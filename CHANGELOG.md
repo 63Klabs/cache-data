@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.1.x version is stable.
 
-## 1.2.4 (2025-06-23)
+## 1.2.5 (2025-06-23)
 
 - Updated suggested Lambda environment variables to uppercase: `CACHE_DATA_`
 - Added check for environment variable `DEPLOY_ENVIRONMENT` among current list of variables checked to determine environment.
