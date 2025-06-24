@@ -104,8 +104,8 @@ class DebugAndLog {
 	 * @returns {string} The current environment.
 	 */
 	static getEnv() {
-		var possibleVars = ["env", "deployEnvironment", "environment", "stage"]; // this is the application env, not the NODE_ENV
-		var env = DebugAndLog.PROD; // if env or deployEnvironment not set, fail to safe
+		var possibleVars = ["env", "deployEnvironment", "environment", "stage, deploy_environment"]; // this is the application env, not the NODE_ENV
+		var env = (process.env?.NODE_ENV === "development" ? DebugAndLog.DEV : DebugAndLog.PROD); // if env or deployEnvironment not set, fail to safe
 
 		if ( "env" in process ) {
 			for (let i in possibleVars) {
