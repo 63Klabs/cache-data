@@ -46,9 +46,63 @@ If you are worried about cost, the Lambda function demonstrated above handles ap
 
 #### Lambda Environment Variables and Execution Role
 
-Below are some typical settings for use with Cache-Data
+Below are some typical CloudFormation template settings for use with Lambda functions using Cache-Data:
 
 ```yaml
+Parameters:
+  CacheDataDbMaxCacheSizeInKB:
+    Type: Number
+    Description: "DynamoDb does better when storing smaller pieces of data. Choose the cut-off in KB that large objects should be stored in S3 instead (10)"
+    Default: 10
+    MinValue: 10
+    MaxValue: 200
+    ConstraintDescription: "Numeric value between 10 and 200 (inclusive)"
+  CacheDataCryptIdHashAlgorithm:
+    Type: String
+    Description: "Hash algorithm used for generating the URI ID to identify cached requests. This is for generating IDs, not crypto."
+    Default: "RSA-SHA256"
+    AllowedValues: ["RSA-SHA256", "RSA-SHA3-224", "RSA-SHA3-256", "RSA-SHA3-384", "RSA-SHA3-512"]
+    ConstraintDescription: "Use possible hashes available from Node.js in the RSA- category (RSA-SHA256 to RSA-SM3)"
+  CacheDataCryptSecureDataAlg:
+    Type: String
+    Description: "Cryptographic algorithm to use for storing sensitive cached data in S3 and DynamoDb"
+    Default: "aes-256-cbc"
+    AllowedValues: ["aes-256-cbc", "aes-256-cfb", "aes-256-cfb1", "aes-256-cfb8", "aes-256-ofb"]
+    ConstraintDescription: "Use possible cipher algorithms available (crypto.getCiphers()) from Node.js in the aes-256-xxx category"
+  CacheDataErrorExpirationInSeconds:
+    Type: Number
+    Description: "How long should errors be cached? This prevents retrying a service that is currenlty in error too often (300 is recommended)"
+    Default: 300
+    MinValue: 1
+    ConstraintDescription: "Choose a value of 1 or greater"
+  CacheDataPurgeExpiredCacheEntriesInHours:
+    Type: Number
+    Description: "The number of hours expired cached data should be kept before purging. Expired cache data may be used if the source returns an error."
+    Default: 24
+    MinValue: 1
+    ConstraintDescription: "Choose a value of 1 or greater"
+  CacheDataPurgeAgeOfCachedBucketObjInDays:
+    Type: Number
+    Description: "Similar to CacheData_PurgeExpiredCacheEntriesInHours, but for the S3 Bucket. S3 calculates from time object is created/last modified (not accessed). This should be longer than your longest cache expiration set in custom/policies. Keeping objects in S3 for too long increases storage costs. (30 is recommended)"
+    Default: 15
+    MinValue: 3
+    ConstraintDescription: "Choose a value of 3 days or greater. This should be slightly longer than the longest cache expiration expected"
+  CacheDataTimeZoneForInterval:
+    Type: String
+    Description: "Cache-Data may expire using an interval such as every four, six, twelve, ... hours on the hour starting at midnight. What timezone holds the midnight to calculate from?"
+    Default: "Etc/UTC"
+    AllowedValues: ["Etc/UTC", "America/Puerto_Rico", "America/New_York", "America/Indianapolis", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu"] # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    ConstraintDescription: "Common examples for United States of America. Accepted values can be changed in the template for your region."
+  CacheDataAWSXRayOn:
+    Type: String
+    Description: "Turn on AWS XRay tracing for Cache-Data"
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    ConstraintDescription: "Accepted values are true or false"
+
+Conditions:
+  IsProduction: !Equals [!Ref DeployEnvironment, "PROD"]
+
 Resources:
 
   # API Gateway
@@ -73,17 +127,18 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
 
       # Lambda Insights and X-Ray
-      Tracing: Active # X-Ray
-      # Required layers for 1) XRay and Lambda Insights, and 2) AWS Secrets Manager and Parameter Store Extension
+      Tracing: !If [ IsNotDevelopment, "Active", !Ref 'AWS::NoValue'] # X-Ray
+
       Layers:
-        - !Sub "arn:aws:lambda:${AWS::Region}:${ACCT_ID_FOR_AWS_INSIGHTS_EXT}:layer:LambdaInsightsExtension:52" # Check for latest version: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsx86-64.html
-        - !Sub "arn:aws:lambda:${AWS::Region}:${ACCT_ID_FOR_AWS_PARAM_AND_SECRETS_EXT}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11" # https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html#ps-integration-lambda-extensions-add
+        # Lambda Insights and Param Secrets - Account and Version are Mapped in as they vary by region and architecture - Update regions and versions in Mapping section
+        - !Sub "arn:aws:lambda:${AWS::Region}:${InsightsAccount}:layer:LambdaInsightsExtension:${Version}"
+        - !Sub "arn:aws:lambda:${AWS::Region}:${ParamAccount}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:${Version}"
 
       Environment:
         Variables:
 
-          NODE_ENV: !If [ IsProduction, "production",  "development"] # Note we are past the build installation phase so devDependencies are not installed, however, we can utilize certain tools in development mode
-          DEPLOY_ENVIRONMENT: !Ref DeployEnvironment # PROD, TEST, DEV - a different category of environment
+          NODE_ENV: !If [ IsProduction, "production",  "development"] # Deployed applications should be run as "production" but if you need to drop it down to "development" you can when running in a TEST or DEV DEPLOY_ENVIRONMENT.
+          DEPLOY_ENVIRONMENT: !Ref DeployEnvironment # PROD, TEST, DEV - a different category of environment.
           LOG_LEVEL: !If [ IsProduction, "0",  "5"] # 0 for prod, 2-5 for non-prod
           PARAM_STORE_PATH: "/" # SSM Parameter store can use a hierarchy to organize your apps parameters
           
@@ -170,70 +225,13 @@ Resources:
 
 ```
 
-The example definition above uses the following parameters. You can either add these to your template's `Parameters` section or hard-code values for your environment variables using the specifications outlined.
-
-```yaml
-Parameters:
-
-
-  # ---------------------------------------------------------------------------
-  # Cache-Data Parameters
-  # From: https://www.npmjs.com/package/@63klabs/cache-data
-
-  CacheDataDbMaxCacheSizeInKB:
-    Type: Number
-    Description: "DynamoDb does better when storing smaller pieces of data. Choose the cut-off in KB that large objects should be stored in S3 instead (10)"
-    Default: 10
-    MinValue: 10
-    MaxValue: 200
-    ConstraintDescription: "Numeric value between 10 and 200 (inclusive)"
-  CacheDataCryptIdHashAlgorithm:
-    Type: String
-    Description: "Hash algorithm used for generating the URI ID to identify cached requests. This is for generating IDs, not crypto."
-    Default: "RSA-SHA256"
-    AllowedValues: ["RSA-SHA256", "RSA-SHA3-224", "RSA-SHA3-256", "RSA-SHA3-384", "RSA-SHA3-512"]
-    ConstraintDescription: "Use possible hashes available from Node.js in the RSA- category (RSA-SHA256 to RSA-SM3)"
-  CacheDataCryptSecureDataAlg:
-    Type: String
-    Description: "Cryptographic algorithm to use for storing sensitive cached data in S3 and DynamoDb"
-    Default: "aes-256-cbc"
-    AllowedValues: ["aes-256-cbc", "aes-256-cfb", "aes-256-cfb1", "aes-256-cfb8", "aes-256-ofb"]
-    ConstraintDescription: "Use possible cipher algorithms available (crypto.getCiphers()) from Node.js in the aes-256-xxx category"
-  CacheDataErrorExpirationInSeconds:
-    Type: Number
-    Description: "How long should errors be cached? This prevents retrying a service that is currently in error too often (300 is recommended)"
-    Default: 300
-    MinValue: 1
-    ConstraintDescription: "Choose a value of 1 or greater"
-  CacheDataPurgeExpiredCacheEntriesInHours:
-    Type: Number
-    Description: "The number of hours expired cached data should be kept before purging. Expired cache data may be used if the source returns an error."
-    Default: 24
-    MinValue: 1
-    ConstraintDescription: "Choose a value of 1 or greater"
-  CacheDataPurgeAgeOfCachedBucketObjInDays:
-    Type: Number
-    Description: "Similar to CacheData_PurgeExpiredCacheEntriesInHours, but for the S3 Bucket. S3 calculates from time object is created/last modified (not accessed). This should be longer than your longest cache expiration set in custom/policies. Keeping objects in S3 for too long increases storage costs. (30 is recommended)"
-    Default: 15
-    MinValue: 3
-    ConstraintDescription: "Choose a value of 3 days or greater. This should be slightly longer than the longest cache expiration expected"
-  CacheDataTimeZoneForInterval:
-    Type: String
-    Description: "Cache-Data may expire using an interval such as every four, six, twelve, ... hours on the hour starting at midnight. What timezone holds the midnight to calculate from?"
-    Default: "Etc/UTC"
-    AllowedValues: ["Etc/UTC", "America/Puerto_Rico", "America/New_York", "America/Indianapolis", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu"] # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-    ConstraintDescription: "Common examples for United States of America. Accepted values can be changed in the template for your region."
-  CacheDataAWSXRayOn:
-    Type: String
-    Description: "Turn on AWS XRay tracing for Cache-Data"
-    Default: "false"
-    AllowedValues: ["true", "false"]
-    ConstraintDescription: "Accepted values are true or false"
-```
-
 #### Cache-Data DynamoDb and S3 CloudFormation Resource Templates
 
 Use the following as an example for creating your DynamoDb and S3 cache storage locations.
+
+You can create a centrally-shared DynamoDb table and S3 location for use among all your instances (each instance has its own encryption key to prevent cache-sharing/exposure).
+
+You can also add the DynamoDbTable and CacheDataS3Bucket to each application template individually. However, this will quickly increase the number of S3 buckets and DynamoDb tables to keep track of.
 
 ```yaml
 Resources:
@@ -350,7 +348,7 @@ exports.handler = async (event, context, callback) => {
 }
 ```
 
-Note: `deployEnvironment` is only one of the possible runtime environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Runtime Environment Variables as well as a variable denoting a Deployment Environment (Production, Development, Testing, etc.).
+Note: `DEPLOY_ENVIRONMENT` is only one of the possible runtime environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Runtime Environment Variables as well as a variable denoting a Deployment Environment (Production, Development, Testing, etc.), and the standard `NODE_ENV` variable.
 
 (Runtime Environment variables are accessed using `process.env.`_`variableName`_.)
 
@@ -362,7 +360,7 @@ Note: There is a sample app and tutorial that works with a CI/CD pipeline availa
 
 ##### Parameters and Secrets
 
-Cache-Data requires an 32 character hexidecimal key to encrypt data when at rest. This can be stored in an SSM Parameter named `crypt_secureDataKey`.
+Cache-Data requires an 32 character hexadecimal key to encrypt data when at rest. This can be stored in an SSM Parameter named `crypt_secureDataKey`.
 
 You have two options for storing and retrieving your SSM Parameters:
 
