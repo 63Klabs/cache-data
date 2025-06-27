@@ -2,11 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
-> Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.1.x version is stable.
+Proposed and upcoming changes may be found on [63Klabs/npm-cache-data Issues](https://github.com/63Klabs/npm-cache-data/issues).
+
+Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/npm-cache-data/security/advisories) in the Cache-Data GitHub repository.
+
+> Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
 ## 1.2.6 (2025-07-xx)
 
-- Added check for `CACHE_DATA_` environment variables during init so they don't need to be set during Cache initialization
+### Enhancements
+
+- Added check for `CACHE_DATA_` environment variables during init so they don't need to be set during Cache initialization. (Closes [issue-212](https://github.com/63Klabs/npm-cache-data/issues/212))
+- Cleaner documentation, CloudFormation templates, and code now that defaults and environment variables can be used.
+
+### Fixes
+
+- Addressed deprecation warnings (handled by Amazon Q Developer):
+  - Eliminated Warnings:
+    - @extra-number/significant-digits@1.3.9 - REMOVED by eliminating lambda-tester
+    - uuid@3.4.0 (2 instances) - REMOVED by eliminating lambda-tester
+  - Remaining Warnings (unavoidable):
+    - lodash.get@4.4.2 - From sinon dependency (external package)
+    - querystring@0.2.0 - From aws-sdk v2 (required for compatibility)
+
+The `querystring` warning will be addressed when aws-sdk v2 compatibility is removed from cache-data. (Required for Node <18 which is no longer available as a Lambda runtime.) Opened issue-
+
+### AI Usage Note
+
+Amazon Q Developer was used to generate tests to ensure backward compatibility, no breaking changes were introduced, and enhancements work as expected. It was used for some additional code generation and reviewed by a human for accuracy.
 
 ## 1.2.5 (2025-06-23)
 

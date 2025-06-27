@@ -28,7 +28,6 @@
     "aws-sdk": "2.x",
     "chai": "^5.2.0",
     "chai-http": "^5.1.1",
-    "lambda-tester": "^4.0.1",
     "mocha": "^11.1.0",
     "sinon": "^21.0.0"
   },
