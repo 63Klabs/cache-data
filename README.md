@@ -22,7 +22,7 @@ This package has been used in production for applications receiving over 1 milli
 * AWS Lambda, S3 bucket, DynamoDb table, and SSM Parameter Store
 * A basic understanding of CloudFormation, Lambda, S3, DynamoDb, and SSM Parameters
 * A basic understanding of IAM policies, especially the Lambda Execution Role, that will allow Lambda to access S3, DynamoDb, and SSM Parameter Store
-* Lambda function should have between 512MB and 1024MB of memory allocated. (256MB minimum). See section regarding Lambda Memory under install.
+* Lambda function should have between 512MB and 1024MB of memory allocated. (256MB minimum). See [Lambda Optimization: Memory Allocation](./docs/lambda-optimization/README.md#lambda-memory-allocation).
 
 ### Installing
 
