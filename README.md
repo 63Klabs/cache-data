@@ -18,7 +18,7 @@ This package has been used in production for applications receiving over 1 milli
 
 ### Requirements
 
-* Current supported versions of Node.js on Lambda
+* Node >18 runtime on Lambda
 * AWS Lambda, S3 bucket, DynamoDb table, and SSM Parameter Store
 * A basic understanding of CloudFormation, Lambda, S3, DynamoDb, and SSM Parameters
 * A basic understanding of IAM policies, especially the Lambda Execution Role, that will allow Lambda to access S3, DynamoDb, and SSM Parameter Store
@@ -32,17 +32,10 @@ This package has been used in production for applications receiving over 1 milli
 4. Install the @63klabs/cache-data package `npm install @63klabs/cache-data`
 5. Add the cache code to your Lambda function
 
-#### Lambda Memory Allocation
+I recommend using the quick-start method when implementing for the first time. It comes with default values and requires less CloudFormation yaml and Node code.
 
-As pointed out in many online resources, including [AWS's own documentation](https://docs.aws.amazon.com/lambda/latest/operatorguide/computing-power.html), Lambda applications should be given more than the default 128MB when using network resources and processing data. I recommend trying 512MB and adjusting depending on your workload and execution experiences. See [Lower AWS Lambda bill by increasing memory by Taavi Rehemägi](https://dashbird.io/blog/lower-aws-lambda-bill-increasing-memory/). 
-
-Optimal performance is somewhere between 256MB and 1024MB. 1024MB is recommended. (I have seen additional improvements by using the AWS Graviton ARM architecture in Lambda.)
-
-Example: The charts below reflect 1 million requests over a seven-day period. As you can see, the invocations remained at a high level throughout the seven-day period. There was a dramatic drop in execution time once the memory was increased from 128 to 512MB. Latency was also improved. This also reduced the number of concurrent executions taking place. (The spike in errors was due to a 3rd party endpoint being down.)
-
-![Metrics before and after upgrade to 512MB with 1M invocations over a 7 day period](https://github.com/chadkluck/npm-chadkluck-cache-data/assets/17443749/0ec98af5-edcf-4e2a-8017-dd17b9c7a11c)
-
-If you are worried about cost, the Lambda function demonstrated above handles approximately 4.6 million requests a month, each averaging 46ms in Lambda run time. This means that the Lambda function executes a total of 211,000 seconds a month which is still within the 400,000 seconds provided by the Free Tier. If there was no free tier, the cost would have been around USD $2.00.
+- [Quick Start Implementation](./docs/00-quick-start-implementation/README.md)
+- [Advanced Implementation](./docs/00-advanced-implementation/README.md)
 
 #### Lambda Environment Variables and Execution Role
 
