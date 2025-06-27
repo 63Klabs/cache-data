@@ -341,19 +341,54 @@ class CacheData {
 		// if we don't have the key set, we don't have anything set
 		if ( this.#secureDataKey === null ) {
 
-			// TODO: Throw error if data is missing
+			// Throw error if no secureData key
+			if ( !("secureDataKey" in parameters) || parameters.secureDataKey === null ) {
+				tools.DebugAndLog.error("CacheData.init() requires a secureDataKey parameter.");
+				throw new Error("CacheData.init() requires a secureDataKey parameter.");
+			}
 
 			// let DynamoDbCache and S3Cache know where to store the data, let them handle the Env variables
 			DynamoDbCache.init(parameters?.dynamoDbTable || null);
 			S3Cache.init(parameters?.s3Bucket || null);
 
-			// set other values
-			this.#secureDataAlgorithm = parameters.secureDataAlgorithm;
+			// secureDataKey can be a string, Buffer, or CachedParameterSecret
 			this.#secureDataKey = parameters.secureDataKey;
 
-			if ("DynamoDbMaxCacheSize_kb" in parameters ) { this.#dynamoDbMaxCacheSize_kb = parameters.DynamoDbMaxCacheSize_kb; }
-			if ("purgeExpiredCacheEntriesAfterXHours" in parameters ) { this.#purgeExpiredCacheEntriesAfterXHours = parameters.purgeExpiredCacheEntriesAfterXHours; }
-			if ("timeZoneForInterval" in parameters ) { this.#timeZoneForInterval = parameters.timeZoneForInterval; }
+			// set other values based on parameters or environment variables
+			this.#secureDataAlgorithm = parameters.secureDataAlgorithm || process.env.CACHE_DATA_SECURE_DATA_ALGORITHM || "aes-256-cbc";
+
+			// CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB
+			if ("DynamoDbMaxCacheSize_kb" in parameters ) { 
+				if (!Number.isInteger(parameters.DynamoDbMaxCacheSize_kb) || parameters.DynamoDbMaxCacheSize_kb <= 0) throw new Error("DynamoDbMaxCacheSize_kb must be a positive integer");
+				this.#dynamoDbMaxCacheSize_kb = parameters.DynamoDbMaxCacheSize_kb; 
+			} else if (process.env.CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB) { 
+				let val = parseInt(process.env.CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB);
+				if (isNaN(val) || val <= 0) throw new Error("CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB must be a positive integer");
+				this.#dynamoDbMaxCacheSize_kb = val; 
+			} else {
+				this.#dynamoDbMaxCacheSize_kb = 10; // default to 10KB
+			}
+			// CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS
+			if ("purgeExpiredCacheEntriesAfterXHours" in parameters ) { 
+				if (!Number.isInteger(parameters.purgeExpiredCacheEntriesAfterXHours) || parameters.purgeExpiredCacheEntriesAfterXHours <= 0) throw new Error("purgeExpiredCacheEntriesAfterXHours must be a positive integer");
+				this.#purgeExpiredCacheEntriesAfterXHours = parameters.purgeExpiredCacheEntriesAfterXHours; 
+			} else if (process.env.CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS) { 
+				let val = parseInt(process.env.CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS);
+				if (isNaN(val) || val <= 0) throw new Error("CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS must be a positive integer");
+				this.#purgeExpiredCacheEntriesAfterXHours = val; 
+			} else {
+				this.#purgeExpiredCacheEntriesAfterXHours = 24; // default to 24 hours
+			}
+			// CACHE_DATA_TIME_ZONE_FOR_INTERVAL
+			if ("timeZoneForInterval" in parameters ) { 
+				if (typeof parameters.timeZoneForInterval !== 'string' || parameters.timeZoneForInterval.trim() === '') throw new Error("timeZoneForInterval must be a non-empty string");
+				this.#timeZoneForInterval = parameters.timeZoneForInterval; 
+			} else if (process.env.CACHE_DATA_TIME_ZONE_FOR_INTERVAL) { 
+				if (process.env.CACHE_DATA_TIME_ZONE_FOR_INTERVAL.trim() === '') throw new Error("CACHE_DATA_TIME_ZONE_FOR_INTERVAL must be a non-empty string");
+				this.#timeZoneForInterval = process.env.CACHE_DATA_TIME_ZONE_FOR_INTERVAL; 
+			} else {
+				this.#timeZoneForInterval = "Etc/UTC"; // default to Etc/UTC
+			}
 
 			this._setOffsetInMinutes();
 
@@ -950,9 +985,6 @@ class CacheData {
 
 };
 
-
-
-
 /**
  * The Cache object handles reads and writes from the cache. 
  * It also acts as a proxy between the app and CacheData which is a private class.
@@ -1055,7 +1087,6 @@ class Cache {
 		this.#idHash = Cache.generateIdHash(connection);
 		this.#syncedNowTimestampInSeconds = CacheData.convertTimestampFromMilliToSeconds(Date.now());
 		this.#syncedLaterTimestampInSeconds = this.#syncedNowTimestampInSeconds + this.#defaultExpirationInSeconds; // now + default cache time
-
 	};
 
 	/**
@@ -1079,13 +1110,13 @@ class Cache {
 	 *	});
 	 * 
 	 * @param {Object} parameters
-	 * @param {string} parameters.dynamoDbTable
-	 * @param {string} parameters.s3Bucket
-	 * @param {string} parameters.secureDataAlgorithm
-	 * @param {string} parameters.secureDataKey
-	 * @param {number} parameters.DynamoDbMaxCacheSize_kb
-	 * @param {number} parameters.purgeExpiredCacheEntriesAfterXHours
-	 * @param {string} parameters.timeZoneForInterval
+	 * @param {string} parameters.dynamoDbTable Can also be set with environment variable CACHE_DATA_DYNAMO_DB_TABLE
+	 * @param {string} parameters.s3Bucket Can also be set with environment variable CACHE_DATA_S3_BUCKET
+	 * @param {string} parameters.secureDataAlgorithm Can also be set with environment variable CACHE_DATA_SECURE_DATA_ALGORITHM
+	 * @param {string|Buffer|tools.Secret|tools.CachedSSMParameter|tools.CachedSecret} parameters.secureDataKey Must be passed, will not accept an environment variable for security reasons.
+	 * @param {number} parameters.DynamoDbMaxCacheSize_kb Can also be set with environment variable CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB
+	 * @param {number} parameters.purgeExpiredCacheEntriesAfterXHours Can also be set with environment variable CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS
+	 * @param {string} parameters.timeZoneForInterval Can also be set with environment variable CACHE_DATA_TIME_ZONE_FOR_INTERVAL
 	 */
 	static init(parameters) {
 		// check if parameters is an object
@@ -1098,7 +1129,8 @@ class Cache {
 		this.#idHashAlgorithm = parameters.idHashAlgorithm || process.env.CACHE_DATA_ID_HASH_ALGORITHM || "RSA-SHA256";
 		this.#useToolsHash = ( "useToolsHash" in parameters ) ? Cache.bool(parameters.useToolsHash) : 
 			("CACHE_DATA_USE_TOOLS_HASH" in process.env ? Cache.bool(process.env.CACHE_DATA_USE_TOOLS_HASH_METHOD) : false);
-				
+		
+		// Let CacheData handle the rest of the initialization
 		CacheData.init(parameters);
 	};
 
