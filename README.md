@@ -152,6 +152,7 @@ Resources:
           CACHE_DATA_ERROR_EXP_IN_SECONDS: !Ref CacheDataErrorExpirationInSeconds
           CACHE_DATA_TIME_ZONE_FOR_INTERVAL: !Ref CacheDataTimeZoneForInterval
           CACHE_DATA_AWS_X_RAY_ON: !Ref CacheDataAWSXRayOn
+          CACHE_DATA_USE_TOOLS_HASH_METHOD: true
 
   # -- LambdaFunction Execution Role --
 
@@ -1252,8 +1253,7 @@ Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set u
 
 - [Website](https://chadkluck.me/)
 - [GitHub](https://github.com/chadkluck)
-- [Mastodon: @63klabs@universeodon.com](https://universeodon.com/@63klabs)
-- [X: @ChadKluck](https://x.com/chadkluck)
+- [Mastodon: @chadkluck@universeodon.com](https://universeodon.com/@chadkluck)
 
 ## Version History
 

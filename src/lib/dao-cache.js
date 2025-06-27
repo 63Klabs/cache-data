@@ -65,9 +65,16 @@ class S3Cache {
 	 * Initialize the S3 bucket for storing cached data.
 	 * @param {string} bucket The bucket name for storing cached data
 	 */
-	static init(bucket) {
-		if ( S3Cache.getBucket() === null) {
-			this.#bucket = bucket;
+
+	static init(bucket = null) {
+		if ( S3Cache.getBucket() === null ) {
+			bucket = (bucket === null) ? process.env?.CACHE_DATA_DYNAMO_DB_TABLE || null : bucket;
+			if (bucket === null || bucket === "") {
+				tools.DebugAndLog.error("Unable to initialize S3 Bucket for Cache. No bucket name provided.");
+				throw new Error("Unable to initialize S3 Cache. No bucket name provided. Please set the CACHE_DATA_S3_BUCKET environment variable or pass a bucket name to S3Cache.init().");
+			} else {
+				this.#bucket = bucket;
+			}
 		} else {
 			tools.DebugAndLog.error("S3Cache already initialized. Ignoring call to S3Cache.init()");
 		}
@@ -197,11 +204,17 @@ class DynamoDbCache {
 
 	/**
 	 * Initialize the DynamoDb settings for storing cached data
-	 * @param {string} table The table name to store cached data
+	 * @param {string|null} table The table name to store cached data
 	 */
-	static init(table) {
+	static init(table = null) {
 		if ( this.#table === null ) {
-			this.#table = table;
+			table = (table === null || table === "") ? process.env?.CACHE_DATA_DYNAMO_DB_TABLE || null : table;
+			if (table === null || table === "") {
+				tools.DebugAndLog.error("Unable to initialize DynamoDbCache. No table name provided.");
+				throw new Error("Unable to initialize DynamoDbCache. No table name provided. Please set the CACHE_DATA_DYNAMO_DB_TABLE environment variable or pass a table name to DynamoDbCache.init().");
+			} else {
+				this.#table = table;
+			}
 		} else {
 			tools.DebugAndLog.error("DynamoDbCache already initialized. Ignoring call to DynamoDbCache.init()");
 		}
@@ -330,8 +343,9 @@ class CacheData {
 
 			// TODO: Throw error if data is missing
 
-			DynamoDbCache.init(parameters.dynamoDbTable);
-			S3Cache.init(parameters.s3Bucket);
+			// let DynamoDbCache and S3Cache know where to store the data, let them handle the Env variables
+			DynamoDbCache.init(parameters?.dynamoDbTable || null);
+			S3Cache.init(parameters?.s3Bucket || null);
 
 			// set other values
 			this.#secureDataAlgorithm = parameters.secureDataAlgorithm;
@@ -971,7 +985,7 @@ class Cache {
 	static STATUS_FORCED = "original:cache-update-forced";
 
 	static #idHashAlgorithm = null;
-	static #useToolsHash = false;
+	static #useToolsHash = null; // gets set in Cache.init()
 
 	#syncedNowTimestampInSeconds = 0; // consistent time base for calculations
 	#syncedLaterTimestampInSeconds = 0; // default expiration if not adjusted
@@ -1074,9 +1088,17 @@ class Cache {
 	 * @param {string} parameters.timeZoneForInterval
 	 */
 	static init(parameters) {
-		if ( "idHashAlgorithm" in parameters ) { this.#idHashAlgorithm = parameters.idHashAlgorithm; } else { tools.DebugAndLog.error("parameters.idHashAlgorithm not set in Cache.init()")};
-		if ("useToolsHash" in parameters ) { this.#useToolsHash = Boolean(parameters.useToolsHash); }
-		
+		// check if parameters is an object
+		if ( typeof parameters !== 'object' || parameters === null ) {
+			tools.DebugAndLog.error("Cache.init() parameters must be an object");
+			throw new Error("Cache.init() parameters must be an object");
+		}
+
+		// if parameters are set, use them, otherwise check for environment variables
+		this.#idHashAlgorithm = parameters.idHashAlgorithm || process.env.CACHE_DATA_ID_HASH_ALGORITHM || "RSA-SHA256";
+		this.#useToolsHash = ( "useToolsHash" in parameters ) ? Cache.bool(parameters.useToolsHash) : 
+			("CACHE_DATA_USE_TOOLS_HASH" in process.env ? Cache.bool(process.env.CACHE_DATA_USE_TOOLS_HASH_METHOD) : false);
+				
 		CacheData.init(parameters);
 	};
 
