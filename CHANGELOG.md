@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.1.x version is stable.
 
+## 1.2.6 (2025-07-xx)
+
+- Added check for `CACHE_DATA_` environment variables during init so they don't need to be set during Cache initialization
+
 ## 1.2.5 (2025-06-23)
 
 - Updated suggested Lambda environment variables to uppercase: `CACHE_DATA_`
