@@ -1,0 +1,119 @@
+# template.yml
+# This is a template for a Lambda function that uses the 63klabs/cache-data package
+
+Resources:
+
+  # API Gateway
+
+  WebApi:
+    Type: AWS::Serverless::Api
+    Properties: 
+      PropagateTags: True
+      TracingEnabled: True
+      OpenApiVersion: 3.0.0
+
+  # Lambda Function
+
+  AppFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # ...
+      Runtime: nodejs22.x
+      MemorySize: 1028
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+      # Lambda Insights and X-Ray
+      Tracing: "Active" # X-Ray
+
+      Layers:
+        # Lambda Insights and Param Secrets - Account and Version are Mapped in as they vary by region and architecture
+        - !Sub "arn:aws:lambda:${AWS::Region}:${AWSInsightsAccount}:layer:LambdaInsightsExtension:${Version}"
+        - !Sub "arn:aws:lambda:${AWS::Region}:${AWSParamAccount}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:${Version}"
+
+      Environment:
+        Variables:
+
+          DEPLOY_ENVIRONMENT: "DEV" # PROD, TEST, DEV - a different category of environment
+          LOG_LEVEL: 5 # 0 for prod, 2-5 for non-prod
+          
+          # Cache-Data settings - Parameters may be used instead of hard-coded values - see docs/00-example-implementation/example-template-parameters.yml
+          CACHE_DATA_DYNAMO_DB_TABLE: your-dynamodb-table-name # The DynamoDb table name to use for caching data
+          CACHE_DATA_S3_BUCKET: your-s3-bucket-name # The S3 bucket name to use for caching data
+          CACHE_DATA_SECURE_DATA_ALGORITHM: "aes-256-cbc" # The cryptographic algorithm to use for storing sensitive cached data in S3 and DynamoDb
+          CACHE_DATA_ID_HASH_ALGORITHM: "RSA-SHA256" # The hash algorithm to use for generating the URI ID to identify cached requests
+          CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB: 10 # The cut-off in KB that large objects should be stored in S3 instead of DynamoDb
+          CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS: 24 # The number of hours expired cached data should be kept before purging
+          CACHE_DATA_ERROR_EXP_IN_SECONDS: 300 # How long should errors be cached? This prevents retrying a service that is currently in error too often
+          CACHE_DATA_TIME_ZONE_FOR_INTERVAL: "Etc/UTC" # Cache-Data may expire using an interval such as every four, six, twelve, ... hours on the hour starting at midnight. What timezone holds the midnight to calculate from?
+          CACHE_DATA_AWS_X_RAY_ON: true # Enable X-Ray tracing for Cache-Data
+          CACHE_DATA_USE_TOOLS_HASH_METHOD: true # Use the tools.hash method for generating the URI ID to identify cached requests (default is false)
+
+  # -- LambdaFunction Execution Role --
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${LAMBDA_EXECUTION_ROLE_NAME}-ExecutionRole"
+      Description: "IAM Role that allows the Lambda permission to execute and access resources"
+      Path: /
+
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [lambda.amazonaws.com]
+          Action: sts:AssumeRole
+
+      # These are for application monitoring via LambdaInsights and X-Ray
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy'
+        - 'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess'
+
+      # These are the resources your Lambda function needs access to
+      # Logs, SSM Parameters, DynamoDb, S3, etc.
+      # Define specific actions such as get/put (read/write)
+      Policies:
+      - PolicyName: LambdaResourceAccessPolicies
+        PolicyDocument:
+          Statement:
+
+          - Sid: LambdaAccessToWriteLogs
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource: !GetAtt AppLogGroup.Arn
+
+          # cache-data Parameter Read Access (from: https://www.npmjs.com/package/@63klabs/cache-data)
+          - Sid: LambdaAccessToSSMParameters
+            Action:
+            - ssm:DescribeParameters
+            - ssm:GetParameters
+            - ssm:GetParameter
+            - ssm:GetParametersByPath
+            Effect: Allow
+            Resource: 
+            - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterPath}*"
+
+          # cache-data S3 bucket (from: https://www.npmjs.com/package/@63klabs/cache-data)
+          - Sid: LambdaAccessToS3BucketCacheData
+            Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:GetObjectVersion
+            Effect: Allow
+            Resource: !Join [ '', [ !GetAtt CacheDataS3Bucket.Arn, '/cache/*' ] ]
+
+          # cache-data DynamoDb table (from: https://www.npmjs.com/package/@63klabs/cache-data)
+          - Sid: LambdaAccessToDynamoDBTableCacheData
+            Action:
+            - dynamodb:GetItem
+            - dynamodb:Scan
+            - dynamodb:Query
+            - dynamodb:BatchGetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:BatchWriteItem
+            Effect: Allow
+            Resource: !GetAtt CacheDataDynamoDbTable.Arn

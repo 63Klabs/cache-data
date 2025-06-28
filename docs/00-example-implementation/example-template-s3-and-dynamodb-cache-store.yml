@@ -1,0 +1,77 @@
+Resources:
+
+  # ... all your other resources
+  # ... make sure your Lambda function has between 512MB and 1024MB allocated (256MB minimum)
+  # ... also make sure you added environment variables to your Lambda function
+  # ... and make sure your Lambda Execution Role grants access to your DynamoDb and S3 buckets
+
+  # ---------------------------------------------------------------------------
+  # Cache-Data
+  # From: https://www.npmjs.com/package/@63klabs/cache-data
+  # Your Lambda function will need access via the Execution Role
+
+  # -- Cache-Data DynamoDb Table --
+
+  CacheDataDynamoDbTable:
+    Type: AWS::DynamoDB::Table
+    Description: Table to store Cache-Data. 
+    Properties:
+      TableName: !Sub '${YOUR-DYNAMODB-TABLE}-CacheData'
+      AttributeDefinitions: 
+        - AttributeName: "id_hash"
+          AttributeType: "S"
+      KeySchema: 
+        - AttributeName: "id_hash"
+          KeyType: "HASH"
+      TimeToLiveSpecification:
+        AttributeName: "purge_ts"
+        Enabled: true
+      BillingMode: "PAY_PER_REQUEST"
+
+
+  # -- Cache-Data S3 Bucket --
+
+  CacheDataS3Bucket:
+    Type: AWS::S3::Bucket
+    Description: S3 Bucket to store Cache-Data too big for DynamoDb. Cache-Data stores objects in /cache directory. The application may store additional data outside of the cache directory.
+    Properties:
+      BucketName: !Sub "${YOUR-BUCKET-NAME}-cachedata"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: "ExpireObjects"
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            ExpirationInDays: !Ref CacheDataPurgeAgeOfCachedBucketObjInDays
+            Prefix: "cache" # this will limit this policy to YOURBUCKETNAME/cache/*
+            NoncurrentVersionExpirationInDays: !Ref CacheDataPurgeAgeOfCachedBucketObjInDays
+            Status: "Enabled" # Enable only if you are going to use this LifecycleConfiguration
+
+  # -- Cache-Data S3 Bucket Policy --
+
+  CacheDataS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CacheDataS3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: SecurityPolicy
+        Statement:
+          - Sid: "DenyNonSecureTransportAccess"
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt CacheDataS3Bucket.Arn
+              - !Join [ '', [ !GetAtt CacheDataS3Bucket.Arn, '/*' ] ]
+            Condition:
+              Bool:
+                "aws:SecureTransport": false
