@@ -13,7 +13,7 @@
     "test": "test"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=16.0.0"
   },
   "dependencies": {
     "aws-xray-sdk-core": "^3.6.0",
