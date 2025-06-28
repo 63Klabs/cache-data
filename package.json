@@ -13,7 +13,7 @@
     "test": "test"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "aws-xray-sdk-core": "^3.6.0",
@@ -36,7 +36,6 @@
     "test:cache": "mocha 'test/cache/**/*-tests.mjs'",
     "test:config": "mocha 'test/config/**/*-tests.mjs'",
     "test:endpoint": "mocha 'test/endpoint/**/*-tests.mjs'",
-    "test:lambda": "mocha 'test/lambda/**/*-tests.mjs'",
     "test:logging": "mocha 'test/logging/**/*-tests.mjs'",
     "test:request": "mocha 'test/request/**/*-tests.mjs'",
     "test:response": "mocha 'test/response/**/*-tests.mjs'",
