@@ -1,7 +1,12 @@
+# Endpoint Properties, Methods, and Use
+
+TODO
+
+## Monitoring and Logging
 
 ### tools.Timer
 
-In its simplist form we can do the following:
+In its simplest form we can do the following:
 
 ```js
 /*
