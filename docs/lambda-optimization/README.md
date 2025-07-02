@@ -144,7 +144,7 @@ Resources:
   WebApi:
     Type: AWS::Serverless::Api
     Properties: 
-	  # ...
+    # ...
       TracingEnabled: True
 
   # Lambda Function
