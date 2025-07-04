@@ -1,0 +1,14 @@
+{
+  "Parameters": {
+    "FunctionMaxMemoryInMB": "2048",
+    "FunctionTimeOutInSeconds": "30",
+    "CacheDataTimeZoneForInterval": "America/Chicago",
+    "CacheDataAWSXRayOn": "true"
+  },
+  "Tags": {
+    "Provisioner": "CloudFormation",
+    "Application": "$PREFIX$-$PROJECT_ID$",
+    "ApplicationDeploymentId": "$PREFIX$-$PROJECT_ID$-$STAGE_ID$",
+    "Repository": "$REPOSITORY$"
+  }
+}
