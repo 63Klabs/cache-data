@@ -46,7 +46,7 @@ def usage():
          AWS profile to use for the request""", file=sys.stderr)
 
 def generate_key(key_len):
-    """Generate a random hex key of specified length"""
+    """Generate a random hex key of specified bit length"""
     return secrets.token_hex(key_len // 8)  # key_len bits ÷ 8 bits/byte = bytes needed
 
 def put_parameter(ssm_client, param_full_name, value, tags, dryrun=False):
