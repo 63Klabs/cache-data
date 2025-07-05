@@ -29,7 +29,7 @@ This package has been used in production for web service applications receiving 
 ### Installing
 
 1. Generate Secret Key to Encrypt Cache:
-   - Use the key generation script during the build to establish a key to encrypt your data.
+   - Use the [key generation script](./docs/00-example-implementation/generate-put-key.py) during [the build](./docs/00-example-implementation/example-buildspec.yml) to establish a key to encrypt your data.
 2. Lambda CloudFormation Template:
    - Node: AWS Lambda supported version of Node
    - Memory: Allocate at least 256MB (512-1024MB recommended)
