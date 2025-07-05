@@ -29,20 +29,20 @@ This package has been used in production for web service applications receiving 
 ### Installing
 
 1. Generate Secret Key to Encrypt Cache:
-  - Use the key generation script during the build to establish a key to encrypt your data.
+   - Use the key generation script during the build to establish a key to encrypt your data.
 2. Lambda CloudFormation Template:
-  - Node: AWS Lambda supported version of Node
-  - Memory: Allocate at least 256MB (512-1024MB recommended)
-  - Environment Variables: Add the cache-data environment variables to your Lambda function.
-  - Execution Role: Include access to S3 and DynamoDb in your Lambda's execution role.
-  - See [Lambda template example](./docs/00-example-implementation/example-template-lambda-function.yml) 
+   - Node: AWS Lambda supported version of Node
+   - Memory: Allocate at least 256MB (512-1024MB recommended)
+   - Environment Variables: Add the cache-data environment variables to your Lambda function.
+   - Execution Role: Include access to S3 and DynamoDb in your Lambda's execution role.
+   - See [Lambda template example](./docs/00-example-implementation/example-template-lambda-function.yml) 
 3. S3 and DynamoDb CloudFormation Template to store your cache:
-  - Include in your application infrastructure template or as separate infrastructure.
-  - See [S3 and DynamoDb Cache Store template example](./docs/00-example-implementation/example-template-s3-and-dynamodb-cache-store.yml)
+   - Include in your application infrastructure template or as separate infrastructure.
+   - See [S3 and DynamoDb Cache Store template example](./docs/00-example-implementation/example-template-s3-and-dynamodb-cache-store.yml)
 4. Install the @63klabs/cache-data package: `npm install @63klabs/cache-data`
 5. Add code to your Lambda function to utilize caching and other cache-data utilities:
-  - See [example code for index and handler](./docs/00-example-implementation/example-handler.js)
-  - See [example code for config initialization](./docs/00-example-implementation/example-config.js)
+   - See [example code for index and handler](./docs/00-example-implementation/example-handler.js)
+   - See [example code for config initialization](./docs/00-example-implementation/example-config.js)
 
 It is recommended that you use the quick-start method when implementing for the first time. It comes with default values and requires less CloudFormation yaml and Node code.
 
