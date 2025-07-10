@@ -2,7 +2,7 @@
 
 > Note: To implement Cache Data, a DynamoDb and S3 bucket needs to be created to store the cache. See the [Cache-Data DynamoDb and S3 CloudFormation Resource Templates](#cache-data-dynamodb-and-s3-cloudformation-resource-templates) section below.
 
-A full implementation example and tutorial is provided as one of the Atlantis Application Starters available through the [Atlantis Tutorials repository](https://github.com/63klabs/atlantis-tutorials). (Atlantis is a collection of templates and deployment scripts to assist in starting and automating serverless deployments using AWS SAM and CloudFormation.)
+A full implementation example and tutorial is available through the [Atlantis Tutorials repository](https://github.com/63klabs/atlantis-tutorials) as [Tutorial #2](https://github.com/63Klabs/atlantis-tutorials/blob/main/tutorials/02-s3-dynamo-api-gateway-lambda-cache-data-node/README.md). (Atlantis is a collection of templates and deployment scripts to assist in starting and automating serverless deployments using AWS SAM and CloudFormation.)
 
 ## CloudFormation Template Examples
 
