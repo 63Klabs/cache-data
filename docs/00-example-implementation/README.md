@@ -34,7 +34,7 @@ Even if not using the parameters, the parameter example also provides descriptio
 
 Cache-Data requires a secret key to encrypt cached data in S3 and DynamoDb. 
 
-This key is stored in SSM Parameter store and can be generated using [the generate-put-key.py build script](./generate-put-key.py)
+This key is stored in SSM Parameter store and can be generated using [the generate-put-ssm.py build script](./generate-put-ssm.py)
 
 The script can be used to store additional parameters at build time. Review comments in the script for usage information.
 
@@ -42,7 +42,7 @@ The script will also look for a [template-configuration.json](./template-configu
 
 Template configuration files are often used alongside buildspec.yml files for supplying `Parameters` and `Tags` to SAM deployments.
 
-To implement the generate-put-key.py script during your CodeBuild process, you can refer to the [example buildspec.yml](./example-buildspec.yml).
+To implement the generate-put-ssm.py script during your CodeBuild process, you can refer to the [example buildspec.yml](./example-buildspec.yml).
 
 ## Code Examples
 

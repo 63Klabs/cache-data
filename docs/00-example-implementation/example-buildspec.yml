@@ -6,10 +6,10 @@ phases:
     commands:
 
       # Generate a random 256 bit key (hexidecimal) in SSM for cache data:
-      - generate-put-keys.py /webservice/app-name/CacheData_SecureDataKey --generate 256
+      - generate-put-ssm.py /webservice/app-name/CacheData_SecureDataKey --generate 256
 
       # Generate a parameter with a preset value:
-      - generate-put-keys.py /webservice/app-name/HelloWorld --value "some-value"
+      - generate-put-ssm.py /webservice/app-name/HelloWorld --value "some-value"
 
       # Generate a parameter with value of 'BLANK' to fill in later:
-      - generate-put-keys.py /webservice/app-name/WeatherServiceApiKey
+      - generate-put-ssm.py /webservice/app-name/WeatherServiceApiKey

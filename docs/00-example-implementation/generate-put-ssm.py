@@ -146,7 +146,7 @@ def get_tags():
     if deployed_using_tag:
         deployed_using_tag['Value'] = 'Build Script'
     else:
-        tags.append({'Key': 'DeployedUsing', 'Value': 'Build Script (generate-put-key.py)'})
+        tags.append({'Key': 'DeployedUsing', 'Value': 'Build Script (generate-put-ssm.py)'})
 
     # print out the tags
     print("Tags to be used:")
