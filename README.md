@@ -69,7 +69,7 @@ See [Change Log](CHANGELOG.md) for version history and changes.
 
 ## Issues, Features, and Enhancements
 
-Visit the [Issues section of the @63Klabs Cache-Data GitHub repository](https://github.com/63klabs/npm-cache-data) for information on reported issues, upcoming fixes and enhancements, and to submit requests.
+Visit the [Issues section of the @63Klabs Cache-Data GitHub repository](https://github.com/63klabs/cache-data) for information on reported issues, upcoming fixes and enhancements, and to submit requests.
 
 ## License
 

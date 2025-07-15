@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/63klabs/npm-cache-data.git"
+    "url": "git+https://github.com/63klabs/cache-data.git"
   },
   "main": "src/index.js",
   "directories": {
@@ -50,7 +50,7 @@
     "AWS Lambda"
   ],
   "bugs": {
-    "url": "https://github.com/63klabs/npm-cache-data/issues"
+    "url": "https://github.com/63klabs/cache-data/issues"
   },
-  "homepage": "https://github.com/63klabs/npm-cache-data#readme"
+  "homepage": "https://github.com/63klabs/cache-data#readme"
 }

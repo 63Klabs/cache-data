@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-Proposed and upcoming changes may be found on [63Klabs/npm-cache-data Issues](https://github.com/63Klabs/npm-cache-data/issues).
+Proposed and upcoming changes may be found on [63Klabs/cache-data Issues](https://github.com/63Klabs/cache-data/issues).
 
-Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/npm-cache-data/security/advisories) in the Cache-Data GitHub repository.
+Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
@@ -12,7 +12,7 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ### Enhancements
 
-- Added check for `CACHE_DATA_` environment variables during init so they don't need to be set during Cache initialization. (Closes [issue-212](https://github.com/63Klabs/npm-cache-data/issues/212))
+- Added check for `CACHE_DATA_` environment variables during init so they don't need to be set during Cache initialization. (Closes [issue-212](https://github.com/63Klabs/cache-data/issues/212))
 - Cleaner documentation, CloudFormation templates, and code now that defaults and environment variables can be used.
 
 ### Fixes

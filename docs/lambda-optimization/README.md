@@ -20,7 +20,7 @@ As pointed out in many online resources, including [AWS's own documentation](htt
 
 Example: The charts below reflect 1 million requests over a seven-day period. As you can see, the invocations remained at a high level throughout the seven-day period. There was a dramatic drop in execution time once the memory was increased from 128 to 512MB. Latency was also improved. This also reduced the number of concurrent executions taking place. (The spike in errors was due to a 3rd party endpoint being down.)
 
-![Metrics before and after upgrade to 512MB with 1M invocations over a 7 day period](https://github.com/63klabs/npm-cache-data/assets/17443749/0ec98af5-edcf-4e2a-8017-dd17b9c7a11c)
+![Metrics before and after upgrade to 512MB with 1M invocations over a 7 day period](https://github.com/63klabs/cache-data/assets/17443749/0ec98af5-edcf-4e2a-8017-dd17b9c7a11c)
 
 If you are worried about cost, the Lambda function demonstrated above handles approximately 4.6 million requests a month, each averaging 46ms in Lambda run time. This means that the Lambda function executes a total of 211,000 seconds a month which is still within the 400,000 seconds provided by the Free Tier. If there was no free tier, the cost would have been around USD $2.00.
 
