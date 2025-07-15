@@ -8,7 +8,7 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## 1.2.7 (2025-07-15)
+## 1.2.8 (2025-07-15)
 
 ### Enhancements
 
@@ -17,7 +17,6 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ### Fixes
 
-- Fixed variable misname in cache S3 init from v1.2.6
 - Addressed deprecation warnings (handled by Amazon Q Developer):
   - Eliminated Warnings:
     - @extra-number/significant-digits@1.3.9 - REMOVED by eliminating lambda-tester
@@ -25,6 +24,8 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
   - Remaining Warnings (unavoidable):
     - lodash.get@4.4.2 - From sinon dependency (external package)
     - querystring@0.2.0 - From aws-sdk v2 (required for compatibility)
+- Fixed variable misname in cache S3 init from v1.2.6
+- Fixed to check for environment variable CACHE_DATA_AWS_X_RAY_ON from v1.2.6
 
 The `querystring` warning will be addressed when aws-sdk v2 compatibility is removed from cache-data. (Required for Node <18 which is no longer available as a Lambda runtime.) Opened [issue-213](https://github.com/63Klabs/cache-data/issues/213)
 
