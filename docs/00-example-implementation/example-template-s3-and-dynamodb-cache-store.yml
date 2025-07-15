@@ -14,7 +14,9 @@ Resources:
 
   CacheDataDynamoDbTable:
     Type: AWS::DynamoDB::Table
-    Description: Table to store Cache-Data. 
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete # Since this is cache data that can be regenerated, Delete is suitable for the deletion policy.
+
     Properties:
       TableName: !Sub '${YOUR-DYNAMODB-TABLE}-CacheData'
       AttributeDefinitions: 
@@ -33,7 +35,6 @@ Resources:
 
   CacheDataS3Bucket:
     Type: AWS::S3::Bucket
-    Description: S3 Bucket to store Cache-Data too big for DynamoDb. Cache-Data stores objects in /cache directory. The application may store additional data outside of the cache directory.
     Properties:
       BucketName: !Sub "${YOUR-BUCKET-NAME}-cachedata"
       PublicAccessBlockConfiguration:
