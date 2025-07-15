@@ -25,7 +25,7 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
     - lodash.get@4.4.2 - From sinon dependency (external package)
     - querystring@0.2.0 - From aws-sdk v2 (required for compatibility)
 
-The `querystring` warning will be addressed when aws-sdk v2 compatibility is removed from cache-data. (Required for Node <18 which is no longer available as a Lambda runtime.) Opened issue-
+The `querystring` warning will be addressed when aws-sdk v2 compatibility is removed from cache-data. (Required for Node <18 which is no longer available as a Lambda runtime.) Opened [issue-213](https://github.com/63Klabs/cache-data/issues/213)
 
 ### AI Usage Note
 
