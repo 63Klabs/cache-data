@@ -1,5 +1,7 @@
 const isTrue = (value) => {
-	return (value !== null && typeof value !== 'undefined' && (value === true || value.toLowerCase() === "true" || value === 1 || value === "1"));
+	return (value !== null && typeof value !== 'undefined' && 
+		(value === true || value === 1 || value === "1" || 
+		(typeof value === 'string' && value.toLowerCase() === "true")));
 };
 
 const AWSXRay = (isTrue(process.env?.CacheData_AWSXRayOn) || isTrue(process.env?.CACHE_DATA_AWS_X_RAY_ON) ) ? require("aws-xray-sdk-core") : null;
