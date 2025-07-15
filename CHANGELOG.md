@@ -8,12 +8,13 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## 1.2.8 (2025-07-15)
+## 1.2.9 (2025-07-15)
 
 ### Enhancements
 
 - Added check for `CACHE_DATA_` environment variables during init so they don't need to be set during Cache initialization. (Closes [issue-212](https://github.com/63Klabs/cache-data/issues/212))
 - Cleaner documentation, CloudFormation templates, and code now that defaults and environment variables can be used.
+- Added ability to pass an array of objects to `new Connections(connections)` to make it easy when importing a connections file
 
 ### Fixes
 

@@ -10,24 +10,46 @@ const DebugAndLog = require('./DebugAndLog.class');
  *************************************************************************** */
 
 class Connections {
-
-	constructor( obj = null ) {
-		
-	};
-
+	
 	_connections = {};
 
 	/**
-	 * Given an object (associative array) create a Connection object to add to
+	 * Creates a Connections object that can hold multiple Connection objects.
+	 * @param {Array<object>|Array<Connection>|object|Connection} connections An object containing Connection objects
+	 */
+	constructor( connections = null ) {
+		if ( connections !== null ) {
+			if ( Array.isArray(connections) ) {
+				for (var i = 0; i < connections.length; i++) {
+					this.add(connections[i]);
+				}
+			} else {
+				this.add(connections);
+			}
+		};
+	};
+
+
+	/**
+	 * Given an object (associative array) or Connection instance, create a Connection object to add to
 	 * our collection of Connections.
 	 * 
-	 * @param {object} obj 
+	 * @param {object|Connection} obj 
 	 */
 	add( obj ) {
-		if ( "name" in obj && obj.name !== null && !(obj.name in this._connections) ) {
-			let connection = new Connection(obj);
-
-			this._connections[obj.name] = connection;
+		let connectionObj = obj;
+		let name = null;
+		
+		if ( obj instanceof Connection ) {
+			connectionObj = obj.toObject();
+			name = obj.getName();
+		} else if ( "name" in obj ) {
+			name = obj.name;
+		}
+		
+		if ( name !== null && !(name in this._connections) ) {
+			let connection = new Connection(connectionObj);
+			this._connections[name] = connection;
 		};
 	};
 
@@ -248,6 +270,10 @@ class Connection {
 
 		return obj;
 	}
+
+	getName() {
+		return this._name;
+	};
 
 	toString() {
 		return `${this._name} ${this._method} ${(this._uri) ? this._uri : this._protocol+"://"+this._host+this._path}${(this._note) ? " "+this._note : ""}`;
