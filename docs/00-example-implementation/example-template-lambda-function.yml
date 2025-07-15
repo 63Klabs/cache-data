@@ -36,17 +36,22 @@ Resources:
           DEPLOY_ENVIRONMENT: "DEV" # PROD, TEST, DEV - a different category of environment
           LOG_LEVEL: 5 # 0 for prod, 2-5 for non-prod
           
-          # Cache-Data settings - Parameters may be used instead of hard-coded values - see docs/00-example-implementation/example-template-parameters.yml
+          # Cache-Data Settings - Parameters may be used instead of hard-coded values
+          # If you do not provide these environment variables, cache-data will use the default values (shown below)
+          # CACHE_DATA_DYNAMO_DB_TABLE and CACHE_DATA_S3_BUCKET are required for cache-data to work
+          # See https://github.com/63Klabs/cache-data/blob/main/docs/00-example-implementation/example-template-lambda-function.yml
+          # -- Required --
           CACHE_DATA_DYNAMO_DB_TABLE: your-dynamodb-table-name # The DynamoDb table name to use for caching data
           CACHE_DATA_S3_BUCKET: your-s3-bucket-name # The S3 bucket name to use for caching data
+          # -- Optional --
           CACHE_DATA_SECURE_DATA_ALGORITHM: "aes-256-cbc" # The cryptographic algorithm to use for storing sensitive cached data in S3 and DynamoDb
           CACHE_DATA_ID_HASH_ALGORITHM: "RSA-SHA256" # The hash algorithm to use for generating the URI ID to identify cached requests
           CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB: 10 # The cut-off in KB that large objects should be stored in S3 instead of DynamoDb
           CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS: 24 # The number of hours expired cached data should be kept before purging
           CACHE_DATA_ERROR_EXP_IN_SECONDS: 300 # How long should errors be cached? This prevents retrying a service that is currently in error too often
           CACHE_DATA_TIME_ZONE_FOR_INTERVAL: "Etc/UTC" # Cache-Data may expire using an interval such as every four, six, twelve, ... hours on the hour starting at midnight. What timezone holds the midnight to calculate from?
-          CACHE_DATA_AWS_X_RAY_ON: true # Enable X-Ray tracing for Cache-Data
-          CACHE_DATA_USE_TOOLS_HASH_METHOD: true # Use the tools.hash method for generating the URI ID to identify cached requests (default is false)
+          CACHE_DATA_AWS_X_RAY_ON: true # (default is false) Enable X-Ray tracing for Cache-Data 
+          CACHE_DATA_USE_TOOLS_HASH_METHOD: true # (default is false) Use the tools.hash method for generating the URI ID to identify cached requests
 
   # -- LambdaFunction Execution Role --
 

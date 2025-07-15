@@ -6,7 +6,31 @@ Parameters:
 
   # ...
 
+  # ---------------------------------------------------------------------------
   # Cache-Data Parameters
+  # Most of these parameters are passed to Lambda Environment Variables
+  # From: https://www.npmjs.com/package/@63klabs/cache-data
+
+  CacheDataDynamoDbTableName:
+    Type: String
+    Description: "The DynamoDb table name to use for caching data. This is used by the 63klabs/cache-data package. If left blank, it will use the imported value from the Cache Data storage stack output."
+    Default: ""
+    AllowedPattern: "^[a-zA-Z0-9_.-]{3,255}$|^$"
+    ConstraintDescription: "Blank to use ImportedValue, otherwise: Must be between 3 and 255 characters. Can contain alphanumeric characters, underscores, dashes, and periods."
+  
+  CacheDataS3BucketName:
+    Type: String
+    Description: "The S3 bucket name to use for caching data. This is used by the 63klabs/cache-data package. If left blank, it will use the imported value from the Cache Data storage stack output."
+    Default: ""
+    AllowedPattern: "^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$|^$"
+    ConstraintDescription: "Blank to use ImportedValue, otherwise: Must be between 3 and 63 characters. Lower case alphanumeric and dashes. Must start and end with a letter or number."
+
+  CacheDataTimeZoneForInterval:
+    Type: String
+    Description: "Cache-Data may expire using an interval such as every four, six, twelve, ... hours on the hour starting at midnight. What timezone holds the midnight to calculate from?"
+    Default: "Etc/UTC"
+    AllowedValues: ["Etc/UTC", "America/Puerto_Rico", "America/New_York", "America/Indianapolis", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu"] # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    ConstraintDescription: "Common examples for United States of America. Accepted values can be changed in the template for your region."
 
   CacheDataDbMaxCacheSizeInKB:
     Type: Number
@@ -51,16 +75,42 @@ Parameters:
     MinValue: 3
     ConstraintDescription: "Choose a value of 3 days or greater. This should be slightly longer than the longest cache expiration expected"
 
-  CacheDataTimeZoneForInterval:
-    Type: String
-    Description: "Cache-Data may expire using an interval such as every four, six, twelve, ... hours on the hour starting at midnight. What timezone holds the midnight to calculate from?"
-    Default: "Etc/UTC"
-    AllowedValues: ["Etc/UTC", "America/Puerto_Rico", "America/New_York", "America/Indianapolis", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu"] # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-    ConstraintDescription: "Common examples for United States of America. Accepted values can be changed in the template for your region."
-
   CacheDataAWSXRayOn:
     Type: String
     Description: "Turn on AWS XRay tracing for Cache-Data"
-    Default: "false"
+    Default: "true"
     AllowedValues: ["true", "false"]
     ConstraintDescription: "Accepted values are true or false"
+
+# -------------------------------------------
+# Example of using imported values
+
+Conditions:
+  HasCacheDataDynamoDbTableName: !Not [!Equals [!Ref CacheDataDynamoDbTableName, ""]]
+  HasCacheDataS3BucketName: !Not [!Equals [!Ref CacheDataS3BucketName, ""]]
+
+Resources:
+
+  # -- Lambda Function --
+  AppFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+
+      # ... function properties ...
+
+      Environment:
+        Variables:
+                    
+          # Cache-Data settings (from: https://www.npmjs.com/package/@63klabs/cache-data)
+          CACHE_DATA_TIME_ZONE_FOR_INTERVAL: !Ref CacheDataTimeZoneForInterval # Cache-Data may expire using an interval such as every four, six, twelve, ... hours on the hour starting at midnight. What timezone holds the midnight to calculate from?
+          CACHE_DATA_AWS_X_RAY_ON: !Ref CacheDataAWSXRayOn # Enable X-Ray tracing for Cache-Data
+          CACHE_DATA_DYNAMO_DB_TABLE: !If 
+            - HasCacheDataDynamoDbTableName
+            - !Ref CacheDataDynamoDbTableName
+            - Fn::ImportValue:
+                'Fn::Sub': '${Prefix}-CacheDataDynamoDbTable' # relies on the Cache Data storage stack output
+          CACHE_DATA_S3_BUCKET: !If 
+            - HasCacheDataS3BucketName
+            - !Ref CacheDataS3BucketName
+            - Fn::ImportValue:
+                'Fn::Sub': '${Prefix}-CacheDataS3Bucket' # relies on the Cache Data storage stack output
