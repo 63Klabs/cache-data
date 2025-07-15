@@ -68,7 +68,7 @@ class S3Cache {
 
 	static init(bucket = null) {
 		if ( S3Cache.getBucket() === null ) {
-			bucket = (bucket === null) ? process.env?.CACHE_DATA_DYNAMO_DB_TABLE || null : bucket;
+			bucket = (bucket === null) ? process.env?.CACHE_DATA_S3_BUCKET || null : bucket;
 			if (bucket === null || bucket === "") {
 				tools.DebugAndLog.error("Unable to initialize S3 Bucket for Cache. No bucket name provided.");
 				throw new Error("Unable to initialize S3 Cache. No bucket name provided. Please set the CACHE_DATA_S3_BUCKET environment variable or pass a bucket name to S3Cache.init().");
