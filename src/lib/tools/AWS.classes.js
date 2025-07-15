@@ -1,4 +1,4 @@
-const AWSXRay = (process.env?.CacheData_AWSXRayOn === "true") ? require("aws-xray-sdk-core") : null;
+const AWSXRay = (process.env?.CacheData_AWSXRayOn === "true" || process.env?.CACHE_DATA_AWS_X_RAY_ON === "true") ? require("aws-xray-sdk-core") : null;
 
 if (AWSXRay !== null) {
 	// Configure capture options
