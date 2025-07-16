@@ -69,7 +69,7 @@ See [Change Log](CHANGELOG.md) for version history and changes.
 
 ## Issues, Features, and Enhancements
 
-Visit the [Issues section of the @63Klabs Cache-Data GitHub repository](https://github.com/63klabs/cache-data) for information on reported issues, upcoming fixes and enhancements, and to submit requests.
+Visit the [Issues section of the @63Klabs Cache-Data GitHub repository](https://github.com/63Klabs/cache-data/issues) for information on reported issues, upcoming fixes and enhancements, and to submit requests.
 
 ## License
 
@@ -81,8 +81,8 @@ This project is licensed under the MIT License - see the LICENSE.txt file for de
 
 - Software, DevOps, and Developer Experience Engineer
 - [AWS Certified Developer - Associate](https://www.credly.com/users/chad-kluck/badges)
-- [Website](https://chadkluck.me/)
-- [GitHub](https://github.com/chadkluck)
-- [GitHub (63Klabs)](https://github.com/63klabs)
+- [Website: chadkluck.me](https://chadkluck.me/)
+- [GitHub: chadkluck](https://github.com/chadkluck)
+- [GitHub: 63Klabs](https://github.com/63klabs)
 - [Mastodon: @chadkluck@universeodon.com](https://universeodon.com/@chadkluck)
 - [LinkedIn](https://www.linkedin.com/in/chadkluck/)

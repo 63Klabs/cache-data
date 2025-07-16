@@ -8,6 +8,20 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
+## 1.3.0 (2025-07-16)
+
+### Enhancements
+
+- Removed AWS SDK V2 support which closes [issue-213](https://github.com/63Klabs/cache-data/issues/213). AWS SDK V2 was for versions of Node 16 and under, and since they are no longer supported Lambda runtimes, support has been removed from cache-data.
+
+### Fixes
+
+- Addressed deprecation warnings (handled by Amazon Q Developer):
+  - Eliminated Warning:
+    - querystring@0.2.0 - From aws-sdk v2 (removed aws-sdk v2)
+  - Remaining Warning (unavoidable):
+    - lodash.get@4.4.2 - From sinon dependency (external package)
+
 ## 1.2.10 (2025-07-15)
 
 ### Enhancements
