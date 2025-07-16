@@ -4,19 +4,29 @@ const isTrue = (value) => {
 		(typeof value === 'string' && value.toLowerCase() === "true")));
 };
 
-const AWSXRay = (isTrue(process.env?.CacheData_AWSXRayOn) || isTrue(process.env?.CACHE_DATA_AWS_X_RAY_ON) ) ? require("aws-xray-sdk-core") : null;
+const USE_XRAY = isTrue(process.env?.CacheData_AWSXRayOn) || isTrue(process.env?.CACHE_DATA_AWS_X_RAY_ON);
 
-if (AWSXRay !== null) {
-	// Configure capture options
-	const captureOptions = {
-		captureRequestInit: true,  // Capture request init
-		captureResponse: true,     // Capture response
-		generateUniqueId: true     // Generate unique IDs for each request
-	};
+let AWSXRay = null;
+let xrayInitialized = false;
 
-	AWSXRay.captureHTTPsGlobal(require('http'), captureOptions);
-	AWSXRay.captureHTTPsGlobal(require("https"), captureOptions);	
-}
+const initializeXRay = () => {
+	if (!xrayInitialized && USE_XRAY) {
+		try {
+			AWSXRay = require("aws-xray-sdk-core");
+			const captureOptions = {
+				captureRequestInit: true,
+				captureResponse: true,
+				generateUniqueId: true
+			};
+			AWSXRay.captureHTTPsGlobal(require('http'), captureOptions);
+			AWSXRay.captureHTTPsGlobal(require("https"), captureOptions);
+		} catch (error) {
+			AWSXRay = null;
+		}
+		xrayInitialized = true;
+	}
+	return AWSXRay;
+};
 
 /**
  * AWS Helper Functions - Functions to perform common get and put operations for DynamoDB, S3, and SSM parameter store.
@@ -78,7 +88,9 @@ class AWS {
 	static #nodeVer = [];
 	static #aws_region = null;
 
-	static #XRayOn = (AWSXRay !== null);
+	static get #XRayOn() {
+		return initializeXRay() !== null;
+	}
 
 	constructor() {}
 
@@ -133,38 +145,15 @@ class AWS {
 			REGION: this.REGION,
 			SDK_V2: this.SDK_V2,
 			SDK_V3: this.SDK_V3,
-			AWSXRayOn: this.#XRayOn
+			AWSXRayOn: USE_XRAY
 		});
 	}
 
 	static #SDK = (
 		function(){
-			if (AWS.SDK_V2) {
-				const { DynamoDB, S3, SSM } = (this.#XRayOn) ? AWSXRay.captureAWS(require("aws-sdk")) : require("aws-sdk");
-				return {
-					dynamo: {
-						client: (new DynamoDB.DocumentClient( {region: AWS.REGION} )), 
-						put: (client, params) => client.put(params).promise(),
-						get: (client, params) => client.get(params).promise(),
-						scan: (client, params) => client.scan(params).promise(),
-						delete: (client, params) => client.delete(params).promise(),
-						update: (client, params) => client.update(params).promise(),
-						sdk: { DynamoDB }
-					},
-					s3: {
-						client: (new S3()),
-						put: (client, params) => client.putObject(params).promise(),
-						get: (client, params) => client.getObject(params).promise(),
-						sdk: { S3 }
-					},
-					ssm: {
-						client: (new SSM( {region: AWS.REGION} )),
-						getByName: (client, params) => client.getParameters(params).promise(),
-						getByPath: (client, params) => client.getParametersByPath(params).promise(),
-						sdk: { SSM }
-					}
-				}
-			} else {
+
+			if (AWS.SDK_V3) {
+			
 				const { DynamoDBClient} = require("@aws-sdk/client-dynamodb");
 				const { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand, DeleteCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 				const { S3, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
@@ -212,7 +201,10 @@ class AWS {
 							GetParametersCommand
 						}
 					}
-				}			
+				}	
+			}
+			else {
+				throw new Error("AWS SDK v2 is no longer supported. Please upgrade to Node.js 18 or higher to use AWS SDK v3.");
 			}
 		}
 	)();
