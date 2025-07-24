@@ -149,13 +149,13 @@ console.log( tools.obfuscate(str, opt) );
 
 The @63klabs/cache-data package will automatically detect and use the correct AWS SDK based on the version of Node.
 
-Node 16 environments will use AWS-SDK version 2.
+Node < 18 is unsupported as of 63klabs/cache-data v1.3.0.
 
 Node 18+ environments will use AWS-SDK version 3.
 
-Note that `package.json` for @63klabs/cache-data only installs the AWS-SDK on dev environments. This is because AWS Lambda already includes the AWS-SDK  without requiring installs. This makes your application lighter and ensures you are always running the most recent SDK release. Given this, that means that AWS SDK v3 is not available in Lambda functions using Node 16, and v2 is not available in Lambda Node >=18 environments.
+Note that `package.json` for @63klabs/cache-data only installs the AWS-SDK on dev environments. This is because AWS Lambda environments already include the AWS-SDK without requiring installs. This makes your application lighter and ensures you are always running the most recent SDK release.
 
-Because DynamoDb, S3, and SSM Parameter store are used by cache-data, only those SDKs are included. A client is provided for each along with limited number of commands. To make gets and puts easier a get and put command is mapped for DynamoDb and S3. (Uses appropriate commands underneath for V2 and V3 so your code wouldn't need to change.)
+Because DynamoDb, S3, and SSM Parameter store are used by cache-data, only those SDKs are included. A client is provided for each along with limited number of commands. To make gets and puts easier a get and put command is mapped for DynamoDb and S3.
 
 #### `tools.AWS` Object
 
@@ -184,70 +184,42 @@ console.log(`hello.txt Body: ${objectData}`);
 The `tools.AWS` object provides the following:
 
 ```js
-{
-	NODE_VER: '20.6.0',
-	NODE_VER_MAJOR: 20,
-	NODE_VER_MINOR: 6,
-	NODE_VER_PATCH: 0,
-	NODE_VER_MAJOR_MINOR: '20.6',
-	NODE_VER_ARRAY: [ 20, 6, 0 ],
-	REGION: "us-east-1", // Set from Node environment process.env.AWS_REGION
-	SDK_VER: "V3",
-	SDK_V2: false, // if (tools.AWS.SDK_V2) { console.log('AWS SDK Version 2!'); }
-	SDK_V3: true, // if (tools.AWS.SDK_V3) { console.log('AWS SDK Version 3!'); }
-	INFO: { /* an object containing all of the properties listed above */ }
-	dynamo: {
-		client: DynamoDBDocumentClient,
-		put: (params) => client.send(new PutCommand(params)), // const result = await tools.AWS.dynamo.put(params);
-		get: (params) => client.send(new GetCommand(params)), // const result = await tools.AWS.dynamo.get(params);
-		scan: (params) => client.send(new ScanCommand(params)), // const result = await tools.AWS.dynamo.scan(params);
-		delete: (params) => client.send(new DeleteCommand(params)), // const result = await tools.AWS.dynamo.delete(params);
-		update: (params) => client.send(new UpdateCommand(params)), // const result = await tools.AWS.dynamo.update(params);
-		sdk: {
-			DynamoDBClient,
-			DynamoDBDocumentClient,
-			GetCommand,
-			PutCommand
-		}
-	},
-	s3: {
-		client: S3,
-		put: (params) => client.send(new PutObjectCommand(params)), // const result = await tools.AWS.s3.put(params)
-		get: (params) => client.send(new GetObjectCommand(params)), // const result = await tools.AWS.s3.get(params)
-		sdk: {
-			S3,
-			GetObjectCommand,
-			PutObjectCommand							
-		}
-
-	},
-	ssm: {
-		client: SSMClient,
-		getByName: (params) => client.send(new GetParametersCommand(query)), // const params = await tools.AWS.ssm.getByName(query)
-		getByPath: (params) => client.send(new GetParametersByPathCommand(query)), // const params = await tools.AWS.ssm.getByPath(query)
-		sdk: {
-			SSMClient,
-			GetParametersByPathCommand,
-			GetParametersCommand
-		}
-	}
-}
+tools.AWS.NODE_VER
+tools.AWS.NODE_VER_MAJOR
+tools.AWS.NODE_VER_MINOR
+tools.AWS.NODE_VER_PATCH
+tools.AWS.NODE_VER_MAJOR_MINOR
+tools.AWS.NODE_VER_ARRAY
+tools.AWS.REGION
+tools.AWS.SDK_VER
+tools.AWS.SDK_V2
+tools.AWS.SDK_V3
+tools.AWS.INFO // an object containing all of the properties listed above
+tools.AWS.dynamo.client
+tools.AWS.dynamo.put(params) // const result = await tools.AWS.dynamo.put(params);
+tools.AWS.dynamo.get(params) // const result = await tools.AWS.dynamo.get(params);
+tools.AWS.dynamo.scan(params) // const result = await tools.AWS.dynamo.scan(params);
+tools.AWS.dynamo.delete(params) // const result = await tools.AWS.dynamo.delete(params);
+tools.AWS.dynamo.update(params) // const result = await tools.AWS.dynamo.update(params);
+tools.AWS.s3.client
+tools.AWS.s3.put(params) // const result = await tools.AWS.s3.put(params)
+tools.AWS.s3.get(params) // const result = await tools.AWS.s3.get(params)
+tools.AWS.ssm.client,
+tools.AWS.ssm.getByName(query) // const params = await tools.AWS.ssm.getByName(query)
+tools.AWS.ssm.getByPath(query) // const params = await tools.AWS.ssm.getByPath(query)
 ```
-
-Because Node 16 and the AWS SDK v2 are being deprecated, this documentation will mainly cover AWS SDK v3. However, `{DynamoDb, S3, SSM}` are still available when your environment is using Node 16 and AWS SDK v2 by importing `tools` from cache-data and accessing the `AWS` class. (See Using AWS SDK V2 through tools.AWS (Deprecated) below.)
 
 ##### Using AWS SDK V3 through tools.AWS
 
-To use the AWS SDK you normally have to import the proper SDKs and libraries, create a client, and then send the commands. The way this is accomplished in version 2 and version 3 of the AWS SDK is slightly different. How to use the AWS SDK is beyond the scope of this package. However, since the package uses reads and writes to S3 objects, DynamoDb tables, and SSM Parameter store, it readily makes these commands available through the `AWS` object from `tools`.
+To use the AWS SDK you normally have to import the proper SDKs and libraries, create a client, and then send the commands. However, since the package uses reads and writes to S3 objects, DynamoDb tables, and SSM Parameter store, it readily makes these commands available through the `AWS` object from `tools`.
 
-Also, as a shortcut as you move from Node 16 and Node 18 (and above), the methods exposed will not differ as it automatically uses the correct methods for the loaded SDK.
-
-To use the methds you only need to pass the parameter or query object as you normally would.
+To use the methods you only need to pass the parameter or query object as you normally would.
 
 ```javascript
 // Given the two parameter/query objects:
+const { tools } = require('@63klabs/cache-data');
 
-let paramsForPut = {
+const paramsForPut = {
 	TableName: 'myTable',
   	Item: {
 		'hash_id': '8e91cef4a27',
@@ -257,40 +229,13 @@ let paramsForPut = {
   }
 }
 
-let paramsForGet = {
+const paramsForGet = {
 	TableName: 'myTable',
 	Key: {'hash_id': '8e91cef4a27'}
 };
-```
 
-```javascript
-// Using AWS SDK V2
-const { DynamoDb } = require('aws-sdk');
-
-const dbDocClient = new DynamoDB.DocumentClient( {region: 'us-east-1'} );
-
-const dbPutResult = await dbDocClient.put(paramsForNewRecord).promise();
-const dbGetResult = await dbDocClient.get(paramsForGet).promise();
-```
-
-```javascript
-// Using AWS SDK V3
-const { DynamoDBClient} = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, GetCommand, PutCommand} = require("@aws-sdk/lib-dynamodb");
-
-const dbClient = new DynamoDBClient({ region: AWS.REGION });
-const dbDocClient = DynamoDBDocumentClient.from(dbClient);
-
-const dbPutResult = await dbDocClient.send(PutCommand(paramsForNewRecord));
-const dbGetResult = await dbDocClient.send(GetCommand(paramsForGetRecord));
-```
-
-```javascript
-// Using tools to handle the SDK version and basic calls for you
-const { tools } = require('@63klabs/cache-data');
-
-const dbPutResult = await tools.AWS.dynamodb.put(paramsForNewRecord);
-const dbGetResult = await tools.AWS.dynamodb.get(paramsForGetRecrod);
+const dbPutResult = await tools.AWS.dynamodb.put(paramsForPut);
+const dbGetResult = await tools.AWS.dynamodb.get(paramsForGet);
 ```
 
 Refer to the section about the tools.AWS above for the variables, methods, and SDK objects available.
@@ -299,7 +244,6 @@ For more on creating parameter/query objects for S3, DynamoDb, and SSM Parameter
 
 - [Amazon S3 examples using SDK for JavaScript (v3)](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html)
 - [Using the DynamoDB Document Client](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/dynamodb-example-dynamodb-utilities.html)
-- []()
 
 ##### Import Additional Commands
 
@@ -315,27 +259,4 @@ const command = new DeleteObjectCommand({
 });
 
 const response = await tools.AWS.s3.client.send(command);
-```
-
-#### Using AWS SDK V2 through tools.AWS (Deprecated)
-
-Because Node 16 and the AWS SDK v2 is being deprecated, this documentation will mainly cover AWS SDK v3. However, `{DynamoDb, S3, SSM}` are still available by importing `tools` from cache-data and accessing the `AWS` class:
-
-```js
-// NodeJS 16 using AWS SDK v2
-const {tools} = require("@63klabs/cache-data");
-
-// using the provided S3 client
-const s3result1 = await tools.AWS.s3.client.putObject(params).promise();
-
-// using your own client
-const s3client = new tools.AWS.s3.sdk.S3();
-const s3result2 = await s3Client.putObject(params).promise();
-
-// similarly with DynamoDb
-const dbResult1 = await tools.AWS.dynamo.client.put(params).promise(); // tools.AWS.dynamo.client uses DynamoDB.DocumentClient
-
-// using your own DynamoDb Document client
-const dbClient = new tools.AWS.dynamo.sdk.DynamoDB.DocumentClient( {region: 'us-east-1'} );
-const dbResult2 = await dbClient.put(params).promise(),
 ```
