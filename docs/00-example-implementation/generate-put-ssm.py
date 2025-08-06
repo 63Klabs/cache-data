@@ -22,7 +22,7 @@ def usage():
     This script can generate a random key of specified bit length or use a provided value.
     It also reads tags from a template-configuration.json file (common for SAM deployments)
     and applies them to the parameter.
-          
+
     NOTE:
         It is designed to be used in a CI/CD pipeline, such as AWS CodePipeline.
         It requires the AWS SDK for Python (boto3) and the botocore library.
@@ -30,20 +30,20 @@ def usage():
         It can be run manually from a local CLI with a specific AWS profile if needed.
         There is a --dryrun option to check if the parameter exists (and see values and tags) without creating it for testing purposes.
         IT WILL NOT OVERWRITE AN EXISTING PARAMETER! DELETE IT FIRST IF YOU WANT TO REPLACE IT,
-          or, update using the AWS CLI, or manually through the console.
-          
+            or, update using the AWS CLI, or manually through the console.
+
     Usage: {sys.argv[0]} <PARAM_NAME> [--generate BITS | --value VALUE] [--dryrun] [--profile PROFILE]
-      PARAM_NAME
-        The name of the key parameter
-        For example, '/webservices/myapp/CacheData_SecureDataKey'
-      --generate BITS
-         Generate a random key with specified number of bits (mutually exclusive with --value)
-      --value VALUE
-         Use the provided value directly (mutually exclusive with --generate)
-      --dryrun
-         Check if parameter exists but don't create it
-      --profile PROFILE
-         AWS profile to use for the request""", file=sys.stderr)
+        PARAM_NAME
+            The name of the key parameter
+            For example, '/webservices/myapp/CacheData_SecureDataKey'
+        --generate BITS
+            Generate a random key with specified number of bits (mutually exclusive with --value)
+        --value VALUE
+            Use the provided value directly (mutually exclusive with --generate)
+        --dryrun
+            Check if parameter exists but don't create it
+        --profile PROFILE
+            AWS profile to use for the request""", file=sys.stderr)
 
 def generate_key(key_len):
     """Generate a random hex key of specified bit length"""
