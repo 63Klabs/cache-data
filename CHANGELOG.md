@@ -8,17 +8,16 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## 1.3.1 (2025-xx-xx)
+## 1.3.2 (2025-09-12)
 
 ### Enhancements
 
-- TODO
-- TODO
+- Path and Query String validations now available by path hierarchy
+- `DebugAndLog`: The environment variable `AWS_LAMBDA_LOG_LEVEL` is now checked as well for setting logging level. `LOG_LEVEL` has priority.
 
 ### Fixes
 
-- TODO
-- TODO
+- `DebugAndLog`: Environment and Logging Level value checks are fixed
 
 ## 1.3.0 (2025-07-16)
 

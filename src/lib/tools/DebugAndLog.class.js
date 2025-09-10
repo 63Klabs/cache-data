@@ -32,7 +32,7 @@ class DebugAndLog {
 	 */
 	static setLogLevel(logLevel = -1, expiration = -1) {
 
-		if ( process.env.NODE_ENV === "production" && this.#logLevel > -1 ) {
+		if ( this.#logLevel > -1) {
 			DebugAndLog.warn("LogLevel already set, cannot reset. Ignoring call to DebugAndLog.setLogLevel("+logLevel+")");
 		} else {
 			if ( expiration !== -1 ) {
@@ -87,7 +87,7 @@ class DebugAndLog {
 	 * @returns {number} The current log level
 	 */
 	static getLogLevel() {
-		if ( this.#logLevel === -1 ) {
+		if ( this.#logLevel === -1) {
 			this.setLogLevel();
 		}
 
@@ -104,7 +104,7 @@ class DebugAndLog {
 	 * @returns {string} The current environment.
 	 */
 	static getEnv() {
-		var possibleVars = ["env", "deployEnvironment", "environment", "stage, deploy_environment"]; // this is the application env, not the NODE_ENV
+		var possibleVars = ["deploy_environment", "env", "deployEnvironment", "environment", "stage"]; // in priority order - this is the application env, not the NODE_ENV
 		var env = (process.env?.NODE_ENV === "development" ? DebugAndLog.DEV : DebugAndLog.PROD); // if env or deployEnvironment not set, fail to safe
 
 		if ( "env" in process ) {
@@ -128,11 +128,10 @@ class DebugAndLog {
 	 * @returns {number} log level
 	 */
 	static getDefaultLogLevel() {
-		var possibleVars = ["detailedLogs", "logLevel"];
+		var possibleVars = ["log_level", "detailedLogs", "logLevel", "aws_lambda_log_level"]; // in priority order and we want to evaluate AWS_LAMBDA_LOG_LEVEL as upper
 		var logLevel = 0;
 
 		if ( DebugAndLog.isNotProduction() ) { // PROD is always at logLevel 0. Always.
-
 			if ( "env" in process ) {
 				for (let i in possibleVars) {
 					let lev = possibleVars[i];
@@ -140,14 +139,33 @@ class DebugAndLog {
 					if (lev in process.env  && !(Number.isNaN(process.env[lev])) && process.env[lev] !== "" && process.env[lev] !== null) {
 						logLevel = Number(process.env[lev]);
 						break; // break out of the for loop
-					} else if (uLEV in process.env && !(Number.isNaN(process.env[uLEV])) && process.env[uLEV] !== "" && process.env[uLEV] !== null) {
-						logLevel = Number(process.env[uLEV]);
-						break; // break out of the for loop
+					} else if (uLEV in process.env && process.env[uLEV] !== "" && process.env[uLEV] !== null) {
+						if (uLEV === "AWS_LAMBDA_LOG_LEVEL") {
+
+							switch (process.env.AWS_LAMBDA_LOG_LEVEL) {
+								case "DEBUG":
+									logLevel = 5;
+									break;
+								case "INFO":
+									logLevel = 3;
+									break;
+								case "WARN":
+									logLevel = 0;
+									break;
+								case "ERROR":
+									logLevel = 0;
+									break;
+							}
+							break; // break out of the for loop
+						} else if (!Number.isNaN(process.env[uLEV])) {
+							logLevel = Number(process.env[uLEV]);
+							break; // break out of the for loop
+						}
 					}
 				};
 			}
 
-		}
+		} else { console.log("Is Production")}
 
 		return logLevel;
 	};
