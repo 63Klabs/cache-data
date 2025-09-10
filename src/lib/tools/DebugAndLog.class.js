@@ -9,6 +9,10 @@ class DebugAndLog {
 	static #logLevel = -1;
 	static #expiration = -1;
 
+	// in priority order
+	static ALLOWED_ENV_VAR_NAMES = ["DEPLOY_ENVIRONMENT", "deploy_environment",  "ENV", "env", "deployEnvironment", "ENVIRONMENT", "environment"];
+	static ALLOWED_LOG_VAR_NAMES = ["CACHE_DATA_LOG_LEVEL", "LOG_LEVEL", "log_level", "detailedLogs", "logLevel", "AWS_LAMBDA_LOG_LEVEL"]
+
 	static PROD = "PROD";
 	static TEST = "TEST";
 	static DEV = "DEV";
@@ -104,18 +108,14 @@ class DebugAndLog {
 	 * @returns {string} The current environment.
 	 */
 	static getEnv() {
-		var possibleVars = ["deploy_environment", "env", "deployEnvironment", "environment", "stage"]; // in priority order - this is the application env, not the NODE_ENV
+		var possibleVars = DebugAndLog.ALLOWED_ENV_VAR_NAMES; // - this is the application env, not the NODE_ENV
 		var env = (process.env?.NODE_ENV === "development" ? DebugAndLog.DEV : DebugAndLog.PROD); // if env or deployEnvironment not set, fail to safe
 
 		if ( "env" in process ) {
 			for (let i in possibleVars) {
 				let e = possibleVars[i];
-				let uE = possibleVars[i].toUpperCase();
 				if (e in process.env && process.env[e] !== "" && process.env[e] !== null) {
 					env = process.env[e].toUpperCase();
-					break; // break out of the for loop
-				} else if (uE in process.env && process.env[uE] !== "" && process.env[uE] !== null) {
-					env = process.env[uE].toUpperCase();
 					break; // break out of the for loop
 				}
 			};
@@ -128,19 +128,15 @@ class DebugAndLog {
 	 * @returns {number} log level
 	 */
 	static getDefaultLogLevel() {
-		var possibleVars = ["log_level", "detailedLogs", "logLevel", "aws_lambda_log_level"]; // in priority order and we want to evaluate AWS_LAMBDA_LOG_LEVEL as upper
+		var possibleVars = DebugAndLog.ALLOWED_LOG_VAR_NAMES; // in priority order and we want to evaluate AWS_LAMBDA_LOG_LEVEL as upper
 		var logLevel = 0;
 
 		if ( DebugAndLog.isNotProduction() ) { // PROD is always at logLevel 0. Always.
 			if ( "env" in process ) {
 				for (let i in possibleVars) {
 					let lev = possibleVars[i];
-					let uLEV = possibleVars[i].toUpperCase();
-					if (lev in process.env  && !(Number.isNaN(process.env[lev])) && process.env[lev] !== "" && process.env[lev] !== null) {
-						logLevel = Number(process.env[lev]);
-						break; // break out of the for loop
-					} else if (uLEV in process.env && process.env[uLEV] !== "" && process.env[uLEV] !== null) {
-						if (uLEV === "AWS_LAMBDA_LOG_LEVEL") {
+					if (lev in process.env && process.env[lev] !== "" && process.env[lev] !== null) {
+						if (lev === "AWS_LAMBDA_LOG_LEVEL") {
 
 							switch (process.env.AWS_LAMBDA_LOG_LEVEL) {
 								case "DEBUG":
@@ -149,16 +145,12 @@ class DebugAndLog {
 								case "INFO":
 									logLevel = 3;
 									break;
-								case "WARN":
-									logLevel = 0;
-									break;
-								case "ERROR":
-									logLevel = 0;
+								default: // logLevel is already 0
 									break;
 							}
 							break; // break out of the for loop
-						} else if (!Number.isNaN(process.env[uLEV])) {
-							logLevel = Number(process.env[uLEV]);
+						} else if (!Number.isNaN(process.env[lev])) {
+							logLevel = Number(process.env[lev]);
 							break; // break out of the for loop
 						}
 					}

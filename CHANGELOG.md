@@ -12,7 +12,6 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ### Enhancements
 
-- Path and Query String validations now available by path hierarchy
 - `DebugAndLog`: The environment variable `AWS_LAMBDA_LOG_LEVEL` is now checked as well for setting logging level. `LOG_LEVEL` has priority.
 
 ### Fixes
