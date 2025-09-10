@@ -1,6 +1,6 @@
 {
   "name": "@63klabs/cache-data",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Cache data from an API endpoint or application process using AWS S3 and DynamoDb",
   "author": "Chad Leigh Kluck (https://chadkluck.me)",
   "license": "MIT",
