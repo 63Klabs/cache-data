@@ -3,26 +3,20 @@ import { DebugAndLog } from '../../src/lib/tools/index.js'
 
 import sinon from 'sinon';
 
-// we will be testing environment variables on a static class
-const modulePath = new URL('../../src/lib/tools/DebugAndLog.class.js', import.meta.url).href;
-const runTestCode = function (testCode) {
-	try {
-		execSync(`export DEPLOY_ENVIRONMENT=PROD && node --input-type=module -e "${testCode}"`);
-	} catch (error) {
-		if (error.status !== 0) throw new Error('Test failed');
-	}
-}
-
-let originalEnv = null;
+let originalEnv = { ...process.env };
+let logStub, warnStub, errorStub, msgStub, debugStub;
 
 const beforeEachEnvVars = function() {
-	// Save the original environment variables
-	originalEnv = { ...process.env };
-
 	// clear out environment and log environment variables
 	DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
 	DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
-	delete(process.env.NODE_ENV);	
+	delete(process.env.NODE_ENV);
+
+	logStub = sinon.stub(console, 'log');
+	warnStub = sinon.stub(console, 'warn');
+	errorStub = sinon.stub(console, 'error');
+	msgStub = sinon.stub(console, 'info');
+	debugStub = sinon.stub(console, 'debug');
 }
 
 const afterEachEnvVars = function() {
@@ -34,6 +28,11 @@ const afterEachEnvVars = function() {
 	// Restore the original environment variables
 	process.env = originalEnv;
 
+	logStub.restore();
+	warnStub.restore();
+	errorStub.restore();
+	msgStub.restore();
+	debugStub.restore();
 }
 
 describe("DebugAndLog tests", () => {
@@ -64,6 +63,7 @@ describe("DebugAndLog tests", () => {
 
 		it('Get the default environment', () => {
 			process.env.NODE_ENV = "";
+			console.log("HI "+DebugAndLog.getEnv());
 			expect(DebugAndLog.getEnv()).to.equal("PROD")
 		})
 	});
@@ -88,34 +88,34 @@ describe("DebugAndLog tests", () => {
 
 	describe('Check NODE_ENV booleans', () => {
 
-		it('Check node_envIsProduction with NODE_ENV not set', () => {
+		it('Check nodeEnvIsProduction with NODE_ENV not set', () => {
 			process.env.NODE_ENV = "";
-			expect(DebugAndLog.node_envIsProduction()).to.equal(true);
+			expect(DebugAndLog.nodeEnvIsProduction()).to.equal(true);
 		})
 
-		it('Check node_envIsDevelopment with NODE_ENV not set', () => {
+		it('Check nodeEnvIsDevelopment with NODE_ENV not set', () => {
 			process.env.NODE_ENV = "";
-			expect(DebugAndLog.node_envIsDevelopment()).to.equal(false);
+			expect(DebugAndLog.nodeEnvIsDevelopment()).to.equal(false);
 		})	
 
-		it('Check node_envIsProduction with NODE_ENV=production', () => {
+		it('Check nodeEnvIsProduction with NODE_ENV=production', () => {
 			process.env.NODE_ENV = "production";
-			expect(DebugAndLog.node_envIsProduction()).to.equal(true);
+			expect(DebugAndLog.nodeEnvIsProduction()).to.equal(true);
 		})
 
-		it('Check node_envIsDevelopment with NODE_ENV=production', () => {
+		it('Check nodeEnvIsDevelopment with NODE_ENV=production', () => {
 			process.env.NODE_ENV = "production";
-			expect(DebugAndLog.node_envIsDevelopment()).to.equal(false);
+			expect(DebugAndLog.nodeEnvIsDevelopment()).to.equal(false);
 		})	
 
-		it('Check node_envIsProduction with NODE_ENV=development', () => {
+		it('Check nodeEnvIsProduction with NODE_ENV=development', () => {
 			process.env.NODE_ENV = "development";
-			expect(DebugAndLog.node_envIsProduction()).to.equal(false);
+			expect(DebugAndLog.nodeEnvIsProduction()).to.equal(false);
 		})
 
-		it('Check node_envIsDevelopment with NODE_ENV=development', () => {
+		it('Check nodeEnvIsDevelopment with NODE_ENV=development', () => {
 			process.env.NODE_ENV = "development";
-			expect(DebugAndLog.node_envIsDevelopment()).to.equal(true);
+			expect(DebugAndLog.nodeEnvIsDevelopment()).to.equal(true);
 		})
 
 	})
@@ -203,21 +203,6 @@ describe("DebugAndLog tests", () => {
 	});
 
 	describe("Check logging", () => {
-		let logStub, warnStub, errorStub;
-
-		// Setup spies before each test
-		beforeEach(() => {
-			logStub = sinon.stub(console, 'log');
-			warnStub = sinon.stub(console, 'warn');
-			errorStub = sinon.stub(console, 'error');
-		});
-
-		// Clean up spies after each test
-		afterEach(() => {
-			logStub.restore();
-			warnStub.restore();
-			errorStub.restore();
-		});
 
 		it('Check Errors and Warnings', () => {
 			// Run your code that generates logs
@@ -301,271 +286,151 @@ describe("DebugAndLog environment type tests", () => {
 });
 
 describe("DebugAndLog environment and log level tests", () => {
-	let originalEnv;
-	let logStub, warnStub, errorStub, msgStub;
 
 	beforeEach(() => {
-		// Save the original environment variables
-		originalEnv = { ...process.env };
-
-		// clear out environment and log environment variables
-		DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
-		DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
-		delete(process.env.NODE_ENV);
-
-		// use sinon to remove any console output
-		logStub = sinon.stub(console, 'log');
-		warnStub = sinon.stub(console, 'warn');
-		errorStub = sinon.stub(console, 'error');
-		msgStub = sinon.stub(console, 'info');
-
-	}
-	);
+		beforeEachEnvVars();
+	});
 	
 	afterEach(() => {
-		// clear out environment and log environment variables
-		DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
-		DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
-		delete(process.env.NODE_ENV);
-
-		// Restore the original environment variables
-		process.env = originalEnv;
-
-		// restore console output
-		logStub.restore();
-		warnStub.restore();
-		errorStub.restore();
-		msgStub.restore();
+		afterEachEnvVars();
 	});
 
 	for (let i = 0; i<=5; i++) {
 		DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach((varName) => {
 			it(`Test set logLevel to ${i} with ${varName} set to 'DEV'`, () => {
-				// process.env[varName] = 'DEV';
-				// DebugAndLog.setLogLevel(i);
-				// expect(DebugAndLog.getEnv()).to.equal('DEV');
-				// expect(DebugAndLog.isDevelopment()).to.equal(true);
-				// expect(DebugAndLog.isTest()).to.equal(false);
-				// expect(DebugAndLog.isProduction()).to.equal(false);
-				// expect(DebugAndLog.getLogLevel()).to.equal(i);
-				const expected = "DEV";
-				const testCode = `
-					process.env.${varName} = '${expected}';
-					process.env.CACHE_DATA_LOG_LEVEL = ${i};
-					const DebugAndLog = await import('${modulePath}');
-
-					if (
-						DebugAndLog.getEnv() === '${expected}'
-						// && DebugAndLog.isDevelopment() === true
-						// && DebugAndLog.isTest() === false
-						// && DebugAndLog.isProduction()) === false
-						// && DebugAndLog.getLogLevel() === ${i}
-					) process.exit(0); else process.exit(1);
-				`;
-				runTestCode(testCode);
+				process.env[varName] = 'DEV';
+				DebugAndLog.setLogLevel(i);
+				expect(DebugAndLog.getEnv()).to.equal('DEV');
+				expect(DebugAndLog.isDevelopment()).to.equal(true);
+				expect(DebugAndLog.isTest()).to.equal(false);
+				expect(DebugAndLog.isProduction()).to.equal(false);
+				expect(DebugAndLog.getLogLevel()).to.equal(i);
 			});
 
-		// 	it(`Test set logLevel to ${i} with ${varName} set to 'TEST'`, () => {
-		// 		process.env[varName] = 'TEST';
-		// 		DebugAndLog.setLogLevel(i);
-		// 		expect(DebugAndLog.getEnv()).to.equal('TEST');
-		// 		expect(DebugAndLog.isDevelopment()).to.equal(false);
-		// 		expect(DebugAndLog.isTest()).to.equal(true);
-		// 		expect(DebugAndLog.isProduction()).to.equal(false);
-		// 		expect(DebugAndLog.getLogLevel()).to.equal(i);
-		// 	});
+			it(`Test set logLevel to ${i} with ${varName} set to 'TEST'`, () => {
+				process.env[varName] = 'TEST';
+				DebugAndLog.setLogLevel(i);
+				expect(DebugAndLog.getEnv()).to.equal('TEST');
+				expect(DebugAndLog.isDevelopment()).to.equal(false);
+				expect(DebugAndLog.isTest()).to.equal(true);
+				expect(DebugAndLog.isProduction()).to.equal(false);
+				expect(DebugAndLog.getLogLevel()).to.equal(i);
+			});
 			
-		// 	it(`Test set logLevel to ${i} with ${varName} set to 'PROD'`, () => {
-		// 		process.env[varName] = 'PROD';
-		// 		DebugAndLog.setLogLevel(i);
-		// 		expect(DebugAndLog.getEnv()).to.equal('PROD');
-		// 		expect(DebugAndLog.isDevelopment()).to.equal(false);
-		// 		expect(DebugAndLog.isTest()).to.equal(false);
-		// 		expect(DebugAndLog.isProduction()).to.equal(true);
-		// 		expect(DebugAndLog.getLogLevel()).to.equal(0);
-		// 	});
+			it(`Test set logLevel to ${i} with ${varName} set to 'PROD'`, () => {
+				process.env[varName] = 'PROD';
+				DebugAndLog.setLogLevel(i);
+				expect(DebugAndLog.getEnv()).to.equal('PROD');
+				expect(DebugAndLog.isDevelopment()).to.equal(false);
+				expect(DebugAndLog.isTest()).to.equal(false);
+				expect(DebugAndLog.isProduction()).to.equal(true);
+				expect(DebugAndLog.getLogLevel()).to.equal(0);
+			});
 		})
 
 	}
 });
 
-// describe("DebugAndLog complex environment tests", () => {
-// 	let originalEnv;
-// 	beforeEach(() => {
-// 		// Save the original environment variables
-// 		originalEnv = { ...process.env };
-
-// 		// clear out environment and log environment variables
-// 		DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
-// 		DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
-// 		delete(process.env.NODE_ENV);
-// 	});
-
-// 	afterEach(() => {
-
-// 		// clear out environment and log environment variables
-// 		DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
-// 		DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
-// 		delete(process.env.NODE_ENV);
-
-// 		// Restore the original environment variables
-// 		process.env = originalEnv;
-// 	});
+describe("DebugAndLog complex environment tests", () => {
+	beforeEach(() => {
+		beforeEachEnvVars();
+	});
 	
-// 	// loop through each of the environment variables and set them all to DEV, TEST, PROD and "" with NODE_ENV set to production and development
-// 	DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach((varName) => {
-// 		it(`Test with env var ${varName}='DEV' and NODE_ENV=production`, () => {
-// 			const expected = "DEV";
-// 			const testCode = `
-// 				process.env.NODE_ENV = "production";
-// 				const DebugAndLog = await import('${modulePath}');
-// 				console.log(process.env);
-// 				DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => process.env[v] = "${expected}");
-// 				if (DebugAndLog.getEnv() === ${expected}) process.exit(0); else process.exit(1);`;
-// 			runTestCode(testCode);
-// 		});
-// 		it(`Test with env var ${varName}='TEST' and NODE_ENV=production`, () => {
-// 			process.env.NODE_ENV = "production";
-// 			DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => process.env[v] = "TEST");
-// 			expect(DebugAndLog.getEnv()).to.equal("TEST");
-// 		});
-// 		it(`Test with env var ${varName}='PROD' and NODE_ENV=production`, () => {
-// 			process.env.NODE_ENV = "production";
-// 			DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => process.env[v] = "PROD");
-// 			expect(DebugAndLog.getEnv()).to.equal("PROD");
-// 		});
-// 		it(`Test with env var ${varName}='PROD' and NODE_ENV=development`, () => {
-// 			process.env.NODE_ENV = "development";
-// 			DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => process.env[v] = "PROD");
-// 			expect(DebugAndLog.getEnv()).to.equal("PROD");
-// 		});
-// 		it(`Test with env var ${varName}='' and NODE_ENV=production`, () => {
-// 			process.env.NODE_ENV = "production";
-// 			DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => process.env[v] = "");
-// 			expect(DebugAndLog.getEnv()).to.equal("PROD");
-// 		});
-// 		it(`Test with env var ${varName}='' and NODE_ENV=development`, () => {
-// 			process.env.NODE_ENV = "development";
-// 			DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => process.env[v] = "");
-// 			expect(DebugAndLog.getEnv()).to.equal("DEV");
-// 		});
-// 	})
-// });
-
-// // Test DebugAndLog.getLogLevel() using various environment variables such as LOG_LEVEL and AWS_LAMBDA_LOG_LEVEL
-// // ensuring that LOG_LEVEL has priority over AWS_LAMBDA_LOG_LEVEL
-// describe("DebugAndLog log level environment variable tests", () => {
-// 	let originalEnv;
-// 	beforeEach(() => {
-// 		// Save the original environment variables
-// 		originalEnv = { ...process.env };
-
-// 		// clear out environment and log environment variables
-// 		DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
-// 		DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
-// 		delete(process.env.NODE_ENV);
-
-// 	});
+	afterEach(() => {
+		afterEachEnvVars();
+	});
 	
-// 	afterEach(() => {
-// 		// clear out environment and log environment variables
-// 		DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
-// 		DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
-// 		delete(process.env.NODE_ENV);
+	// get first 4 elements from DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES
+	const testVarNames = DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.slice(0, 4);
+	const testEnvTypes = ["PROD", "TEST", "DEV"];
+	const testNodeEnvs = ["production", "development", "empty"]
 
-// 		// Restore the original environment variables
-// 		process.env = originalEnv;
-// 	});
+	// loop through each of the environment variables and set them all to DEV, TEST, PROD and "" with NODE_ENV set to production and development
+	testVarNames.forEach((varName) => {
+		testEnvTypes.forEach((envType) => {
+			testNodeEnvs.forEach((nodeEnv) => {
+				it(`Test with env var ${varName}='${envType}' and NODE_ENV=${nodeEnv}`, () => {
+					process.env.NODE_ENV = nodeEnv;
+					process.env[varName] = envType;
+					expect(DebugAndLog.getEnv()).to.equal(envType);
+				});
+			})
+		})
+	})
+});
 
-// 	DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach((varName) => {
-// 		it(`Test with ${varName} set to '0'`, () => {
+// Test DebugAndLog.getLogLevel() using various environment variables such as LOG_LEVEL and AWS_LAMBDA_LOG_LEVEL
+describe("DebugAndLog log level environment variable tests", () => {
+	beforeEach(() => {
+		beforeEachEnvVars();
+		process.env.NODE_ENV = "development";
+		process.env.ENV_TYPE = "TEST";
+	});
+	
+	afterEach(() => {
+		afterEachEnvVars();
+	});
 
-// 			const expected = 0;
-// 			const testCode = `
-// 				process.env.DEPLOY_ENVIRONMENT = 'TEST';
-// 				process.env.${varName} = '${expected}';
-// 				const DebugAndLog = await import('${modulePath}');
-// 				if (DebugAndLog.getLogLevel() === ${expected}) process.exit(0); else process.exit(1);`;
-// 			runTestCode(testCode);
-// 		});
-		
-// 		it(`Test with ${varName} set to '1'`, () => {
-// 			process.env[varName] = '1';
-// 			console.log(DebugAndLog.getEnv());
-// 			expect(DebugAndLog.getLogLevel()).to.equal(1);
-// 		}
-// 		);
-// 		it(`Test with ${varName} set to '2'`, () => {
-// 			process.env[varName] = '2';
-// 			expect(DebugAndLog.getLogLevel()).to.equal(2);
-// 		}
-// 		);
-// 		it(`Test with ${varName} set to '3'`, () => {
-// 			process.env[varName] = '3';
-// 			expect(DebugAndLog.getLogLevel()).to.equal(3);
-// 		}
-// 		);
-// 		it(`Test with ${varName} set to '4'`, () => {
-// 			process.env[varName] = '4';
-// 			expect(DebugAndLog.getLogLevel()).to.equal(4);
-// 		}
-// 		);
-// 		it(`Test with ${varName} set to '5'`, () => {
-// 			process.env[varName] = '5';
-// 			expect(DebugAndLog.getLogLevel()).to.equal(5);
-// 		}
-// 		);
-// 		it(`Test with ${varName} set to 'invalid'`, () => {
-// 			process.env[varName] = 'invalid';
-// 			expect(DebugAndLog.getLogLevel()).to.equal(0);
-// 		}
-// 		);
-// 		it(`Test with ${varName} unset`, () => {
-// 			delete process.env[varName];
-// 			expect(DebugAndLog.getLogLevel()).to.equal(0);
-// 		}
-// 		);
-// 	})
-// 	it(`Test with both LOG_LEVEL=3 and AWS_LAMBDA_LOG_LEVEL=ERROR set`, () => {
-// 		process.env.LOG_LEVEL = '3';
-// 		process.env.AWS_LAMBDA_LOG_LEVEL = 'ERROR';
-// 		expect(DebugAndLog.getLogLevel()).to.equal(3);
-// 	}
-// 	);
-// 	it(`Test with both LOG_LEVEL=invalid and AWS_LAMBDA_LOG_LEVEL=DEBUG set`, () => {
-// 		process.env.LOG_LEVEL = 'invalid';
-// 		process.env.AWS_LAMBDA_LOG_LEVEL = 'DEBUG';
-// 		expect(DebugAndLog.getLogLevel()).to.equal(5);
-// 	}
-// 	);
-// 	it(`Test with both LOG_LEVEL and AWS_LAMBDA_LOG_LEVEL unset`, () => {
-// 		delete process.env.LOG_LEVEL;
-// 		delete process.env.AWS_LAMBDA_LOG_LEVEL;
-// 		expect(DebugAndLog.getLogLevel()).to.equal(0);
-// 	}
-// 	);
-// 	it(`Test with both LOG_LEVEL=invalid and AWS_LAMBDA_LOG_LEVEL=invalid set`, () => {
-// 		process.env.LOG_LEVEL = 'invalid';
-// 		process.env.AWS_LAMBDA_LOG_LEVEL = 'invalid';
-// 		expect(DebugAndLog.getLogLevel()).to.equal(0);
-// 	}
-// 	);
+	const testLogLevelVars = DebugAndLog.ALLOWED_LOG_VAR_NAMES;
+	// remove the "AWS_LAMBDA_LOG_LEVEL" since it doesn't use a number
+	testLogLevelVars.splice(testLogLevelVars.indexOf("AWS_LAMBDA_LOG_LEVEL"), 1);
 
-// 	// test AWS_LAMBDA_LOG_LEVEL with values DEBUG, INFO, WARN, ERROR
-// 	it(`Test with AWS_LAMBDA_LOG_LEVEL=DEBUG set`, () => {
-// 		process.env.AWS_LAMBDA_LOG_LEVEL = 'DEBUG';
-// 		expect(DebugAndLog.getLogLevel()).to.equal(5);
-// 	});
-// 	it(`Test with AWS_LAMBDA_LOG_LEVEL=INFO set`, () => {
-// 		process.env.AWS_LAMBDA_LOG_LEVEL = 'INFO';
-// 		expect(DebugAndLog.getLogLevel()).to.equal(3);
-// 	});
-// 	it(`Test with AWS_LAMBDA_LOG_LEVEL=WARN set`, () => {
-// 		process.env.AWS_LAMBDA_LOG_LEVEL = 'WARN';
-// 		expect(DebugAndLog.getLogLevel()).to.equal(0);
-// 	});
-// 	it(`Test with AWS_LAMBDA_LOG_LEVEL=ERROR set`, () => {
-// 		process.env.AWS_LAMBDA_LOG_LEVEL = 'ERROR';
-// 		expect(DebugAndLog.getLogLevel()).to.equal(0);
-// 	});
-// });
+	const testLevels = ['5', '4', '3', '2', '1', '0'];
+	const awsLambdaLogLevels = [["ERROR",0] ["WARN",0], ["INFO",3], ["DEBUG",5]];
+
+	testLogLevelVars.forEach((varName) => {
+		testLevels.forEach((level) => {
+			it(`Test with ${varName} set to '${level}'`, () => {
+				process.env[varName] = level;
+				expect(DebugAndLog.getLogLevel()).to.equal(level);
+			});
+		})
+
+		it(`Test with ${varName} invalid`, () => {
+			process.env[varName] = 'invalid';
+			expect(DebugAndLog.getLogLevel()).to.equal(0);
+		});	
+
+		it(`Test with ${varName} empty`, () => {
+			process.env[varName] = '';
+			expect(DebugAndLog.getLogLevel()).to.equal(0);
+		});	
+
+		it(`Test with ${varName} unset`, () => {
+			delete process.env[varName];
+			expect(DebugAndLog.getLogLevel()).to.equal(0);
+		});
+	})
+
+	it(`Test with both LOG_LEVEL=3 and AWS_LAMBDA_LOG_LEVEL=ERROR set. LOG_LEVEL has priority.`, () => {
+		process.env.LOG_LEVEL = '3';
+		process.env.AWS_LAMBDA_LOG_LEVEL = 'ERROR';
+		expect(DebugAndLog.getLogLevel()).to.equal(3);
+	});
+
+	it(`Test with both LOG_LEVEL=invalid and AWS_LAMBDA_LOG_LEVEL=DEBUG set`, () => {
+		process.env.LOG_LEVEL = 'invalid';
+		process.env.AWS_LAMBDA_LOG_LEVEL = 'DEBUG';
+		expect(DebugAndLog.getLogLevel()).to.equal(5);
+	});
+
+	it(`Test with both LOG_LEVEL and AWS_LAMBDA_LOG_LEVEL unset`, () => {
+		delete process.env.LOG_LEVEL;
+		delete process.env.AWS_LAMBDA_LOG_LEVEL;
+		expect(DebugAndLog.getLogLevel()).to.equal(0);
+	});
+
+	it(`Test with both LOG_LEVEL=invalid and AWS_LAMBDA_LOG_LEVEL=invalid set`, () => {
+		process.env.LOG_LEVEL = 'invalid';
+		process.env.AWS_LAMBDA_LOG_LEVEL = 'invalid';
+		expect(DebugAndLog.getLogLevel()).to.equal(0);
+	});
+
+	// test AWS_LAMBDA_LOG_LEVEL with values DEBUG, INFO, WARN, ERROR
+	awsLambdaLogLevels.forEach((level) => {
+		it(`Test with AWS_LAMBDA_LOG_LEVEL=${level[0]} set`, () => {
+			process.env.AWS_LAMBDA_LOG_LEVEL = level[0];
+			expect(DebugAndLog.getLogLevel()).to.equal(level[1]);
+		});		
+	})
+});

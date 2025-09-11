@@ -1,6 +1,10 @@
 const { sanitize } = require("./utils");
 const util = require('util');
 
+const _getNodeEnv = function() {
+	return process.env?.NODE_ENV === "development" ? "development" : "production";
+};
+
 /**
  * A simple Debug and Logging class.
  */
@@ -8,8 +12,7 @@ class DebugAndLog {
 
 	static #logLevel = -1;
 	static #environment = null;
-	static #expiration = -1;
-	static #node_env = process.env?.NODE_ENV === "development" ? "development" : "production";
+	static #initialNodeEnv = _getNodeEnv();
 
 	// in priority order
 	static ALLOWED_ENV_TYPE_VAR_NAMES = ["DEPLOY_ENVIRONMENT", "DEPLOY_ENV", "ENV_TYPE", "deploy_environment",  "ENV", "env", "deployEnvironment", "ENVIRONMENT", "environment"];
@@ -33,68 +36,28 @@ class DebugAndLog {
 
 	/**
 	 * Set the log level.
+	 * Deprecated. Set Lambda Environment variable LOG_LEVEL instead.
 	 * @param {number} logLevel 0 - 5
 	 * @param {*} expiration YYYY-MM-DD HH:MM:SS format. Only set to specified level until this date
 	 */
 	static setLogLevel(logLevel = -1, expiration = -1) {
-
-		// we can switch if NODE_ENV is "development"
-		if ( this.node_envIsDevelopment() ) {
-			if ( expiration !== -1 ) {
-				let time = new Date( expiration );
-				this.#expiration = time.toISOString();
-			} else {
-				this.#expiration = -1;
-			}            
-			
-			if ( logLevel === -1 || this.nonDefaultLogLevelExpired()) {
-				this.#logLevel = this.getDefaultLogLevel();
-			} else {
-				this.#logLevel = logLevel;
-				DebugAndLog.msg("DebugAndLog: Override of log level default set: "+logLevel+". Default LogLevel override code should be removed before production");
-				if ( this.#expiration === -1 ) {
-					DebugAndLog.warn("DebugAndLog: Override of log level default set WITHOUT EXPIRATION. An expiration is recommended.");
-				}
-			} 
-		} else {
-			if (logLevel > 0) {
-				DebugAndLog.warn("DebugAndLog: Node Production environment (NODE_ENV='production' or not set). Cannot set logLevel higher than 0. Ignoring call to DebugAndLog.setLogLevel("+logLevel+").");
-			}
-			
-			this.#logLevel = 0;
-		}
-
+		DebugAndLog.warn("DebugAndLog.setLogLevel() no longer has any effect use LOG_LEVEL environment variable instead.");
+		DebugAndLog.debug(`DebugAndLog.setLogLevel(${logLevel}, ${expiration}) no longer has any effect.`)
 	};
-
-	static nonDefaultLogLevelExpired() {
-		let r = false;
-
-		if ( this.#expiration !== -1 ) {
-			let now = new Date();
-			if ( now.toISOString() > this.#expiration ) {
-				DebugAndLog.warn("DebugAndLog: Override of log level default expired. Call to DebugAndLog.setLogLevel() should be commented out or removed");
-				r = true;
-			}
-		}
-
-		return r;
-	}
-
-	/**
-	 * 
-	 * @returns {string} The expiration date of the set log level
-	 */
-	static getExpiration() {
-		return this.#expiration;
-	}
 
 	/**
 	 * 
 	 * @returns {number} The current log level
 	 */
 	static getLogLevel() {
-		if ( this.#logLevel === -1) {
-			this.setLogLevel();
+
+		if ( this.#logLevel < 0 || DebugAndLog.nodeEnvIsDevelopment() || DebugAndLog.nodeEnvHasChanged() ) {
+
+			if (DebugAndLog.isProduction()) {
+				this.#logLevel = 0;
+			} else {
+				this.#logLevel = this.getDefaultLogLevel();
+			}
 		}
 
 		return this.#logLevel;
@@ -107,12 +70,12 @@ class DebugAndLog {
 	 * are not set it will return DebugAndLog.PROD which 
 	 * is considered safe (most restrictive)
 	 * Note: This is the application environment, not the NODE_ENV
-	 * @returns {string} The current environment.
+	 * @returns {string} PROD|TEST|DEV - The current environment.
 	 */
 	static getEnvType() {
 		// We can switch if NODE_ENV is set to "development"
-		if ( this.#environment === null || this.node_envIsDevelopment()) {
-			const  nodeEnvType = (DebugAndLog.node_envIsDevelopment() ? DebugAndLog.DEV : DebugAndLog.PROD); // if env or deployEnvironment not set, fail to safe
+		if ( this.#environment === null || DebugAndLog.nodeEnvIsDevelopment() || DebugAndLog.nodeEnvHasChanged) {
+			const  nodeEnvType = (DebugAndLog.nodeEnvIsDevelopment() ? DebugAndLog.DEV : DebugAndLog.PROD); // if env or deployEnvironment not set, fail to safe
 			const envType = DebugAndLog.getEnvTypeFromEnvVar();
 
 			this.#environment = (DebugAndLog.ENVIRONMENTS.includes(envType) ? envType : nodeEnvType);
@@ -135,30 +98,54 @@ class DebugAndLog {
 	static getEnvTypeFromEnvVar() {
 		let environmentType = "NONE";
 		const possibleVars = DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES; // - this is the application env, not the NODE_ENV
-		if ( "env" in process ) {
-			for (let i in possibleVars) {
-				let e = possibleVars[i];
-				if (e in process.env && process.env[e] !== "" && process.env[e] !== null) {
-					environmentType = process.env[e].toUpperCase();
-					break; // break out of the for loop
-				}
-			};
-		}
+
+		for (let i in possibleVars) {
+			let e = possibleVars[i];
+			if (e in process.env && process.env[e] !== "" && process.env[e] !== null) {
+				environmentType = process.env[e].toUpperCase();
+				break; // break out of the for loop
+			}
+		};
+
 		return environmentType;
 	}
 
 	/**
 	 * Is Environment Variable NODE_ENV set to "development"?
 	 */
-	static node_envIsDevelopment() {
-		return !DebugAndLog.node_envIsProduction();
+	static nodeEnvIsDevelopment() {
+		return DebugAndLog.getNodeEnv() === "development";
 	}
 
 	/**
 	 * Is Environment Variable NODE_ENV set to "production" or "" or undefined?
 	 */
-	static node_envIsProduction() {
-		return this.#node_env === "production";
+	static nodeEnvIsProduction() {
+		return !this.nodeEnvIsDevelopment();
+	}
+
+	/**
+	 * Get the current NODE_ENV (returns "production" if not set or if NODE_ENV is set to anything other than "development")
+	 * Calls DebugAndLog.nodeEnvHasChanged() to log a warning if the value has changed since initialization. Should only change during testing.
+	 * @returns {string} development|production
+	 */
+	static getNodeEnv() {
+		DebugAndLog.nodeEnvHasChanged();
+		return _getNodeEnv();
+	}
+
+	/**
+	 * Checks to see if the current NODE_ENV environment variable has changed since DebugAndLog was initialized.
+	 * The only time this should happen is while running tests. This should never happen in a production application.
+	 * If these warnings are triggered as you application is running, something is modifying process.env.NODE_ENV during execution.
+	 * @returns {boolean}
+	 */
+	static nodeEnvHasChanged() {
+		const hasChanged = _getNodeEnv() !== this.#initialNodeEnv;
+		if (hasChanged && this.#logLevel > -1) {
+			DebugAndLog.warn("DebugAndLog: NODE_ENV changed from initial value of '"+this.#initialNodeEnv+"' to '"+_getNodeEnv()+"' during execution. This is not recommended.");
+		}
+		return hasChanged;
 	}
 
 	/**
@@ -166,8 +153,8 @@ class DebugAndLog {
 	 * @returns {number} log level
 	 */
 	static getDefaultLogLevel() {
-		var possibleVars = DebugAndLog.ALLOWED_LOG_VAR_NAMES; // in priority order and we want to evaluate AWS_LAMBDA_LOG_LEVEL as upper
-		var logLevel = 0;
+		let possibleVars = DebugAndLog.ALLOWED_LOG_VAR_NAMES; // in priority order and we want to evaluate AWS_LAMBDA_LOG_LEVEL as upper
+		let logLevel = 0;
 
 		if ( DebugAndLog.isNotProduction() ) { // PROD is always at logLevel 0. Always.
 			if ( "env" in process ) {
@@ -186,6 +173,7 @@ class DebugAndLog {
 								default: // logLevel is already 0
 									break;
 							}
+
 							break; // break out of the for loop
 						} else if (!Number.isNaN(process.env[lev])) {
 							logLevel = Number(process.env[lev]);
@@ -195,7 +183,7 @@ class DebugAndLog {
 				};
 			}
 
-		} else { console.log("Is Production")}
+		}
 
 		return logLevel;
 	};
@@ -253,44 +241,6 @@ class DebugAndLog {
 		const FORMAT_WITH_OBJ = '[%s] %s | %s';
 		const FORMAT_WITHOUT_OBJ = '[%s] %s';
 
-		// const baseLog = function(level, tag, message, obj = null) {
-		// 	// Validate inputs
-		// 	if (typeof level !== 'string') {
-		// 		throw new TypeError('Log level must be a string');
-		// 	}
-			
-		// 	// Ensure tag and message are strings
-		// 	const safeTag = String(tag || '');
-		// 	const safeMessage = String(message || '');
-			
-		// 	// Validate log level is allowed
-		// 	if (!Object.prototype.hasOwnProperty.call(logLevels, level)) {
-		// 		level = 'info'; // Default to info if invalid level
-		// 	}
-			
-		// 	const logFn = logLevels[level];
-			
-		// 	try {
-		// 		let formattedMessage;
-		// 		if (obj !== null) {
-		// 			formattedMessage = util.format(
-		// 				'[%s] %s | %s',
-		// 				safeTag,
-		// 				safeMessage,
-		// 				util.inspect(sanitize(obj), { depth: null })
-		// 			);
-		// 		} else {
-		// 			formattedMessage = util.format(
-		// 				'[%s] %s',
-		// 				safeTag,
-		// 				safeMessage
-		// 			);
-		// 		}
-		// 		logFn(formattedMessage);
-		// 	} catch (error) {
-		// 		console.error('Logging failed:', error);
-		// 	}
-		// };
 		const baseLog = function(level, tag, message, obj = null) {
 			// Early return for invalid input
 			if (typeof level !== 'string') {
@@ -336,17 +286,10 @@ class DebugAndLog {
 		const info = (tag, message, obj) => baseLog('info', tag, message, obj);
 		const debug = (tag, message, obj) => baseLog('debug', tag, message, obj);
 		
-		let lvl = DebugAndLog.getLogLevel();
-		tag = tag.toUpperCase();
+		// let lvl = (this.#logLevel > -1) ? DebugAndLog.getLogLevel() : DebugAndLog.MSG; 
+		let lvl = (this.#logLevel > -1) ? this.#logLevel > -1 : DebugAndLog.MSG; 
 
-		// if ( obj !== null ) {
-		// 	let msgObj = obj;
-		// 	if ( Array.isArray(msgObj)) { msgObj = { array: msgObj};}
-		// 	if ( ""+msgObj === "[object Object]" || ""+msgObj === "[object Array]") {
-		// 		msgObj = JSON.stringify(sanitize(msgObj));
-		// 	}
-		// 	message += " | "+msgObj;
-		// }
+		tag = tag.toUpperCase();
 
 		switch (tag) {
 			case DebugAndLog.ERROR:
@@ -460,5 +403,7 @@ class DebugAndLog {
 	};
 
 };
+
+DebugAndLog.getLogLevel();
 
 module.exports = DebugAndLog;
