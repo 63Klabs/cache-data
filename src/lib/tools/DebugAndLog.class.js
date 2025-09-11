@@ -7,17 +7,19 @@ const util = require('util');
 class DebugAndLog {
 
 	static #logLevel = -1;
+	static #environment = null;
 	static #expiration = -1;
+	static #node_env = process.env?.NODE_ENV === "development" ? "development" : "production";
 
 	// in priority order
-	static ALLOWED_ENV_VAR_NAMES = ["DEPLOY_ENVIRONMENT", "deploy_environment",  "ENV", "env", "deployEnvironment", "ENVIRONMENT", "environment"];
+	static ALLOWED_ENV_TYPE_VAR_NAMES = ["DEPLOY_ENVIRONMENT", "DEPLOY_ENV", "ENV_TYPE", "deploy_environment",  "ENV", "env", "deployEnvironment", "ENVIRONMENT", "environment"];
 	static ALLOWED_LOG_VAR_NAMES = ["CACHE_DATA_LOG_LEVEL", "LOG_LEVEL", "log_level", "detailedLogs", "logLevel", "AWS_LAMBDA_LOG_LEVEL"]
 
 	static PROD = "PROD";
 	static TEST = "TEST";
 	static DEV = "DEV";
 
-	static ENVIRONMENTS = [DebugAndLog.PROD, DebugAndLog.TEST, DebugAndLog.DEV];
+	static ENVIRONMENTS = ["PROD", "TEST", "DEV"];//[DebugAndLog.PROD, DebugAndLog.TEST, DebugAndLog.DEV];
 
 	static ERROR = "ERROR"; // 0
 	static WARN = "WARN"; // 0
@@ -36,9 +38,8 @@ class DebugAndLog {
 	 */
 	static setLogLevel(logLevel = -1, expiration = -1) {
 
-		if ( this.#logLevel > -1) {
-			DebugAndLog.warn("LogLevel already set, cannot reset. Ignoring call to DebugAndLog.setLogLevel("+logLevel+")");
-		} else {
+		// we can switch if NODE_ENV is "development"
+		if ( this.node_envIsDevelopment() ) {
 			if ( expiration !== -1 ) {
 				let time = new Date( expiration );
 				this.#expiration = time.toISOString();
@@ -49,17 +50,18 @@ class DebugAndLog {
 			if ( logLevel === -1 || this.nonDefaultLogLevelExpired()) {
 				this.#logLevel = this.getDefaultLogLevel();
 			} else {
-				if ( logLevel > 0 && DebugAndLog.isProduction() ) {
-					DebugAndLog.warn("DebugAndLog: Production environment. Cannot set logLevel higher than 0. Ignoring call to DebugAndLog.setLogLevel("+logLevel+"). Default LogLevel override code should be removed before production");
-					this.#logLevel = this.getDefaultLogLevel();
-				} else {
-					this.#logLevel = logLevel;
-					DebugAndLog.msg("DebugAndLog: Override of log level default set: "+logLevel+". Default LogLevel override code should be removed before production");
-					if ( this.#expiration === -1 ) {
-						DebugAndLog.warn("DebugAndLog: Override of log level default set WITHOUT EXPIRATION. An expiration is recommended.");
-					}
+				this.#logLevel = logLevel;
+				DebugAndLog.msg("DebugAndLog: Override of log level default set: "+logLevel+". Default LogLevel override code should be removed before production");
+				if ( this.#expiration === -1 ) {
+					DebugAndLog.warn("DebugAndLog: Override of log level default set WITHOUT EXPIRATION. An expiration is recommended.");
 				}
 			} 
+		} else {
+			if (logLevel > 0) {
+				DebugAndLog.warn("DebugAndLog: Node Production environment (NODE_ENV='production' or not set). Cannot set logLevel higher than 0. Ignoring call to DebugAndLog.setLogLevel("+logLevel+").");
+			}
+			
+			this.#logLevel = 0;
 		}
 
 	};
@@ -107,21 +109,57 @@ class DebugAndLog {
 	 * Note: This is the application environment, not the NODE_ENV
 	 * @returns {string} The current environment.
 	 */
-	static getEnv() {
-		var possibleVars = DebugAndLog.ALLOWED_ENV_VAR_NAMES; // - this is the application env, not the NODE_ENV
-		var env = (process.env?.NODE_ENV === "development" ? DebugAndLog.DEV : DebugAndLog.PROD); // if env or deployEnvironment not set, fail to safe
+	static getEnvType() {
+		// We can switch if NODE_ENV is set to "development"
+		if ( this.#environment === null || this.node_envIsDevelopment()) {
+			const  nodeEnvType = (DebugAndLog.node_envIsDevelopment() ? DebugAndLog.DEV : DebugAndLog.PROD); // if env or deployEnvironment not set, fail to safe
+			const envType = DebugAndLog.getEnvTypeFromEnvVar();
 
+			this.#environment = (DebugAndLog.ENVIRONMENTS.includes(envType) ? envType : nodeEnvType);
+		}
+
+		return this.#environment;
+	}
+
+	/**
+	 * Alias for getEnvType()
+	 */
+	static getEnv() {
+		return DebugAndLog.getEnvType();
+	};
+
+	/**
+	 * 
+	 * @returns {string} PROD|TEST|DEV|NONE based upon first environment variable from DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES found
+	 */
+	static getEnvTypeFromEnvVar() {
+		let environmentType = "NONE";
+		const possibleVars = DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES; // - this is the application env, not the NODE_ENV
 		if ( "env" in process ) {
 			for (let i in possibleVars) {
 				let e = possibleVars[i];
 				if (e in process.env && process.env[e] !== "" && process.env[e] !== null) {
-					env = process.env[e].toUpperCase();
+					environmentType = process.env[e].toUpperCase();
 					break; // break out of the for loop
 				}
 			};
 		}
-		return (DebugAndLog.ENVIRONMENTS.includes(env) ? env : DebugAndLog.PROD);
-	};
+		return environmentType;
+	}
+
+	/**
+	 * Is Environment Variable NODE_ENV set to "development"?
+	 */
+	static node_envIsDevelopment() {
+		return !DebugAndLog.node_envIsProduction();
+	}
+
+	/**
+	 * Is Environment Variable NODE_ENV set to "production" or "" or undefined?
+	 */
+	static node_envIsProduction() {
+		return this.#node_env === "production";
+	}
 
 	/**
 	 * 
