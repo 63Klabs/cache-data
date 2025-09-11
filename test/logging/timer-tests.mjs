@@ -1,9 +1,52 @@
 import { expect } from 'chai';
 import { Timer } from '../../src/lib/tools/index.js'
+import { DebugAndLog } from '../../src/lib/tools/index.js'
 
 import { sleep } from '../helpers/utils.mjs';
 
+import sinon from 'sinon';
+
+let originalEnv = { ...process.env };
+let logStub, warnStub, errorStub, msgStub, debugStub;
+
+const beforeEachEnvVars = function() {
+	// clear out environment and log environment variables
+	DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
+	DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
+	delete(process.env.NODE_ENV);
+
+	logStub = sinon.stub(console, 'log');
+	warnStub = sinon.stub(console, 'warn');
+	errorStub = sinon.stub(console, 'error');
+	msgStub = sinon.stub(console, 'info');
+	debugStub = sinon.stub(console, 'debug');
+}
+
+const afterEachEnvVars = function() {
+	// clear out environment and log environment variables
+	DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES.forEach(v => delete process.env[v]);
+	DebugAndLog.ALLOWED_LOG_VAR_NAMES.forEach(v => delete process.env[v]);
+	delete(process.env.NODE_ENV);
+
+	// Restore the original environment variables
+	process.env = originalEnv;
+
+	logStub.restore();
+	warnStub.restore();
+	errorStub.restore();
+	msgStub.restore();
+	debugStub.restore();
+}
+
 describe("Timer tests", () => {
+
+	beforeEach(() => {
+		beforeEachEnvVars();	
+	});
+	
+	afterEach(() => {
+		afterEachEnvVars();
+	});
 
 	const t1 = new Timer("Timer 1 start", true);
 	const t2 = new Timer("Timer 2 no start", false);

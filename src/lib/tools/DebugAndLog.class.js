@@ -5,6 +5,8 @@ const _getNodeEnv = function() {
 	return process.env?.NODE_ENV === "development" ? "development" : "production";
 };
 
+"use strict"
+
 /**
  * A simple Debug and Logging class.
  */
@@ -13,9 +15,10 @@ class DebugAndLog {
 	static #logLevel = -1;
 	static #environment = null;
 	static #initialNodeEnv = _getNodeEnv();
+	static #nodeEnvChangeWarnCount = 0;
 
 	// in priority order
-	static ALLOWED_ENV_TYPE_VAR_NAMES = ["DEPLOY_ENVIRONMENT", "DEPLOY_ENV", "ENV_TYPE", "deploy_environment",  "ENV", "env", "deployEnvironment", "ENVIRONMENT", "environment"];
+	static ALLOWED_ENV_TYPE_VAR_NAMES = ["CACHE_DATA_ENV", "DEPLOY_ENVIRONMENT", "DEPLOY_ENV", "ENV_TYPE", "deploy_environment",  "ENV", "env", "deployEnvironment", "ENVIRONMENT", "environment"];
 	static ALLOWED_LOG_VAR_NAMES = ["CACHE_DATA_LOG_LEVEL", "LOG_LEVEL", "log_level", "detailedLogs", "logLevel", "AWS_LAMBDA_LOG_LEVEL"]
 
 	static PROD = "PROD";
@@ -24,25 +27,47 @@ class DebugAndLog {
 
 	static ENVIRONMENTS = ["PROD", "TEST", "DEV"];//[DebugAndLog.PROD, DebugAndLog.TEST, DebugAndLog.DEV];
 
-	static ERROR = "ERROR"; // 0
-	static WARN = "WARN"; // 0
-	static LOG = "LOG"; // 0
-	static MSG = "MSG"; // 1
-	static DIAG = "DIAG"; // 3
-	static DEBUG = "DEBUG"; // 5
+	static LOG = "LOG";
+	static ERROR = "ERROR";
+	static WARN = "WARN";
+	static INFO = "INFO";
+	static MSG = "MSG";
+	static DIAG = "DIAG";
+	static DEBUG = "DEBUG";
+
+	static LOG_LEVEL_NUM = 0;
+	static ERROR_LEVEL_NUM = 0;
+	static WARN_LEVEL_NUM = 1;
+	static INFO_LEVEL_NUM = 2;
+	static MSG_LEVEL_NUM = 3;
+	static DIAG_LEVEL_NUM = 4;
+	static DEBUG_LEVEL_NUM = 5;
+
+	static PROD_DEFAULT_LEVEL_NUM = 2;
 
 	constructor() {
 	};
 
 	/**
 	 * Set the log level.
-	 * Deprecated. Set Lambda Environment variable LOG_LEVEL instead.
+	 * Deprecated. Set Lambda Environment variable CACHE_DATA_LOG_LEVEL, LOG_LEVEL, or AWS_LAMBDA_LOG_LEVEL instead.
 	 * @param {number} logLevel 0 - 5
-	 * @param {*} expiration YYYY-MM-DD HH:MM:SS format. Only set to specified level until this date
+	 * @param {*} expiration Deprecated - no effect
 	 */
 	static setLogLevel(logLevel = -1, expiration = -1) {
-		DebugAndLog.warn("DebugAndLog.setLogLevel() no longer has any effect use LOG_LEVEL environment variable instead.");
-		DebugAndLog.debug(`DebugAndLog.setLogLevel(${logLevel}, ${expiration}) no longer has any effect.`)
+		DebugAndLog.warn(`DebugAndLog.setLogLevel(${logLevel}, ${expiration}) is deprecated. Use CACHE_DATA_LOG_LEVEL, LOG_LEVEL, or AWS_LAMBDA_LOG_LEVEL environment variable instead.`);
+		
+		if (DebugAndLog.isProduction()) {
+			if (Number.isFinite(Number(logLevel)) && Number(logLevel) <= DebugAndLog.PROD_DEFAULT_LEVEL_NUM) {
+				this.#logLevel = Number(logLevel);
+			} else {
+				this.#logLevel = DebugAndLog.PROD_DEFAULT_LEVEL_NUM;
+			}
+		} else if (Number.isFinite(Number(logLevel))) {
+			this.#logLevel = Number(logLevel);
+		}
+
+		return this.#logLevel;
 	};
 
 	/**
@@ -52,17 +77,19 @@ class DebugAndLog {
 	static getLogLevel() {
 
 		if ( this.#logLevel < 0 || DebugAndLog.nodeEnvIsDevelopment() || DebugAndLog.nodeEnvHasChanged() ) {
-
-			if (DebugAndLog.isProduction()) {
-				this.#logLevel = 0;
-			} else {
-				this.#logLevel = this.getDefaultLogLevel();
-			}
+			this.#logLevel = this.getDefaultLogLevel();
 		}
 
 		return this.#logLevel;
 
 	}
+
+	/**
+	 * Alias for getEnvType()
+	 */
+	static getEnv() {
+		return DebugAndLog.getEnvType();
+	};
 
 	/**
 	 * Check process.env for an environment variable named
@@ -83,25 +110,17 @@ class DebugAndLog {
 
 		return this.#environment;
 	}
-
-	/**
-	 * Alias for getEnvType()
-	 */
-	static getEnv() {
-		return DebugAndLog.getEnvType();
-	};
-
 	/**
 	 * 
 	 * @returns {string} PROD|TEST|DEV|NONE based upon first environment variable from DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES found
 	 */
 	static getEnvTypeFromEnvVar() {
-		let environmentType = "NONE";
+		let environmentType = "none";
 		const possibleVars = DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES; // - this is the application env, not the NODE_ENV
 
 		for (let i in possibleVars) {
 			let e = possibleVars[i];
-			if (e in process.env && process.env[e] !== "" && process.env[e] !== null) {
+			if (e in process.env && process.env[e] !== "" && process.env[e] !== null && DebugAndLog.ENVIRONMENTS.includes(process.env[e].toUpperCase())) {
 				environmentType = process.env[e].toUpperCase();
 				break; // break out of the for loop
 			}
@@ -143,8 +162,15 @@ class DebugAndLog {
 	static nodeEnvHasChanged() {
 		const hasChanged = _getNodeEnv() !== this.#initialNodeEnv;
 		if (hasChanged && this.#logLevel > -1) {
-			DebugAndLog.warn("DebugAndLog: NODE_ENV changed from initial value of '"+this.#initialNodeEnv+"' to '"+_getNodeEnv()+"' during execution. This is not recommended.");
+			this.#nodeEnvChangeWarnCount++;
+			// if this.#nodeEnvChangeWarnCount == 1 or is divisible by 25
+			if (this.#nodeEnvChangeWarnCount === 1 || this.#nodeEnvChangeWarnCount % 100 === 0) {
+				DebugAndLog.warn(`DebugAndLog: NODE_ENV changed from initial value of '${this.#initialNodeEnv}' to '${_getNodeEnv()}' during execution. This is not recommended outside of tests.`);
+			}
+		} else {
+			this.#nodeEnvChangeWarnCount = 0;
 		}
+
 		return hasChanged;
 	}
 
@@ -154,36 +180,51 @@ class DebugAndLog {
 	 */
 	static getDefaultLogLevel() {
 		let possibleVars = DebugAndLog.ALLOWED_LOG_VAR_NAMES; // in priority order and we want to evaluate AWS_LAMBDA_LOG_LEVEL as upper
-		let logLevel = 0;
+		let logLevel = DebugAndLog.PROD_DEFAULT_LEVEL_NUM;
+		let found = false;
 
-		if ( DebugAndLog.isNotProduction() ) { // PROD is always at logLevel 0. Always.
-			if ( "env" in process ) {
-				for (let i in possibleVars) {
-					let lev = possibleVars[i];
-					if (lev in process.env && process.env[lev] !== "" && process.env[lev] !== null) {
-						if (lev === "AWS_LAMBDA_LOG_LEVEL") {
+		for (let i in possibleVars) {
+			let lev = possibleVars[i];
+			if (lev in process.env && process.env[lev] !== "" && process.env[lev] !== null) {
+				if (lev === "AWS_LAMBDA_LOG_LEVEL") {
 
-							switch (process.env.AWS_LAMBDA_LOG_LEVEL) {
-								case "DEBUG":
-									logLevel = 5;
-									break;
-								case "INFO":
-									logLevel = 3;
-									break;
-								default: // logLevel is already 0
-									break;
-							}
+					switch (process.env.AWS_LAMBDA_LOG_LEVEL) {
+						case "DEBUG":
+							logLevel = DebugAndLog.DEBUG_LEVEL_NUM;
+							found = true;
+							break;
+						case "INFO":
+							logLevel = DebugAndLog.INFO_LEVEL_NUM;
+							found = true;
+							break;
+						case "WARN":
+							logLevel = DebugAndLog.WARN_LEVEL_NUM;
+							found = true;
+							break;
+						case "ERROR":
+							logLevel = DebugAndLog.ERROR_LEVEL_NUM;
+							found = true;
+							break;
+						default: // invalid
+							break;
+					}
 
-							break; // break out of the for loop
-						} else if (!Number.isNaN(process.env[lev])) {
-							logLevel = Number(process.env[lev]);
-							break; // break out of the for loop
+				} else if (Number.isFinite(Number(process.env[lev]))) {
+					logLevel = Number(process.env[lev]);
+					found = true;
+				}
+
+				if (found) {
+					if (DebugAndLog.isProduction()) {
+						if (logLevel > DebugAndLog.PROD_DEFAULT_LEVEL_NUM) {
+							DebugAndLog.warn(`DebugAndLog: ${lev} set to ${logLevel} in production environment. Only 0-2 is allowed in production. Setting to ${DebugAndLog.PROD_DEFAULT_LEVEL_NUM}`);
+							logLevel = DebugAndLog.PROD_DEFAULT_LEVEL_NUM;
 						}
 					}
-				};
+					break; // break out of the for loop
+				}
 			}
-
-		}
+		};
 
 		return logLevel;
 	};
@@ -286,8 +327,8 @@ class DebugAndLog {
 		const info = (tag, message, obj) => baseLog('info', tag, message, obj);
 		const debug = (tag, message, obj) => baseLog('debug', tag, message, obj);
 		
-		// let lvl = (this.#logLevel > -1) ? DebugAndLog.getLogLevel() : DebugAndLog.MSG; 
-		let lvl = (this.#logLevel > -1) ? this.#logLevel > -1 : DebugAndLog.MSG; 
+		// let lvl = (this.#logLevel > -1) ? DebugAndLog.getLogLevel() : DebugAndLog.MSG_LEVEL_NUM; 
+		let lvl = (this.#logLevel > -1) ? this.#logLevel : DebugAndLog.INFO_LEVEL_NUM; 
 
 		tag = tag.toUpperCase();
 
@@ -296,16 +337,19 @@ class DebugAndLog {
 				error(tag, message, obj);
 				break;
 			case DebugAndLog.WARN:
-				warn(tag, message, obj);
+				if (lvl >= DebugAndLog.WARN_LEVEL_NUM) { warn(tag, message, obj); }
 				break;
+			case DebugAndLog.INFO:
+				if (lvl >= DebugAndLog.INFO_LEVEL_NUM) { info(tag, message, obj); }
+				break; 
 			case DebugAndLog.MSG:
-				if (lvl >= 1) { info(tag, message, obj); } // 1
+				if (lvl >= DebugAndLog.MSG_LEVEL_NUM) { info(tag, message, obj); }
 				break; 
 			case DebugAndLog.DIAG:
-				if (lvl >= 3) { debug(tag, message, obj); } //3
+				if (lvl >= DebugAndLog.DIAG_LEVEL_NUM) { debug(tag, message, obj); }
 				break; 
 			case DebugAndLog.DEBUG:
-				if (lvl >= 5) { debug(tag, message, obj); } //5
+				if (lvl >= DebugAndLog.DEBUG_LEVEL_NUM) { debug(tag, message, obj); }
 				break; 
 			default: // log
 				log(tag, message, obj);
@@ -334,7 +378,7 @@ class DebugAndLog {
 	};
 
 	/**
-	 * Level 1 - Short messages and status
+	 * Level 2 - Short messages and status
 	 * @param {string} message 
 	 * @param {object} obj 
 	 */
@@ -343,13 +387,22 @@ class DebugAndLog {
 	};
 
 	/**
-	 * Level 1 - Short messages and status
+	 * Level 2 - Short messages and status
 	 * (same as DebugAndLog.msg() )
 	 * @param {string} message 
 	 * @param {object} obj 
 	 */
 	static async message(message, obj = null) {
 		return DebugAndLog.msg(message, obj);
+	};
+
+	/**
+	 * Level 1 - Short messages and status
+	 * @param {string} message 
+	 * @param {object} obj 
+	 */
+	static async info(message, obj = null) {
+		return DebugAndLog.writeLog(DebugAndLog.INFO, message, obj);
 	};
 
 	/**
