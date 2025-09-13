@@ -178,7 +178,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 									}
 								};
 
-								DebugAndLog.debug(`Response status ${res.statusCode}`, {status: res.statusCode, headers: res.headers});
+								DebugAndLog.debug(`Response status ${res.statusCode}`, {status: res.statusCode, method: requestObject.getMethod(), host: requestObject.getHost(), url: requestObject.getURI(false), headers: res.headers});
 
 								if (res.statusCode >= 500) {
 									xRaySegment.addFaultFlag();
