@@ -585,8 +585,6 @@ class APIRequest {
 
 									const result = await _httpGetExecute(options, this, subsegment);
 
-									console.log("RESULT", result);
-
 									subsegment.addAnnotation('success', result ? "true" : "false");
 									subsegment.addAnnotation('status_code', this.#response?.statusCode || 500);
 									subsegment.addAnnotation('note', this.getNote());
