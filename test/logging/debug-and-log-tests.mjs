@@ -443,3 +443,42 @@ describe("DebugAndLog log level environment variable tests", () => {
 		});		
 	})
 });
+
+
+// Test DebugAndLog.getLogLevel() using various environment variables such as LOG_LEVEL and AWS_LAMBDA_LOG_LEVEL
+describe("DebugAndLog log level environment variable tests with strings", () => {
+	beforeEach(() => {
+		beforeEachEnvVars();
+		process.env.NODE_ENV = "development";
+		process.env.ENV_TYPE = "TEST";
+	});
+	
+	afterEach(() => {
+		afterEachEnvVars();
+	});
+
+	const testLogLevelVars = DebugAndLog.ALLOWED_LOG_VAR_NAMES.slice(0, 3);
+	// remove the "AWS_LAMBDA_LOG_LEVEL" since it doesn't use a number
+	testLogLevelVars.splice(testLogLevelVars.indexOf("AWS_LAMBDA_LOG_LEVEL"), 1);
+
+	const testLevelStrings = ["ERROR", "WARN", "INFO", "MSG", "DIAG", "DEBUG"];
+
+	testLogLevelVars.forEach((varName) => {
+		for (let index = 0; index < testLevelStrings.length; index++) {
+			const level = testLevelStrings[index];
+
+			it(`Test with ${varName} set to '${level}'`, () => {
+				process.env[varName] = `${level}`;
+				process.env.ENV_TYPE = "TEST";
+				expect(DebugAndLog.getLogLevel()).to.equal(index);
+			});
+		}
+	});
+
+	it(`Test with both LOG_LEVEL='MSG' and AWS_LAMBDA_LOG_LEVEL=ERROR set. LOG_LEVEL has priority.`, () => {
+		process.env.LOG_LEVEL = 'MSG';
+		process.env.AWS_LAMBDA_LOG_LEVEL = 'ERROR';
+		expect(DebugAndLog.getLogLevel()).to.equal(3);
+	});
+
+});

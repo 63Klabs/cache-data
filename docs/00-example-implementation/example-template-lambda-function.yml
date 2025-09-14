@@ -33,10 +33,10 @@ Resources:
       Environment:
         Variables:
 
-          DEPLOY_ENVIRONMENT: "DEV" # PROD, TEST, DEV - a different category of environment
-          LOG_LEVEL: 5 # 0 for prod, 2-5 for non-prod
+          DEPLOY_ENVIRONMENT: "TEST" # PROD, TEST, DEV - a different category of environment
+          LOG_LEVEL: 5 # 0-2 for prod, 3-5 for non-prod
           
-          # Cache-Data Settings - Parameters may be used instead of hard-coded values
+          # Cache-Data Settings - CloudFormation template parameters may be used instead of hard-coded values
           # If you do not provide these environment variables, cache-data will use the default values (shown below)
           # CACHE_DATA_DYNAMO_DB_TABLE and CACHE_DATA_S3_BUCKET are required for cache-data to work
           # See https://github.com/63Klabs/cache-data/blob/main/docs/00-example-implementation/example-template-lambda-function.yml

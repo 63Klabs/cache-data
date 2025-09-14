@@ -35,6 +35,8 @@ class DebugAndLog {
 	static DIAG = "DIAG";
 	static DEBUG = "DEBUG";
 
+	static ALLOWED_LOG_LEVEL_STRINGS = ["ERROR", "WARN", "INFO", "MSG", "DIAG", "DEBUG"];
+
 	static LOG_LEVEL_NUM = 0;
 	static ERROR_LEVEL_NUM = 0;
 	static WARN_LEVEL_NUM = 1;
@@ -205,10 +207,20 @@ class DebugAndLog {
 							logLevel = DebugAndLog.ERROR_LEVEL_NUM;
 							found = true;
 							break;
+						case "CRITICAL":
+							logLevel = DebugAndLog.ERROR_LEVEL_NUM; // This is lowest we go and will let Lambda filter out
+							found = true;
+							break;
+						case "SILENT":
+							logLevel = DebugAndLog.ERROR_LEVEL_NUM; // This is lowest we go and will let Lambda filter out
+							found = true;
+							break;
 						default: // invalid
 							break;
 					}
-
+				} else if (typeof process.env[lev] === "string" && DebugAndLog.ALLOWED_LOG_LEVEL_STRINGS.includes(process.env[lev].toUpperCase())) {
+					logLevel = DebugAndLog[process.env[lev].toUpperCase().concat("_LEVEL_NUM")];
+					found = true;
 				} else if (Number.isFinite(Number(process.env[lev]))) {
 					logLevel = Number(process.env[lev]);
 					found = true;

@@ -401,7 +401,7 @@ const cacheObj = await cache.CacheableDataAccess.getData(
 
 ### Connections using CachedSSMParameter or CachedSecret
 
-Creating a connection is similar to above, we can add an authorization property to the conection:
+Creating a connection is similar to above, we can add an authorization property to the connection:
 
 ```js
 conn = {

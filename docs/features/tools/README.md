@@ -4,7 +4,105 @@ TODO
 
 ## Monitoring and Logging
 
+The `tools` object provides a Timer class and a DebugAndLog class to help with monitoring and logging.
+
+### Setting the Log Level
+
+To set the log level, `DebugAndLog` checks for environment variables in the following order:
+
+1. `CACHE_DATA_LOG_LEVEL`
+2. `LOG_LEVEL`
+3. `log_level` (__deprecated, will be removed in future__)
+4. `detailedLog`s (__deprecated, will be removed in future__)
+5. `logLevel` (__deprecated, will be removed in future__)
+6. `AWS_LAMBDA_LOG_LEVEL`
+
+If none of these is set, it defaults to level 2 (INFO).
+
+You can get the current list of accepted variables in priority order from `tools.DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES` (since v1.3.2).
+
+Most examples will use `LOG_LEVEL` but if you have another package using `LOG_LEVEL` and wish to set `DebugAndLog` separately, use `CACHE_DATA_LOG_LEVEL`.
+
+If you only provide `AWS_LAMBDA_LOG_LEVEL` and set it to `SILENT`, `ERROR` or `WARN` then those log settings will take precedence (`CACHE` and `RESPONSE` logs will not be generated).
+
+These can be set in your CloudFormation template Lambda resource Environment Variables.
+
+There are six levels of logging:
+
+> `LOG`, `RESPONSE`, `CACHE`, and `ERROR` logs will always be logged unless `AWS_LAMBDA_LOG_LEVEL` is set to `SILENT`, `CRITICAL`, `ERROR`, or `WARN`.
+
+- 0 - ERROR: Errors in addition to RESPONSE and CACHE logs will be logged.
+- 1 - WARN: Warnings and Errors will be logged.
+- 2 - INFO: In addition to previous, INFO will be logged.
+- 3 - MSG: More verbose than INFO
+- 4 - DIAG: Timers and diagnostic info
+- 5 - DEBUG: Everything is logged
+
+If you wish to set the log level programmatically, do so before calling `Config.init()` by using `tools.DebugAndLog.setLogLevel(level)` where level is an integer from `0` to `5` or one of the following strings: `'ERROR'`, `'WARN'`, `'INFO'`, `'MSG'`, `'DIAG'`, `'DEBUG'`.
+
+> Note: The default log level is 2 (INFO) and cannot be set higher in production `PROD` environments.
+
+DebugAndLog will not set logging higher than 2 in production (`PROD`) environments, based on whether the following environment variables are set to `PROD`, `TEST`, or `DEV`. If none are set, `NODE_ENV` is checked for `production` or `development`. 
+
+The default is `PROD`.
+
+- `CACHE_DATA_ENV`
+- `DEPLOY_ENVIRONMENT`
+- `DEPLOY_ENV`
+- `ENV_TYPE`
+- `deploy_environment` (__deprecated, will be removed in future__)
+- `ENV`
+- `env` (__deprecated, will be removed in future__)
+- `deployEnvironment` (__deprecated, will be removed in future__)
+- `ENVIRONMENT`
+- `environment` (__deprecated, will be removed in future__)
+
+You can get the current list of accepted variables in priority order from `tools.DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES` (since v1.3.2).
+
+As an example, in your Lambda function CloudFormation template you would set:
+
+```yaml
+Resources:
+  MyFunction:
+	Type: AWS::Lambda::Function
+	Properties:
+	  Environment:
+		Variables:
+		  DEPLOY_ENVIRONMENT: TEST
+		  LOG_LEVEL: DEBUG
+```
+
+For a production environment:
+
+```yaml
+Resources:
+  MyFunction:
+	Type: AWS::Lambda::Function
+	Properties:
+	  Environment:
+		Variables:
+		  DEPLOY_ENVIRONMENT: PROD
+		  LOG_LEVEL: INFO
+```
+
+An example using template parameters and conditionals:
+
+```yaml
+Resources:
+  MyFunction:
+	Type: AWS::Lambda::Function
+	Properties:
+	  Environment:
+		Variables:
+		  DEPLOY_ENVIRONMENT: !Ref DeployEnvironment
+		  LOG_LEVEL: !If [ IsProduction, "INFO", "DEBUG"]
+```
+
+> Note: The deployment environment variables use `DEV`, `TEST`, and `PROD`. `DEV` is for local environments. `TEST` is for environments deployed in the cloud. `PROD` is, of course, for production environments. This is similar, but a bit different, than `NODE_ENV` as `NODE_ENV` also controls what package dependencies are deployed.
+
 ### tools.Timer
+
+> Timer only generates logs at level 4 (DIAG) or higher.
 
 In its simplest form we can do the following:
 
@@ -33,14 +131,9 @@ You are able to get the current time elapsed in milliseconds from a running Time
 
 ### tools.DebugAndLog
 
-```js
-/*
-Assuming: 
-const { tools, cache, endpoint } = require('@63klabs/cache-data');
-*/
 
-/* increase the log level - comment out when not needed  */
-tools.DebugAndLog.setLogLevel(5, "2022-02-28T04:59:59Z"); // we can increase the debug level with an expiration
+```js
+const { tools, cache, endpoint } = require('@63klabs/cache-data');
 
 tools.DebugAndLog.debug("Hello World");
 tools.DebugAndLog.msg("The sky is set to be blue today");
@@ -61,14 +154,15 @@ try {
 
 Before calling `Config.init()` you can set the log level using `DebugAndLog.setLogLevel()`. If you set the log level after calling `Config.init()` OR after calling any `DebugAndLog` function, you will get an error. That is because a default log level has already been set and we will not allow the changing of the log level after a script has begun.
 
-There are six (6) logging functions.
+There are seven (7) logging functions.
 
 ```js
-DebugAndLog.error(msgStr, obj); // logs at ALL logging levels
-DebugAndLog.warn(msgStr, obj); // logs at ALL logging levels
 DebugAndLog.log(msgStr, tagStr, obj); // logs at ALL logging levels
-DebugAndLog.msg(msgStr, obj); // logs at level 1 and above
-DebugAndLog.diag(msgStr, obj); // logs at level 3 and above
+DebugAndLog.error(msgStr, obj); // logs at ALL logging levels
+DebugAndLog.warn(msgStr, obj); // logs at level 1 and higher
+DebugAndLog.info(msgStr, obj); // logs at level 2 and higher
+DebugAndLog.msg(msgStr, obj); // logs at level 3 and higher
+DebugAndLog.diag(msgStr, obj); // logs at level 4 and higher
 DebugAndLog.debug(msgStr, obj); // logs at level 5
 ```
 
@@ -79,6 +173,8 @@ Choose the method based on how verbose you want your logging to be at various sc
 Note that `DebugAndLog.log(msgStr, tagStr)` allows you to add a tag. If a tag is not provided `LOG` will be used and your log entry will look like `[LOG] your message`.
 
 If you provide `TEMP` as a tag ('temperature' for example) then the log entry will look something like this: `[TEMP] your message`.
+
+> The `DebugAndLog.log()` function is for __logging row data__ such as requests, cache responses, and data points that can be queried and aggregated in Dashboards or exported to databases or data tables.
 
 ## Sanitize and Obfuscate functions
 

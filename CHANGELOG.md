@@ -8,15 +8,16 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## 1.3.2 (2025-09-12)
+## 1.3.3 (2025-09-14)
 
 ### Enhancements
 
-- `DebugAndLog`: The environment variable `AWS_LAMBDA_LOG_LEVEL` is now checked as well for setting logging level. `LOG_LEVEL` has priority.
+- `DebugAndLog`: The environment variable `AWS_LAMBDA_LOG_LEVEL` is now checked as well for setting logging level. `LOG_LEVEL` has priority. (v1.3.2)
+- `DebugAndLog`: The log level environment variable now accepts strings as well as numbers `ERROR`, `WARN`, `INFO`, `MSG`, `DIAG`, `DEBUG` or `0`, `1`, `2`, `3`, `4`, `5` respectively.
 
 ### Fixes
 
-- `DebugAndLog`: Environment and Logging Level value checks are fixed
+- `DebugAndLog`: Environment and Logging Level value checks are fixed (v1.3.2)
 
 ## 1.3.0 (2025-07-16)
 
