@@ -8,7 +8,11 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## 1.3.3 (2025-09-14)
+## v1.3.4 (2025-xx-xx)
+
+Not yet released.
+
+## v1.3.3 (2025-09-14)
 
 ### Enhancements
 
