@@ -3,5 +3,6 @@ test
 docs
 .github
 .gitignore
+.kiro
 package-lock.json
 sample-implementations
