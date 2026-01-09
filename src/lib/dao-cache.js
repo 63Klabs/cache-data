@@ -870,12 +870,12 @@ class CacheData {
 	 */
 	static lowerCaseKeys (objectWithKeys) {
 		let objectWithLowerCaseKeys = {};
-		if ( objectWithKeys !== null ) {
+		if ( objectWithKeys !== null && objectWithKeys !== undefined && typeof objectWithKeys === 'object' ) {
 			let keys = Object.keys(objectWithKeys); 
 			// move each value from objectWithKeys to objectWithLowerCaseKeys
 			keys.forEach( function( k ) { 
 				objectWithLowerCaseKeys[k.toLowerCase()] = objectWithKeys[k]; 
-			});            
+			});
 		}
 		return objectWithLowerCaseKeys;
 	}
