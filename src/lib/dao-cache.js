@@ -118,7 +118,7 @@ class S3Cache {
 	 */
 	static async read (idHash) {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			const objKey = `${S3Cache.getPath()}${idHash}.json`;
 			const objFullLocation = `${S3Cache.getBucket()}/${objKey}`;
@@ -145,8 +145,8 @@ class S3Cache {
 				resolve(item);
 
 			} catch (error) {
-				tools.DebugAndLog.error(`Error getting object from S3 (${objFullLocation}): ${error.message}`, error.stack);
-				reject(item);
+				tools.DebugAndLog.error(`Error getting object from S3 (${objFullLocation}): ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(item);
 			}
 
 		});
@@ -165,7 +165,7 @@ class S3Cache {
 		const objFullLocation = `${S3Cache.getBucket()}/${objKey}`;
 		tools.DebugAndLog.debug(`Putting object to S3: ${objFullLocation}`);
 
-		return new Promise( async (resolve, reject) => {
+		return new Promise( async (resolve) => {
 
 			try {
 				const params = {
@@ -182,8 +182,8 @@ class S3Cache {
 				resolve(true);
 			
 			} catch (error) {
-				tools.DebugAndLog.error(`Error putting object to S3. [E2] (${objFullLocation}) ${error.message}`, error.stack);
-				reject(false)
+				tools.DebugAndLog.error(`Error putting object to S3. [E2] (${objFullLocation}) ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(false)
 			};
 		});
 
@@ -235,7 +235,7 @@ class DynamoDbCache {
 	 */
 	static async read (idHash) {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			tools.DebugAndLog.debug(`Getting record from DynamoDb for id_hash: ${idHash}`)
 			let result = {};
@@ -260,8 +260,8 @@ class DynamoDbCache {
 
 				resolve(result);
 			} catch (error) {
-				tools.DebugAndLog.error(`Unable to perform DynamoDb query. (${idHash}) ${error.message}`, error.stack);
-				reject(result);
+				tools.DebugAndLog.error(`Unable to perform DynamoDb query. (${idHash}) ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(result);
 			};
 
 		});
@@ -275,7 +275,7 @@ class DynamoDbCache {
 	 */
 	static async write (item) {
 
-		return new Promise( async (resolve, reject) => {
+		return new Promise( async (resolve) => {
 
 			try {
 				
@@ -293,8 +293,8 @@ class DynamoDbCache {
 				resolve(true);
 			
 			} catch (error) {
-				tools.DebugAndLog.error(`Write to DynamoDb failed for id_hash: ${item.id_hash} ${error.message}`, error.stack);
-				reject(false)
+				tools.DebugAndLog.error(`Write to DynamoDb failed for id_hash: ${item.id_hash} ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(false)
 			};
 		});
 
@@ -405,7 +405,7 @@ class CacheData {
 	 * @returns {Promise<boolean>}
 	 */
 	static async prime() {
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 			try {
 				let primeTasks = [];
 
@@ -417,8 +417,8 @@ class CacheData {
 
 				resolve(true);
 			} catch (error) {
-				tools.DebugAndLog.error(`CacheData.prime() failed ${error.message}`, error.stack);
-				reject(false);
+				tools.DebugAndLog.error(`CacheData.prime() failed ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(false);
 			}
 		});
 	}
@@ -498,55 +498,52 @@ class CacheData {
 	 */
 	static async _process(idHash, item, syncedNow, syncedLater) {
 		
-		return new Promise(async (resolve, reject) => {
-
-			try {
-					
-				// Is this a pointer to data in S3?
-				if ("data" in item && "info" in item.data && "objInS3" in item.data.info && item.data.info.objInS3 === true) {
-					tools.DebugAndLog.debug(`Item is in S3. Fetching... (${idHash})`);
-					item = await S3Cache.read(idHash); // The data is stored in S3 so get it
-					tools.DebugAndLog.debug(`Item returned from S3 replaces pointer to S3 (${idHash})`, item);
-					// NOTE: if this fails and returns null it will be handled as any item === null which is to say that body will be null
-				}
+		try {
 				
-				let body = null;
-				let headers = null;
-				let expires = syncedLater;
-				let statusCode = null;
-
-				if (item !== null) {
-					tools.DebugAndLog.debug(`Process data from cache (${idHash})`);
-					body = item.data.body; // set the cached body data (this is what we will be the body of the response)
-
-					headers = item.data.headers;
-					expires = item.expires;
-					statusCode = item.data.statusCode;
-					
-					// if the body is encrypted (because classification is private) decrypt it
-					if ( item.data.info.classification === CacheData.PRIVATE ) {
-						try {
-							tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Decrypting body...`);
-							await CacheData.prime();
-							body = this._decrypt(body);
-						} catch (error) {
-							// Decryption failed
-							body = null;
-							expires = syncedNow;
-							headers = null;
-							statusCode = "500";
-							tools.DebugAndLog.error(`Unable to decrypt cache. Ignoring it. (${idHash}) ${error.message}`, error.stack);
-						}
-					}               
-				}
-
-				resolve({ body: body, headers: headers, expires: expires, statusCode: statusCode });
-			} catch (error) {
-				tools.DebugAndLog.error(`Error getting data from cache. (${idHash}) ${error.message}`, error.stack);
-				reject( {body: null, expires: syncedNow, headers: null, statusCode: "500"} );
+			// Is this a pointer to data in S3?
+			if ("data" in item && "info" in item.data && "objInS3" in item.data.info && item.data.info.objInS3 === true) {
+				tools.DebugAndLog.debug(`Item is in S3. Fetching... (${idHash})`);
+				item = await S3Cache.read(idHash); // The data is stored in S3 so get it
+				tools.DebugAndLog.debug(`Item returned from S3 replaces pointer to S3 (${idHash})`, item);
+				// NOTE: if this fails and returns null it will be handled as any item === null which is to say that body will be null
 			}
+			
+			let body = null;
+			let headers = null;
+			let expires = syncedLater;
+			let statusCode = null;
+
+			if (item !== null) {
+				tools.DebugAndLog.debug(`Process data from cache (${idHash})`);
+				body = item.data.body; // set the cached body data (this is what we will be the body of the response)
+
+				headers = item.data.headers;
+				expires = item.expires;
+				statusCode = item.data.statusCode;
 				
-		});
+				// if the body is encrypted (because classification is private) decrypt it
+				if ( item.data.info.classification === CacheData.PRIVATE ) {
+					try {
+						tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Decrypting body...`);
+						await CacheData.prime();
+						body = this._decrypt(body);
+					} catch (error) {
+						// Decryption failed
+						body = null;
+						expires = syncedNow;
+						headers = null;
+						statusCode = "500";
+						tools.DebugAndLog.error(`Unable to decrypt cache. Ignoring it. (${idHash}) ${error?.message || 'Unknown error'}`, error?.stack);
+					}
+				}               
+			}
+
+			return { body: body, headers: headers, expires: expires, statusCode: statusCode };
+		} catch (error) {
+			tools.DebugAndLog.error(`Error getting data from cache. (${idHash}) ${error?.message || 'Unknown error'}`, error?.stack);
+			return { body: null, expires: syncedNow, headers: null, statusCode: "500" };
+		}
+			
 	};
 
 	/**
@@ -557,7 +554,7 @@ class CacheData {
 	 */
 	static async read(idHash, syncedLater) {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			let cache = this.format(syncedLater);
 
@@ -577,10 +574,10 @@ class CacheData {
 					tools.DebugAndLog.debug(`No cache found for ${idHash}`);
 				}
 
-				resolve(cache);
 			} catch (error) {
-				tools.DebugAndLog.error(`CacheData.read(${idHash}) failed ${error.message}`, error.stack);
-				reject(cache);
+				tools.DebugAndLog.error(`CacheData.read(${idHash}) failed ${error?.message || 'Unknown error'}`, error?.stack);
+			} finally {
+				resolve(cache);
 			};
 			
 		});
@@ -692,7 +689,7 @@ class CacheData {
 			DynamoDbCache.write(item); // we don't wait for a response 
 
 		} catch (error) {
-			tools.DebugAndLog.error(`CacheData.write for ${idHash} FAILED now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} failed. ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`CacheData.write for ${idHash} FAILED now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} failed. ${error?.message || 'Unknown error'}`, error?.stack);
 			cacheData = CacheData.format(0);
 		};
 
@@ -764,7 +761,7 @@ class CacheData {
 			}
 
 		} catch (error) {
-			tools.DebugAndLog.error(`CacheData.getSecureDataKey() failed ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`CacheData.getSecureDataKey() failed ${error?.message || 'Unknown error'}`, error?.stack);
 		}
 
 		return buff;
@@ -1355,7 +1352,7 @@ class Cache {
 		try {
 			timestampInSeconds = CacheData.convertTimestampFromMilliToSeconds( Date.parse(date) );
 		} catch (error) {
-			tools.DebugAndLog.error(`Cannot parse date/time: ${date} ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`Cannot parse date/time: ${date} ${error?.message || 'Unknown error'}`, error?.stack);
 		}
 		return timestampInSeconds;
 	};
@@ -1446,7 +1443,7 @@ class Cache {
 	 */
 	async read () {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			if ( this.#store !== null ) {
 				resolve(this.#store);
@@ -1462,9 +1459,9 @@ class Cache {
 					this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
 					this.#status = Cache.STATUS_CACHE_ERROR;
 
-					tools.DebugAndLog.error(`Cache Read: Cannot read cached data for ${this.#idHash}: ${error.message}`, error.stack);
+					tools.DebugAndLog.error(`Cache Read: Cannot read cached data for ${this.#idHash}: ${error?.message || 'Unknown error'}`, error?.stack);
 
-					reject(this.#store);
+					resolve(this.#store);
 				};
 			}
 
@@ -1630,7 +1627,7 @@ class Cache {
 		try {
 			bodyToReturn = (body !== null && parseBody) ? JSON.parse(body) : body;
 		} catch (error) {
-			tools.DebugAndLog.error(`Cache.getBody() parse error: ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`Cache.getBody() parse error: ${error?.message || 'Unknown error'}`, error?.stack);
 			tools.DebugAndLog.debug("Error parsing body", body);
 		};
 
@@ -1792,7 +1789,7 @@ class Cache {
 			}
 
 		} catch (error) {
-			tools.DebugAndLog.error(`Unable to extend cache: ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`Unable to extend cache: ${error?.message || 'Unknown error'}`, error?.stack);
 		};
 
 	};
@@ -1921,7 +1918,7 @@ class Cache {
 			tools.DebugAndLog.debug("Cache Updated "+this.getStatus()+": "+this.#idHash);
 			
 		} catch (error) {
-			tools.DebugAndLog.error(`Cannot copy cached data to local store for evaluation: ${this.#idHash} ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`Cannot copy cached data to local store for evaluation: ${this.#idHash} ${error?.message || 'Unknown error'}`, error?.stack);
 			if ( this.#store === null ) {
 				this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
 			}
@@ -1998,7 +1995,7 @@ class CacheableDataAccess {
 	 */
 	static async getData(cachePolicy, apiCallFunction, connection, data = null, tags = {} ) {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			CacheData.prime(); // prime anything we'll need that may have changed since init, we'll await the result before read and write
 
@@ -2048,7 +2045,7 @@ class CacheableDataAccess {
 							}
 							
 						} catch (error) {
-							tools.DebugAndLog.error(`Not successful in creating cache: ${idHash} (${tags.path}/${tags.id}) ${error.message}`, error.stack);
+							tools.DebugAndLog.error(`Not successful in creating cache: ${idHash} (${tags.path}/${tags.id}) ${error?.message || 'Unknown error'}`, error?.stack);
 						}
 
 					} else {
@@ -2065,8 +2062,8 @@ class CacheableDataAccess {
 
 			} catch (error) {
 				timer.stop();
-				tools.DebugAndLog.error(`Error while getting data: (${tags.path}/${tags.id}) ${error.message}`, error.stack);
-				reject(cache);
+				tools.DebugAndLog.error(`Error while getting data: (${tags.path}/${tags.id}) ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(cache);
 			};
 		});
 	};
