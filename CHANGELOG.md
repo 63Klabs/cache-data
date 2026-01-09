@@ -8,9 +8,12 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## v1.3.4 (2025-xx-xx)
+## v1.3.4 (2025-01-xx)
 
-Not yet released.
+### Fixes
+
+- `Cache.CachableDataAccess` - Lambda function may end before writes to S3 completed on large objects resulting in a cached object not being found. When caching an object the `CachableDataAccess` now waits for all writes to complete.
+- Updated dependencies resolving the deprecated `lodash` dependency of `sinon`. This only affected `devDependencies`. [lodash.get deprecation warning (used by sinon) #214](https://github.com/63Klabs/cache-data/issues/214)
 
 ## v1.3.3 (2025-09-14)
 

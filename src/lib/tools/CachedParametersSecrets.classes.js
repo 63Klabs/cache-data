@@ -101,7 +101,7 @@ class CachedParameterSecrets {
 	 */
 	static async prime() {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			try {
 				const promises = [];
@@ -115,7 +115,7 @@ class CachedParameterSecrets {
 
 			} catch (error) {
 				DebugAndLog.error(`CachedParameterSecrets.prime(): ${error.message}`, error.stack);
-				reject(false);
+				resolve(false);
 			}
 
 		});
@@ -295,7 +295,7 @@ class CachedParameterSecret {
 		DebugAndLog.debug(`CachedParameterSecret.refresh() Checking refresh status of ${this.name}`);
 		if ( !this.isRefreshing() ) {
 			this.cache.status = 0;
-			this.cache.promise = new Promise(async (resolve, reject) => {
+			this.cache.promise = new Promise(async (resolve) => {
 				try {
 					const timer = new Timer('CachedParameterSecret_refresh', true);
 					let resp = null;
@@ -316,7 +316,7 @@ class CachedParameterSecret {
 					resolve(this.cache.status);					
 				} catch (error) {
 					DebugAndLog.error(`Error Calling Secrets Manager and SSM Parameter Store Lambda Extension during refresh: ${error.message}`, error.stack);
-					reject(-1);
+					resolve(-1);
 				}
 			});
 		}
@@ -376,7 +376,7 @@ class CachedParameterSecret {
 
 	async _requestSecretsFromLambdaExtension() {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			let body = "";
 
@@ -402,7 +402,7 @@ class CachedParameterSecret {
 
 				} catch (error) {
 					DebugAndLog.error(`CachedParameterSecret http: Error Calling Secrets Manager and SSM Parameter Store Lambda Extension: Error parsing response for ${options.path} ${error.message}`, error.stack);
-					reject(null);
+					resolve(null);
 				}
 
 			};
@@ -426,12 +426,12 @@ class CachedParameterSecret {
 
 					res.on('error', error => {
 						DebugAndLog.error(`CachedParameterSecret http Error: E0 Error obtaining response for ${options.path} ${error.message}`, error.stack);
-						reject(null);
+						resolve(null);
 					});
 
 				}  catch (error) {
 					DebugAndLog.error(`CachedParameterSecret http Error: E1 Error obtaining response for ${options.path} ${error.message}`, error.stack);
-					reject(null);
+					resolve(null);
 				}
 
 			});
@@ -439,12 +439,12 @@ class CachedParameterSecret {
 			req.on('timeout', () => {
 				DebugAndLog.error(`CachedParameterSecret http Error: Endpoint request timeout reached for ${options.path}`);
 				req.end();
-				reject(null);
+				resolve(null);
 			});
 
 			req.on('error', error => {
 				DebugAndLog.error(`CachedParameterSecret http Error: Error during request for ${options.path} ${error.message}`, error.stack);
-				reject(null);
+				resolve(null);
 			});
 
 			req.end();

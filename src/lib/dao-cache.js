@@ -118,7 +118,7 @@ class S3Cache {
 	 */
 	static async read (idHash) {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			const objKey = `${S3Cache.getPath()}${idHash}.json`;
 			const objFullLocation = `${S3Cache.getBucket()}/${objKey}`;
@@ -145,8 +145,8 @@ class S3Cache {
 				resolve(item);
 
 			} catch (error) {
-				tools.DebugAndLog.error(`Error getting object from S3 (${objFullLocation}): ${error.message}`, error.stack);
-				reject(item);
+				tools.DebugAndLog.error(`Error getting object from S3 (${objFullLocation}): ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(item);
 			}
 
 		});
@@ -165,7 +165,7 @@ class S3Cache {
 		const objFullLocation = `${S3Cache.getBucket()}/${objKey}`;
 		tools.DebugAndLog.debug(`Putting object to S3: ${objFullLocation}`);
 
-		return new Promise( async (resolve, reject) => {
+		return new Promise( async (resolve) => {
 
 			try {
 				const params = {
@@ -182,8 +182,8 @@ class S3Cache {
 				resolve(true);
 			
 			} catch (error) {
-				tools.DebugAndLog.error(`Error putting object to S3. [E2] (${objFullLocation}) ${error.message}`, error.stack);
-				reject(false)
+				tools.DebugAndLog.error(`Error putting object to S3. [E2] (${objFullLocation}) ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(false)
 			};
 		});
 
@@ -235,7 +235,7 @@ class DynamoDbCache {
 	 */
 	static async read (idHash) {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			tools.DebugAndLog.debug(`Getting record from DynamoDb for id_hash: ${idHash}`)
 			let result = {};
@@ -258,11 +258,11 @@ class DynamoDbCache {
 
 				tools.DebugAndLog.debug(`Query success from DynamoDb for id_hash: ${idHash}`);
 
-				resolve(result);
 			} catch (error) {
-				tools.DebugAndLog.error(`Unable to perform DynamoDb query. (${idHash}) ${error.message}`, error.stack);
-				reject(result);
-			};
+				tools.DebugAndLog.error(`Unable to perform DynamoDb query. (${idHash}) ${error?.message || 'Unknown error'}`, error?.stack);
+			} finally {
+				resolve(result);
+			}
 
 		});
 
@@ -275,7 +275,7 @@ class DynamoDbCache {
 	 */
 	static async write (item) {
 
-		return new Promise( async (resolve, reject) => {
+		return new Promise( async (resolve) => {
 
 			try {
 				
@@ -293,9 +293,9 @@ class DynamoDbCache {
 				resolve(true);
 			
 			} catch (error) {
-				tools.DebugAndLog.error(`Write to DynamoDb failed for id_hash: ${item.id_hash} ${error.message}`, error.stack);
-				reject(false)
-			};
+				tools.DebugAndLog.error(`Write to DynamoDb failed for id_hash: ${item.id_hash} ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(false)
+			}
 		});
 
 	};
@@ -405,7 +405,7 @@ class CacheData {
 	 * @returns {Promise<boolean>}
 	 */
 	static async prime() {
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 			try {
 				let primeTasks = [];
 
@@ -417,8 +417,8 @@ class CacheData {
 
 				resolve(true);
 			} catch (error) {
-				tools.DebugAndLog.error(`CacheData.prime() failed ${error.message}`, error.stack);
-				reject(false);
+				tools.DebugAndLog.error(`CacheData.prime() failed ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(false);
 			}
 		});
 	}
@@ -498,55 +498,52 @@ class CacheData {
 	 */
 	static async _process(idHash, item, syncedNow, syncedLater) {
 		
-		return new Promise(async (resolve, reject) => {
-
-			try {
-					
-				// Is this a pointer to data in S3?
-				if ("data" in item && "info" in item.data && "objInS3" in item.data.info && item.data.info.objInS3 === true) {
-					tools.DebugAndLog.debug(`Item is in S3. Fetching... (${idHash})`);
-					item = await S3Cache.read(idHash); // The data is stored in S3 so get it
-					tools.DebugAndLog.debug(`Item returned from S3 replaces pointer to S3 (${idHash})`, item);
-					// NOTE: if this fails and returns null it will be handled as any item === null which is to say that body will be null
-				}
+		try {
 				
-				let body = null;
-				let headers = null;
-				let expires = syncedLater;
-				let statusCode = null;
-
-				if (item !== null) {
-					tools.DebugAndLog.debug(`Process data from cache (${idHash})`);
-					body = item.data.body; // set the cached body data (this is what we will be the body of the response)
-
-					headers = item.data.headers;
-					expires = item.expires;
-					statusCode = item.data.statusCode;
-					
-					// if the body is encrypted (because classification is private) decrypt it
-					if ( item.data.info.classification === CacheData.PRIVATE ) {
-						try {
-							tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Decrypting body...`);
-							await CacheData.prime();
-							body = this._decrypt(body);
-						} catch (error) {
-							// Decryption failed
-							body = null;
-							expires = syncedNow;
-							headers = null;
-							statusCode = "500";
-							tools.DebugAndLog.error(`Unable to decrypt cache. Ignoring it. (${idHash}) ${error.message}`, error.stack);
-						}
-					}               
-				}
-
-				resolve({ body: body, headers: headers, expires: expires, statusCode: statusCode });
-			} catch (error) {
-				tools.DebugAndLog.error(`Error getting data from cache. (${idHash}) ${error.message}`, error.stack);
-				reject( {body: null, expires: syncedNow, headers: null, statusCode: "500"} );
+			// Is this a pointer to data in S3?
+			if ("data" in item && "info" in item.data && "objInS3" in item.data.info && item.data.info.objInS3 === true) {
+				tools.DebugAndLog.debug(`Item is in S3. Fetching... (${idHash})`);
+				item = await S3Cache.read(idHash); // The data is stored in S3 so get it
+				tools.DebugAndLog.debug(`Item returned from S3 replaces pointer to S3 (${idHash})`, item);
+				// NOTE: if this fails and returns null it will be handled as any item === null which is to say that body will be null
 			}
+			
+			let body = null;
+			let headers = null;
+			let expires = syncedLater;
+			let statusCode = null;
+
+			if (item !== null) {
+				tools.DebugAndLog.debug(`Process data from cache (${idHash})`);
+				body = item.data.body; // set the cached body data (this is what we will be the body of the response)
+
+				headers = item.data.headers;
+				expires = item.expires;
+				statusCode = item.data.statusCode;
 				
-		});
+				// if the body is encrypted (because classification is private) decrypt it
+				if ( item.data.info.classification === CacheData.PRIVATE ) {
+					try {
+						tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Decrypting body...`);
+						await CacheData.prime();
+						body = this._decrypt(body);
+					} catch (error) {
+						// Decryption failed
+						body = null;
+						expires = syncedNow;
+						headers = null;
+						statusCode = "500";
+						tools.DebugAndLog.error(`Unable to decrypt cache. Ignoring it. (${idHash}) ${error?.message || 'Unknown error'}`, error?.stack);
+					}
+				}               
+			}
+
+			return { body: body, headers: headers, expires: expires, statusCode: statusCode };
+		} catch (error) {
+			tools.DebugAndLog.error(`Error getting data from cache. (${idHash}) ${error?.message || 'Unknown error'}`, error?.stack);
+			return { body: null, expires: syncedNow, headers: null, statusCode: "500" };
+		}
+			
 	};
 
 	/**
@@ -557,7 +554,7 @@ class CacheData {
 	 */
 	static async read(idHash, syncedLater) {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			let cache = this.format(syncedLater);
 
@@ -577,10 +574,10 @@ class CacheData {
 					tools.DebugAndLog.debug(`No cache found for ${idHash}`);
 				}
 
-				resolve(cache);
 			} catch (error) {
-				tools.DebugAndLog.error(`CacheData.read(${idHash}) failed ${error.message}`, error.stack);
-				reject(cache);
+				tools.DebugAndLog.error(`CacheData.read(${idHash}) failed ${error?.message || 'Unknown error'}`, error?.stack);
+			} finally {
+				resolve(cache);
 			};
 			
 		});
@@ -597,106 +594,113 @@ class CacheData {
 	 * @param {number} expires 
 	 * @param {number} statusCode 
 	 * @param {boolean} encrypt 
-	 * @returns {CacheDataFormat}
+	 * @returns {Promise<CacheDataFormat>}
 	 */
-	static write (idHash, syncedNow, body, headers, host, path, expires, statusCode, encrypt = true) {
+	static async write (idHash, syncedNow, body, headers, host, path, expires, statusCode, encrypt = true) {
 
 		let cacheData = null;
 	
-		try {
+		return new Promise(async (resolve) => {
 
-			tools.DebugAndLog.debug(`Updating Cache for ${idHash} now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} ... `);
+			const taskList = [];
 
-			if( isNaN(expires) || expires < syncedNow ) {
-				expires = syncedNow + 300;
-			}
+			try {
 
-			// lowercase all headers
-			headers = CacheData.lowerCaseKeys(headers);
+				tools.DebugAndLog.debug(`Updating Cache for ${idHash} now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} ... `);
 
-			// set etag
-			if ( !("etag" in headers) ) {
-				headers.etag = CacheData.generateEtag(idHash, body);
-			}
-
-			// set last modified
-			if ( !("last-modified" in headers) ) {
-				headers['last-modified'] = CacheData.generateInternetFormattedDate(syncedNow);
-			}
-
-			// set expires in header
-			if ( !("expires" in headers) ) {
-				headers['expires'] = CacheData.generateInternetFormattedDate(expires);
-			}
-	
-			cacheData = CacheData.format(expires, body, headers, statusCode);
-
-			const bodySize_kb = this.calculateKBytes(body);
-			let bodyToStore = body;
-
-			// if the endpoint policy is classified as private, encrypt
-			if ( encrypt ) {
-				tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Encrypting body...`);
-				bodyToStore = this._encrypt(body);
-			}
-
-			// create the (preliminary) cache record
-			let item = {
-				id_hash: idHash,
-				expires: expires,
-				purge_ts: (syncedNow + (this.#purgeExpiredCacheEntriesAfterXHours * 3600)),
-				data: { 
-					info: { 
-						expires: headers.expires,
-						host: host,
-						path: path,
-						classification: (encrypt ? CacheData.PRIVATE : CacheData.PUBLIC),
-						size_kb: bodySize_kb,
-						objInS3: false
-					},
-					headers: headers,
-					body: bodyToStore,
-					statusCode: statusCode
+				if( isNaN(expires) || expires < syncedNow ) {
+					expires = syncedNow + 300;
 				}
-			};
 
-			/*
-			DynamoDb has a limit of 400KB per item so we want to make sure
-			the Item does not take up that much space. Also, we want 
-			DynamoDb to run efficiently so it is best to only store smaller 
-			items there and move larger items into S3.
+				// lowercase all headers
+				headers = CacheData.lowerCaseKeys(headers);
 
-			Any items larger than the max size we set will be stored over 
-			in S3.
+				// set etag
+				if ( !("etag" in headers) ) {
+					headers.etag = CacheData.generateEtag(idHash, body);
+				}
 
-			What is the max size? It can be set in the Lambda Environment
-			Variables and discovering the proper balance will take some trials.
-			We don't want to constantly be calling S3, but we also don't want
-			to make DynamoDb too heavy either.
+				// set last modified
+				if ( !("last-modified" in headers) ) {
+					headers['last-modified'] = CacheData.generateInternetFormattedDate(syncedNow);
+				}
 
-			(In summary: Max Item size in DynamoDb is 400KB, and storing too many large
-			items can have a performance impact. However constantly calling
-			S3 also will have a performance impact.)
-			*/
+				// set expires in header
+				if ( !("expires" in headers) ) {
+					headers['expires'] = CacheData.generateInternetFormattedDate(expires);
+				}
+		
+				cacheData = CacheData.format(expires, body, headers, statusCode);
 
-			// do the size check
-			if (bodySize_kb > this.#dynamoDbMaxCacheSize_kb) {
-				// over max size limit set in Lambda Environment Variables
-				S3Cache.write(idHash, JSON.stringify(item) );
-				// update the Item we will pass to DynamoDb
-				let preview = (typeof item.data.body === "string") ? item.data.body.slice(0,100)+"..." : "[---ENCRYPTED---]";
-				item.data.body = "ID: "+idHash+" PREVIEW: "+preview;
-				item.data.info.objInS3 = true; 
+				const bodySize_kb = this.calculateKBytes(body);
+				let bodyToStore = body;
+
+				// if the endpoint policy is classified as private, encrypt
+				if ( encrypt ) {
+					tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Encrypting body...`);
+					bodyToStore = this._encrypt(body);
+				}
+
+				// create the (preliminary) cache record
+				let item = {
+					id_hash: idHash,
+					expires: expires,
+					purge_ts: (syncedNow + (this.#purgeExpiredCacheEntriesAfterXHours * 3600)),
+					data: { 
+						info: { 
+							expires: headers.expires,
+							host: host,
+							path: path,
+							classification: (encrypt ? CacheData.PRIVATE : CacheData.PUBLIC),
+							size_kb: bodySize_kb,
+							objInS3: false
+						},
+						headers: headers,
+						body: bodyToStore,
+						statusCode: statusCode
+					}
+				};
+
+				/*
+				DynamoDb has a limit of 400KB per item so we want to make sure
+				the Item does not take up that much space. Also, we want 
+				DynamoDb to run efficiently so it is best to only store smaller 
+				items there and move larger items into S3.
+
+				Any items larger than the max size we set will be stored over 
+				in S3.
+
+				What is the max size? It can be set in the Lambda Environment
+				Variables and discovering the proper balance will take some trials.
+				We don't want to constantly be calling S3, but we also don't want
+				to make DynamoDb too heavy either.
+
+				(In summary: Max Item size in DynamoDb is 400KB, and storing too many large
+				items can have a performance impact. However constantly calling
+				S3 also will have a performance impact.)
+				*/
+
+				// do the size check
+				if (bodySize_kb > this.#dynamoDbMaxCacheSize_kb) {
+					// over max size limit set in Lambda Environment Variables
+					taskList.push(S3Cache.write(idHash, JSON.stringify(item) )); // ADD_PROMISE_COLLECTION_HERE
+					// update the Item we will pass to DynamoDb
+					let preview = (typeof item.data.body === "string") ? item.data.body.slice(0,100)+"..." : "[---ENCRYPTED---]";
+					item.data.body = "ID: "+idHash+" PREVIEW: "+preview;
+					item.data.info.objInS3 = true; 
+				}
+				
+				taskList.push(DynamoDbCache.write(item)); // ADD_PROMISE_COLLECTION_HERE
+
+			} catch (error) {
+				tools.DebugAndLog.error(`CacheData.write for ${idHash} FAILED now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} failed. ${error?.message || 'Unknown error'}`, error?.stack);
+				cacheData = CacheData.format(0);
+			} finally {
+				await Promise.all(taskList);
+				resolve(cacheData); // ADD_PROMISE_COLLECTION_HERE
 			}
-			
-			DynamoDbCache.write(item); // we don't wait for a response 
-
-		} catch (error) {
-			tools.DebugAndLog.error(`CacheData.write for ${idHash} FAILED now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} failed. ${error.message}`, error.stack);
-			cacheData = CacheData.format(0);
-		};
-
-		return cacheData;
+		});
+		
 
 	};
 
@@ -764,7 +768,7 @@ class CacheData {
 			}
 
 		} catch (error) {
-			tools.DebugAndLog.error(`CacheData.getSecureDataKey() failed ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`CacheData.getSecureDataKey() failed ${error?.message || 'Unknown error'}`, error?.stack);
 		}
 
 		return buff;
@@ -873,12 +877,12 @@ class CacheData {
 	 */
 	static lowerCaseKeys (objectWithKeys) {
 		let objectWithLowerCaseKeys = {};
-		if ( objectWithKeys !== null ) {
+		if ( objectWithKeys !== null && objectWithKeys !== undefined && typeof objectWithKeys === 'object' ) {
 			let keys = Object.keys(objectWithKeys); 
 			// move each value from objectWithKeys to objectWithLowerCaseKeys
 			keys.forEach( function( k ) { 
 				objectWithLowerCaseKeys[k.toLowerCase()] = objectWithKeys[k]; 
-			});            
+			});
 		}
 		return objectWithLowerCaseKeys;
 	}
@@ -995,9 +999,16 @@ class CacheData {
  * 
  * Cache.init({parameters});
  * 
- * Then you can create new objects:
+ * Then you can then make a request, sending it through CacheableDataAccess:
  * 
- * const cacheObject = new Cache({id}, {parameters});
+ *  const { cache } = require("@63klabs/cache-data");
+ * 
+ *	const cacheObj = await cache.CacheableDataAccess.getData(
+ *		cacheCfg, 
+ *		yourFetchFunction,
+ *		conn, 
+ *		daoQuery
+ *	);
  */
 class Cache {
 
@@ -1355,7 +1366,7 @@ class Cache {
 		try {
 			timestampInSeconds = CacheData.convertTimestampFromMilliToSeconds( Date.parse(date) );
 		} catch (error) {
-			tools.DebugAndLog.error(`Cannot parse date/time: ${date} ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`Cannot parse date/time: ${date} ${error?.message || 'Unknown error'}`, error?.stack);
 		}
 		return timestampInSeconds;
 	};
@@ -1446,7 +1457,7 @@ class Cache {
 	 */
 	async read () {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			if ( this.#store !== null ) {
 				resolve(this.#store);
@@ -1462,9 +1473,9 @@ class Cache {
 					this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
 					this.#status = Cache.STATUS_CACHE_ERROR;
 
-					tools.DebugAndLog.error(`Cache Read: Cannot read cached data for ${this.#idHash}: ${error.message}`, error.stack);
+					tools.DebugAndLog.error(`Cache Read: Cannot read cached data for ${this.#idHash}: ${error?.message || 'Unknown error'}`, error?.stack);
 
-					reject(this.#store);
+					resolve(this.#store);
 				};
 			}
 
@@ -1630,7 +1641,7 @@ class Cache {
 		try {
 			bodyToReturn = (body !== null && parseBody) ? JSON.parse(body) : body;
 		} catch (error) {
-			tools.DebugAndLog.error(`Cache.getBody() parse error: ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`Cache.getBody() parse error: ${error?.message || 'Unknown error'}`, error?.stack);
 			tools.DebugAndLog.debug("Error parsing body", body);
 		};
 
@@ -1756,44 +1767,56 @@ class Cache {
 	 * @param {string} reason Reason for extending, either Cache.STATUS_ORIGINAL_ERROR or Cache.STATUS_ORIGINAL_NOT_MODIFIED
 	 * @param {number} seconds 
 	 * @param {number} errorCode
+	 * @returns {Promise<boolean>}
 	 */
-	extendExpires(reason, seconds = 0, errorCode = 0) {
+	async extendExpires(reason, seconds = 0, errorCode = 0) {
 
-		try {
-			
-			let cache = this.#store.cache;
+		let returnStatus = false;
 
-			// we will extend based on error extention if in error, we'll look at passed seconds and non-error default later
-			if (seconds === 0 && reason === Cache.STATUS_ORIGINAL_ERROR) {
-				seconds = this.#defaultExpirationExtensionOnErrorInSeconds;
-			}
+		return new Promise(async (resolve) => {
 
-			// if the cache exists, we'll extend it
-			if ( cache !== null ) {
-				// statusCode
-				let statusCode = (cache.statusCode !== null) ? cache.statusCode : errorCode ; 
+			try {
+				
+				let cache = this.#store.cache;
 
-				// we are going to create a new expires header, so delete it if it exists so we start from now()
-				if (cache.headers !== null && "expires" in cache.headers) { delete cache.headers.expires; }
+				// we will extend based on error extention if in error, we'll look at passed seconds and non-error default later
+				if (seconds === 0 && reason === Cache.STATUS_ORIGINAL_ERROR) {
+					seconds = this.#defaultExpirationExtensionOnErrorInSeconds;
+				}
 
-				// calculate the new expires based on default (seconds === 0) or now() + seconds passed to this function
-				let expires = (seconds === 0) ? this.calculateDefaultExpires() : this.#syncedNowTimestampInSeconds + seconds;
+				// if the cache exists, we'll extend it
+				if ( cache !== null ) {
+					// statusCode
+					let statusCode = (cache.statusCode !== null) ? cache.statusCode : errorCode ; 
 
-				// if a reason was passed, use it only if it is a valid reason for extending. Otherwise null
-				let status = (reason === Cache.STATUS_ORIGINAL_ERROR || reason === Cache.STATUS_ORIGINAL_NOT_MODIFIED) ? reason : null;
+					// we are going to create a new expires header, so delete it if it exists so we start from now()
+					if (cache.headers !== null && "expires" in cache.headers) { delete cache.headers.expires; }
 
-				// if we received an error, add it in in case we want to evaluate further
-				if (errorCode >= 400) { this.#errorCode = errorCode; }
+					// calculate the new expires based on default (seconds === 0) or now() + seconds passed to this function
+					let expires = (seconds === 0) ? this.calculateDefaultExpires() : this.#syncedNowTimestampInSeconds + seconds;
 
-				// perform the update with existing info, but new expires and status
-				this.update( cache.body,  cache.headers, statusCode, expires, status);
-			} else {
-				tools.DebugAndLog.debug("Cache is null. Nothing to extend.");
-			}
+					// if a reason was passed, use it only if it is a valid reason for extending. Otherwise null
+					let status = (reason === Cache.STATUS_ORIGINAL_ERROR || reason === Cache.STATUS_ORIGINAL_NOT_MODIFIED) ? reason : null;
 
-		} catch (error) {
-			tools.DebugAndLog.error(`Unable to extend cache: ${error.message}`, error.stack);
-		};
+					// if we received an error, add it in in case we want to evaluate further
+					if (errorCode >= 400) { this.#errorCode = errorCode; }
+
+					// perform the update with existing info, but new expires and status
+					await this.update( cache.body,  cache.headers, statusCode, expires, status);
+				} else {
+					tools.DebugAndLog.debug("Cache is null. Nothing to extend.");
+				}
+
+				returnStatus = true;
+
+			} catch (error) {
+				tools.DebugAndLog.error(`Unable to extend cache: ${error?.message || 'Unknown error'}`, error?.stack);
+			} finally {
+				resolve(returnStatus);
+			};
+
+		});
+
 
 	};
 
@@ -1819,119 +1842,121 @@ class Cache {
 	 * @param {object} headers Any headers you want to pass along, including last-modified, etag, and expires. Note that if expires is included as a header here, then it will override the expires paramter passed to .update()
 	 * @param {number} statusCode Status code of original request
 	 * @param {number} expires Expiration unix timestamp in seconds
-	 * @returns {CacheDataFormat} Representation of data stored in cache
+	 * @returns {Promise<CacheDataFormat>} Representation of data stored in cache
 	 */
-	update (body, headers, statusCode = 200, expires = 0, status = null) {
+	async update (body, headers, statusCode = 200, expires = 0, status = null) {
 
-		const prev = {
-			eTag: this.getETag(),
-			modified: this.getLastModified(),
-			expired: this.isExpired(),
-			empty: this.isEmpty()
-		};
+		return new Promise(async (resolve) => {
+				
+			const prev = {
+				eTag: this.getETag(),
+				modified: this.getLastModified(),
+				expired: this.isExpired(),
+				empty: this.isEmpty()
+			};
 
-		// lowercase all the header keys so we can evaluate each
-		headers = Cache.lowerCaseKeys(headers);
+			// lowercase all the header keys so we can evaluate each
+			headers = Cache.lowerCaseKeys(headers);
 
-		/* Bring in headers
-		We'll keep the etag and last-modified. Also any specified
-		*/
-		let defaultHeadersToRetain = [
-			"content-type",
-			"etag",
-			"last-modified",
-			"ratelimit-limit",
-			"ratelimit-remaining",
-			"ratelimit-reset",
-			"x-ratelimit-limit",
-			"x-ratelimit-remaining",
-			"x-ratelimit-reset",
-			"retry-after"
-		];
+			/* Bring in headers
+			We'll keep the etag and last-modified. Also any specified
+			*/
+			let defaultHeadersToRetain = [
+				"content-type",
+				"etag",
+				"last-modified",
+				"ratelimit-limit",
+				"ratelimit-remaining",
+				"ratelimit-reset",
+				"x-ratelimit-limit",
+				"x-ratelimit-remaining",
+				"x-ratelimit-reset",
+				"retry-after"
+			];
 
-		// combine the standard headers with the headers specified for endpoint in custom/policies.json
-		let ptHeaders = [].concat(this.#headersToRetain, defaultHeadersToRetain);
+			// combine the standard headers with the headers specified for endpoint in custom/policies.json
+			let ptHeaders = [].concat(this.#headersToRetain, defaultHeadersToRetain);
 
-		// lowercase the headers we are looking for
-		let passThrough = ptHeaders.map(element => {
-			return element.toLowerCase();
-		});
+			// lowercase the headers we are looking for
+			let passThrough = ptHeaders.map(element => {
+				return element.toLowerCase();
+			});
 
-		let headersForCache = {};
+			let headersForCache = {};
 
-		// retain specified headers
-		passThrough.forEach(function( key ) {
-			if (key in headers) { headersForCache[key] = headers[key]; }
-		});
+			// retain specified headers
+			passThrough.forEach(function( key ) {
+				if (key in headers) { headersForCache[key] = headers[key]; }
+			});
 
-		// we'll set the default expires, in case the expires in header does not work out, or we don't use the header expires
-		if ( isNaN(expires) || expires === 0) {
-			expires = this.calculateDefaultExpires();
-		}
-		
-		// get the expires and max age (as timestamp)from headers if we don't insist on overriding
-		// unlike etag and last-modified, we won't move them over, but let the expires param in .update() do the talking
-		if ( !this.#overrideOriginHeaderExpiration && ("expires" in headers || ("cache-control" in headers && headers['cache-control'].includes("max-age") ))) { 
+			// we'll set the default expires, in case the expires in header does not work out, or we don't use the header expires
+			if ( isNaN(expires) || expires === 0) {
+				expires = this.calculateDefaultExpires();
+			}
+			
+			// get the expires and max age (as timestamp)from headers if we don't insist on overriding
+			// unlike etag and last-modified, we won't move them over, but let the expires param in .update() do the talking
+			if ( !this.#overrideOriginHeaderExpiration && ("expires" in headers || ("cache-control" in headers && headers['cache-control'].includes("max-age") ))) { 
 
-			let age = this.#syncedNowTimestampInSeconds;
-			let exp = this.#syncedNowTimestampInSeconds;
+				let age = this.#syncedNowTimestampInSeconds;
+				let exp = this.#syncedNowTimestampInSeconds;
 
-			if ("cache-control" in headers && headers['cache-control'].includes("max-age")) {
-				// extract max-age
-				let cacheControl = headers['cache-control'].split(",");
-				for(const p of cacheControl) {
-					if(p.trim().startsWith("max-age")) {
-						let maxage = parseInt(p.trim().split("=")[1], 10);
-						age = this.#syncedNowTimestampInSeconds + maxage; // convert to timestamp
-						break; // break out of for
+				if ("cache-control" in headers && headers['cache-control'].includes("max-age")) {
+					// extract max-age
+					let cacheControl = headers['cache-control'].split(",");
+					for(const p of cacheControl) {
+						if(p.trim().startsWith("max-age")) {
+							let maxage = parseInt(p.trim().split("=")[1], 10);
+							age = this.#syncedNowTimestampInSeconds + maxage; // convert to timestamp
+							break; // break out of for
+						}
 					}
 				}
+
+				if ("expires" in headers) {
+					exp = Cache.parseToSeconds(headers.expires);
+				}
+
+				// we will take the greater of max-age or expires, and if they are not 0 and not past, use it as expTimestamp
+				let max = ( exp > age ) ? exp : age;
+				if ( max !== 0 && expires > this.#syncedNowTimestampInSeconds) { expires = max; }
+
 			}
 
-			if ("expires" in headers) {
-				exp = Cache.parseToSeconds(headers.expires);
+			/* Write to Cache
+			We are now ready to write to the cache
+			*/
+			try {
+				this.#store = await CacheData.write(this.#idHash, this.#syncedNowTimestampInSeconds, body, headersForCache, this.#hostId, this.#pathId, expires, statusCode, this.#encrypt);
+
+				if (status === null) {
+					if (prev.empty) {
+						status = Cache.STATUS_NO_CACHE;
+					} else if (this.getETag() === prev.eTag || this.getLastModified() === prev.modified) {
+						status = Cache.STATUS_CACHE_SAME;
+					} else if (prev.expired) {
+						status = Cache.STATUS_EXPIRED;
+					} else {
+						status = Cache.STATUS_FORCED;
+					}					
+				}
+
+				this.#status = status; 
+
+				tools.DebugAndLog.debug("Cache Updated "+this.getStatus()+": "+this.#idHash);
+				
+			} catch (error) {
+				tools.DebugAndLog.error(`Cannot copy cached data to local store for evaluation: ${this.#idHash} ${error?.message || 'Unknown error'}`, error?.stack);
+				if ( this.#store === null ) {
+					this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
+				}
+				this.#status = Cache.STATUS_CACHE_ERROR;
+			} finally {
+				resolve(this.#store);
 			}
 
-			// we will take the greater of max-age or expires, and if they are not 0 and not past, use it as expTimestamp
-			let max = ( exp > age ) ? exp : age;
-			if ( max !== 0 && expires > this.#syncedNowTimestampInSeconds) { expires = max; }
-
-		}
-
-		/* Write to Cache
-		We are now ready to write to the cache
-		*/
-		try {
-			this.#store = CacheData.write(this.#idHash, this.#syncedNowTimestampInSeconds, body, headersForCache, this.#hostId, this.#pathId, expires, statusCode, this.#encrypt);
-
-			if (status === null) {
-				if (prev.empty) {
-					status = Cache.STATUS_NO_CACHE;
-				} else if (this.getETag() === prev.eTag || this.getLastModified() === prev.modified) {
-					status = Cache.STATUS_CACHE_SAME;
-				} else if (prev.expired) {
-					status = Cache.STATUS_EXPIRED;
-				} else {
-					status = Cache.STATUS_FORCED;
-				}					
-			}
-
-			this.#status = status; 
-
-			tools.DebugAndLog.debug("Cache Updated "+this.getStatus()+": "+this.#idHash);
-			
-		} catch (error) {
-			tools.DebugAndLog.error(`Cannot copy cached data to local store for evaluation: ${this.#idHash} ${error.message}`, error.stack);
-			if ( this.#store === null ) {
-				this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
-			}
-			this.#status = Cache.STATUS_CACHE_ERROR;
-		};
-
-		return this.#store;
-			
+		});
 	};
-
 };
 
 class CacheableDataAccess {
@@ -1982,7 +2007,7 @@ class CacheableDataAccess {
 	 * @param {string} cachePolicy.pathId
 	 * @param {boolean} cachePolicy.encrypt
 	 * @param {object} apiCallFunction The function to call in order to make the request. This function can call ANY datasource (file, http endpoint, etc) as long as it returns a DAO object
-	 * @param {object} connection A connection object that specifies an id, location, and connectin details for the apiCallFunction to access data. If you have a Connection object pass conn.toObject()
+	 * @param {object} connection A connection object that specifies an id, location, and connection details for the apiCallFunction to access data. If you have a Connection object pass conn.toObject()
 	 * @param {string} connection.method
 	 * @param {string} connection.protocol
 	 * @param {string} connection.host
@@ -1998,7 +2023,7 @@ class CacheableDataAccess {
 	 */
 	static async getData(cachePolicy, apiCallFunction, connection, data = null, tags = {} ) {
 
-		return new Promise(async (resolve, reject) => {
+		return new Promise(async (resolve) => {
 
 			CacheData.prime(); // prime anything we'll need that may have changed since init, we'll await the result before read and write
 
@@ -2040,21 +2065,21 @@ class CacheableDataAccess {
 							// check header and status for 304 not modified
 							if (originalSource.statusCode === 304) {
                                 tools.DebugAndLog.debug("Received 304 Not Modified. Extending cache");
-								cache.extendExpires(Cache.STATUS_ORIGINAL_NOT_MODIFIED, 0, originalSource.statusCode);
+								await cache.extendExpires(Cache.STATUS_ORIGINAL_NOT_MODIFIED, 0, originalSource.statusCode);
 							} else {
 								let body = ( typeof originalSource.body !== "object" ) ? originalSource.body : JSON.stringify(originalSource.body);
 								await CacheData.prime(); // can't proceed until we have the secrets
-								cache.update(body, originalSource.headers, originalSource.statusCode);
+								await cache.update(body, originalSource.headers, originalSource.statusCode);
 							}
 							
 						} catch (error) {
-							tools.DebugAndLog.error(`Not successful in creating cache: ${idHash} (${tags.path}/${tags.id}) ${error.message}`, error.stack);
+							tools.DebugAndLog.error(`Not successful in creating cache: ${idHash} (${tags.path}/${tags.id}) ${error?.message || 'Unknown error'}`, error?.stack);
 						}
 
 					} else {
 
 						tools.DebugAndLog.error(`${originalSource.statusCode} | Not successful in getting data from original source for cache. Extending cache expires. ${idHash} (${tags.path}/${tags.id})`, originalSource);
-						cache.extendExpires(Cache.STATUS_ORIGINAL_ERROR, 0, originalSource.statusCode);
+						await cache.extendExpires(Cache.STATUS_ORIGINAL_ERROR, 0, originalSource.statusCode);
 
 					}
 				}
@@ -2065,8 +2090,8 @@ class CacheableDataAccess {
 
 			} catch (error) {
 				timer.stop();
-				tools.DebugAndLog.error(`Error while getting data: (${tags.path}/${tags.id}) ${error.message}`, error.stack);
-				reject(cache);
+				tools.DebugAndLog.error(`Error while getting data: (${tags.path}/${tags.id}) ${error?.message || 'Unknown error'}`, error?.stack);
+				resolve(cache);
 			};
 		});
 	};

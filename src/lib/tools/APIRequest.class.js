@@ -36,13 +36,13 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 	/*
 	Return a promise that will resolve to true or false based upon success
 	*/
-	return new Promise ((resolve, reject) => {
+	return new Promise ((resolve) => {
 
 		/*
 		Functions/variables we'll use within https.get()
 		We need to declare functions that we will be using within https.get()
 		"locally" and refer to the requestObject to perform updates
-		setResponse() and addRedirect() also performs the resolve() and reject() for the promise
+		setResponse() and addRedirect() also performs the resolve() for the promise
 		*/
 		const setResponse = function (response) { requestObject.setResponse(response); resolve(true)};
 		const addRedirect = function (uri) { requestObject.addRedirect(uri); resolve(false)};
@@ -515,7 +515,7 @@ class APIRequest {
 	 */
 	async send_get() {
 
-		return new Promise (async (resolve, reject) => {
+		return new Promise (async (resolve) => {
 			// https://stackoverflow.com/questions/41470296/how-to-await-and-return-the-result-of-a-http-request-so-that-multiple-request
 
 			// https://nodejs.org/api/https.html#https_https_request_url_options_callback
@@ -608,11 +608,11 @@ class APIRequest {
 				}
 				catch (error) {
 					DebugAndLog.error(`Error in APIRequest call to _httpGetExecute (${this.getNote()}): ${error.message}`, error.stack);
-					reject(APIRequest.responseFormat(false, 500, "Error during send request"));
+					resolve(APIRequest.responseFormat(false, 500, "Error during send request"));
 				}				
 			} catch (error) {
 				DebugAndLog.error(`API error while trying request for host ${this.getHost()} ${this.getNote()} ${error.message}`, { APIRequest: this.toObject(), trace: error.stack } );
-				reject(APIRequest.responseFormat(false, 500, "Error during send request"));
+				resolve(APIRequest.responseFormat(false, 500, "Error during send request"));
 			
 			}
 		});	
