@@ -110,6 +110,16 @@ Resources:
             Effect: Allow
             Resource: !Join [ '', [ !GetAtt CacheDataS3Bucket.Arn, '/cache/*' ] ]
 
+          - Sid: LambdaAccessToS3ListBucket
+            Action:
+            - s3:ListBucket
+            Effect: Allow
+            Resource: !Sub 'arn:aws:s3:::${CacheDataS3Bucket}'
+            # Condition: # will be enabled in future if after further testing
+            #   StringLike:
+            #     s3:prefix:
+            #       - 'cache'
+            
           # cache-data DynamoDb table (from: https://www.npmjs.com/package/@63klabs/cache-data)
           - Sid: LambdaAccessToDynamoDBTableCacheData
             Action:

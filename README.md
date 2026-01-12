@@ -4,29 +4,34 @@ A package for AWS Lambda Node.js applications to access and cache data from remo
 
 > Note: This repository and package has moved from chadkluck to 63Klabs but is still managed by the same developer.
 
-[@63klabs/cache-data on npmjs.com](https://www.npmjs.com/package/@63klabs/cache-data)
+- [@63klabs/cache-data on npmjs.com](https://www.npmjs.com/package/@63klabs/cache-data)
+- [@63klabs/cache-data on GitHub](https://github.com/@63klabs/cache-data)
 
 ## Description
 
-For AWS Lambda functions written in Node.js that require caching of data either of an internal process or external data source such as remote API endpoints. While out of the box it can fetch data from remote endpoint APIs, custom Data Access Objects can be written to provide caching of data from all sorts of sources including resource expensive database calls.
+A distributed, serverless data caching solution for AWS Lambda Node.js functions. Cache data from internal processes or external data sources such as remote API endpoints to be shared among concurrent executions. Uses DynamoDb and S3 for caching.
 
 It has several utility functions such `DebugAndLog`, `Timer`, and SSM Parameter Store loaders.
 
 It can be used in place of Express.js for simple web service applications as it also includes functions for handling and validating requests, routing, and client request logging.
 
-This package has been used in production for web service applications receiving over 1 million requests per week with a 75% cache-hit rate lowering latency to less than 100ms in most cases. This is a considerable improvement when faced with resource intense processes, connection pools, API rate limits, and slow endpoints.
+This package has been used in production environments for web service applications receiving over 1 million requests per week with a 75% cache-hit rate lowering latency to less than 100ms in most cases. This is a considerable improvement when faced with resource intense processes, connection pools, API rate limits, and slow endpoints.
 
 ## Getting Started
 
 ### Requirements
 
-- Node >18 runtime on Lambda
+- Node >22 runtime on Lambda
 - AWS Lambda, S3 bucket, DynamoDb table, and SSM Parameter Store
 - A basic understanding of CloudFormation, Lambda, S3, DynamoDb, and SSM Parameters
 - A basic understanding of IAM policies, especially the Lambda Execution Role, that will allow Lambda to access S3, DynamoDb, and SSM Parameter Store
-- Lambda function should have between 512MB and 1024MB of memory allocated. (256MB minimum). See [Lambda Optimization: Memory Allocation](./docs/lambda-optimization/README.md#lambda-memory-allocation).
+- Lambda function should have between 512MB and 2048MB of memory allocated. (>1024MB recommended). See [Lambda Optimization: Memory Allocation](./docs/lambda-optimization/README.md#lambda-memory-allocation).
 
 ### Installing
+
+The simplest way to get started is to use the [63klabs Atlantis Templates and Script platform](hhttps://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments) to deploy this and other ready-to-run solutions via CI/CD.
+
+However, if you want to write your own templates and code, follow the following steps:
 
 1. Generate Secret Key to Encrypt Cache:
    - Use the [key generation script](./docs/00-example-implementation/generate-put-ssm.py) during [the build](./docs/00-example-implementation/example-buildspec.yml) to establish a key to encrypt your data.

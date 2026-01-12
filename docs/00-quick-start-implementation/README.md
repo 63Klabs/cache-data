@@ -318,7 +318,7 @@ Config.init(); // we need to await completion in the async call function
 /**
  * Lambda function handler
  */
-exports.handler = async (event, context, callback) => {
+exports.handler = async (event, context) => {
 
 	/* wait for CONFIG to be settled as we need it before continuing. */
 	await Config.promise();
@@ -327,7 +327,7 @@ exports.handler = async (event, context, callback) => {
 	const response = await someFunction(event, context); // some code or function that generates a response
 
 	/* Send the result back to API Gateway */
-	callback(null, response);
+	return response;
 
 }
 ```
