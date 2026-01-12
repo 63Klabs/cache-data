@@ -1,72 +1,18 @@
 # This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
 # For more information see: https://help.github.com/actions/language-and-framework-guides/publishing-nodejs-packages
 
-# name: Node.js Package
-
-# on:
-#   release:
-#     types: [created]
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-#     permissions:
-#       contents: read
-#     steps:
-#       - uses: actions/checkout@v6
-#       - uses: actions/setup-node@v6
-#         with:
-#           node-version: 20
-#       - run: npm install
-#       - run: npm test
-
-#   publish-npm:
-#     needs: build
-#     runs-on: ubuntu-latest
-#     permissions:
-#       contents: read
-#       packages: write
-#     steps:
-#       - uses: actions/checkout@v6
-#       - uses: actions/setup-node@v6
-#         with:
-#           node-version: 20
-#           registry-url: https://registry.npmjs.org/
-#       - run: npm install
-#       - run: npm publish --access public
-#         env:
-#           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
-
 name: Publish Package
 
 on:
-  release:
-    types: [created]
-  workflow_dispatch:
-    inputs:
-      fail_on_oidc_claims_mismatch:
-        description: 'Set to true to fail the job when OIDC claims mismatch'
-        required: false
-        default: 'false'
-      expected_repository:
-        description: 'Expected repository (owner/repo) for OIDC claims'
-        required: false
-        default: '63Klabs/cache-data'
-      expected_workflow:
-        description: 'Expected workflow filename for OIDC claims'
-        required: false
-        default: 'npm-publish.yml'
-      expected_ref_prefix:
-        description: 'Expected ref prefix (e.g., refs/tags/)'
-        required: false
-        default: 'refs/tags/'
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   id-token: write  # Required for OIDC
   contents: read
 
 jobs:
-
   publish:
     runs-on: ubuntu-latest
     steps:
@@ -76,105 +22,7 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      - name: Upgrade npm for OIDC trusted publishing support
-        run: npm install -g npm@latest
       - run: npm install
       - run: npm run build --if-present
       - run: npm test
-      - name: Dump OIDC token claims
-        env:
-          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
-        run: |
-          echo "Requesting OIDC token (value will NOT be printed)"
-          TOKEN_JSON=$(curl -s -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-          TOKEN_VALUE=$(echo "$TOKEN_JSON" | jq -r .value)
-          if [ -z "$TOKEN_VALUE" ] || [ "$TOKEN_VALUE" = "null" ]; then
-            echo "No OIDC token returned"
-          else
-            PAYLOAD=$(echo "$TOKEN_VALUE" | awk -F. '{print $2}')
-            python - <<'PY'
-import sys, json, base64
-p = sys.argv[1]
-p += '=' * (-len(p) % 4)
-print('OIDC claims:')
-print(json.dumps(json.loads(base64.urlsafe_b64decode(p).decode()), indent=2))
-PY
- "$PAYLOAD"
-          fi
-      - name: Verify OIDC claims (optional)
-        env:
-          # Priority: workflow_dispatch input -> repository secret -> default
-          FAIL_ON_OIDC_CLAIMS_MISMATCH: ${{ github.event.inputs.fail_on_oidc_claims_mismatch || secrets.FAIL_ON_OIDC_CLAIMS_MISMATCH || 'false' }}
-          EXPECTED_REPOSITORY: ${{ github.event.inputs.expected_repository || secrets.EXPECTED_REPOSITORY || '63Klabs/cache-data' }}
-          EXPECTED_WORKFLOW: ${{ github.event.inputs.expected_workflow || secrets.EXPECTED_WORKFLOW || 'npm-publish.yml' }}
-          EXPECTED_REF_PREFIX: ${{ github.event.inputs.expected_ref_prefix || secrets.EXPECTED_REF_PREFIX || 'refs/tags/' }}
-          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
-        run: |
-          # Enabled when either the workflow_dispatch input or the secret is set to 'true'.
-          if [ "${FAIL_ON_OIDC_CLAIMS_MISMATCH}" != "true" ]; then
-            echo "Optional OIDC claims check disabled (set the workflow input 'fail_on_oidc_claims_mismatch=true' when dispatching or set secret FAIL_ON_OIDC_CLAIMS_MISMATCH=true to enable)"
-            exit 0
-          fi
-          echo "Verifying OIDC claims against expected values"
-          TOKEN_JSON=$(curl -s -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-          TOKEN_VALUE=$(echo "$TOKEN_JSON" | jq -r .value)
-          if [ -z "$TOKEN_VALUE" ] || [ "$TOKEN_VALUE" = "null" ]; then
-            echo "No OIDC token returned - cannot verify claims"
-            exit 1
-          fi
-          PAYLOAD=$(echo "$TOKEN_VALUE" | awk -F. '{print $2}')
-          CLAIMS_JSON=$(python - <<'PY'
-import sys, json, base64
-p = sys.argv[1]
-p += '=' * (-len(p) % 4)
-print(json.dumps(json.loads(base64.urlsafe_b64decode(p).decode())))
-PY
- "$PAYLOAD")
-          echo "Decoded claims: $CLAIMS_JSON"
-          REPO_CLAIM=$(echo "$CLAIMS_JSON" | jq -r '.repository // .repo // empty')
-          WORKFLOW_CLAIM=$(echo "$CLAIMS_JSON" | jq -r '.workflow // .workflow_ref // empty')
-          REF_CLAIM=$(echo "$CLAIMS_JSON" | jq -r '.ref // empty')
-          EXPECTED_REPOSITORY=${EXPECTED_REPOSITORY:-$GITHUB_REPOSITORY}
-          EXPECTED_WORKFLOW=${EXPECTED_WORKFLOW:-npm-publish.yml}
-          EXPECTED_REF_PREFIX=${EXPECTED_REF_PREFIX:-refs/tags/}
-          echo "Expecting repository: $EXPECTED_REPOSITORY (token: $REPO_CLAIM)"
-          echo "Expecting workflow: $EXPECTED_WORKFLOW (token: $WORKFLOW_CLAIM)"
-          echo "Expecting ref prefix: $EXPECTED_REF_PREFIX (token: $REF_CLAIM)"
-          mismatch=0
-          if [ -n "$REPO_CLAIM" ] && [ "$REPO_CLAIM" != "$EXPECTED_REPOSITORY" ]; then
-            echo "Repository claim mismatch: expected $EXPECTED_REPOSITORY but token has $REPO_CLAIM"
-            mismatch=1
-          fi
-          if [ -n "$WORKFLOW_CLAIM" ] && [ "$WORKFLOW_CLAIM" != "$EXPECTED_WORKFLOW" ]; then
-            echo "Workflow claim mismatch: expected $EXPECTED_WORKFLOW but token has $WORKFLOW_CLAIM"
-            mismatch=1
-          fi
-          if [ -n "$REF_CLAIM" ] && ! echo "$REF_CLAIM" | grep -q "^$EXPECTED_REF_PREFIX"; then
-            echo "Ref claim mismatch: expected prefix $EXPECTED_REF_PREFIX but token has $REF_CLAIM"
-            mismatch=1
-          fi
-          if [ "$mismatch" -eq 1 ]; then
-            echo "OIDC claims verification failed"
-            exit 1
-          fi
-          echo "OIDC claims verification passed"
-      - name: Debug npm auth
-        run: |
-          echo "node: $(node -v)  npm: $(npm -v)"
-          if npm config get //registry.npmjs.org/:_authToken >/dev/null 2>&1; then echo "_authToken present"; else echo "_authToken empty"; fi
-          npm whoami || echo "npm whoami: not authenticated"
-          echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
-          echo "GITHUB_REF=$GITHUB_REF"
-          test -f ~/.npmrc && echo "~/.npmrc exists" || echo "~/.npmrc not found"
-      - name: Debug npm auth
-        run: |
-          echo "node: $(node -v)  npm: $(npm -v)"
-          if npm config get //registry.npmjs.org/:_authToken >/dev/null 2>&1; then echo "_authToken present"; else echo "_authToken empty"; fi
-          npm whoami || echo "npm whoami: not authenticated"
-          echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
-          echo "GITHUB_REF=$GITHUB_REF"
-          test -f ~/.npmrc && echo "~/.npmrc exists" || echo "~/.npmrc not found"
-      - name: Publish to npm
-        run: npm publish --access public
+      - run: npm publish
