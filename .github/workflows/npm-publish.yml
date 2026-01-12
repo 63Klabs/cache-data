@@ -42,6 +42,24 @@ name: Publish Package
 on:
   release:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      fail_on_oidc_claims_mismatch:
+        description: 'Set to true to fail the job when OIDC claims mismatch'
+        required: false
+        default: 'false'
+      expected_repository:
+        description: 'Expected repository (owner/repo) for OIDC claims'
+        required: false
+        default: '63Klabs/cache-data'
+      expected_workflow:
+        description: 'Expected workflow filename for OIDC claims'
+        required: false
+        default: 'npm-publish.yml'
+      expected_ref_prefix:
+        description: 'Expected ref prefix (e.g., refs/tags/)'
+        required: false
+        default: 'refs/tags/'
 
 permissions:
   id-token: write  # Required for OIDC
@@ -86,16 +104,17 @@ PY
           fi
       - name: Verify OIDC claims (optional)
         env:
-          FAIL_ON_OIDC_CLAIMS_MISMATCH: ${{ secrets.FAIL_ON_OIDC_CLAIMS_MISMATCH }}
-          EXPECTED_REPOSITORY: '63Klabs/cache-data'
-          EXPECTED_WORKFLOW: 'npm-publish.yml'
-          EXPECTED_REF_PREFIX: 'refs/tags/'
+          # Priority: workflow_dispatch input -> repository secret -> default
+          FAIL_ON_OIDC_CLAIMS_MISMATCH: ${{ github.event.inputs.fail_on_oidc_claims_mismatch || secrets.FAIL_ON_OIDC_CLAIMS_MISMATCH || 'false' }}
+          EXPECTED_REPOSITORY: ${{ github.event.inputs.expected_repository || secrets.EXPECTED_REPOSITORY || '63Klabs/cache-data' }}
+          EXPECTED_WORKFLOW: ${{ github.event.inputs.expected_workflow || secrets.EXPECTED_WORKFLOW || 'npm-publish.yml' }}
+          EXPECTED_REF_PREFIX: ${{ github.event.inputs.expected_ref_prefix || secrets.EXPECTED_REF_PREFIX || 'refs/tags/' }}
           ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
           ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
         run: |
-          # Set to 'true' in secrets to enable the guard and fail the job on mismatch.
+          # Enabled when either the workflow_dispatch input or the secret is set to 'true'.
           if [ "${FAIL_ON_OIDC_CLAIMS_MISMATCH}" != "true" ]; then
-            echo "Optional OIDC claims check disabled (set FAIL_ON_OIDC_CLAIMS_MISMATCH=true in secrets to enable)"
+            echo "Optional OIDC claims check disabled (set the workflow input 'fail_on_oidc_claims_mismatch=true' when dispatching or set secret FAIL_ON_OIDC_CLAIMS_MISMATCH=true to enable)"
             exit 0
           fi
           echo "Verifying OIDC claims against expected values"
