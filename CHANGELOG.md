@@ -14,6 +14,7 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 - `Cache.CachableDataAccess` - Lambda function may end before writes to S3 completed on large objects resulting in a cached object not being found. When caching an object the `CachableDataAccess` now waits for all writes to complete.
 - Updated dependencies resolving the deprecated `lodash` dependency of `sinon`. This only affected `devDependencies`. [lodash.get deprecation warning (used by sinon) #214](https://github.com/63Klabs/cache-data/issues/214)
+- **CI:** Use npm Trusted Publishing (OIDC) for `npm publish` and removed the `NPM_TOKEN` fallback to avoid classic token deprecation warnings; configure the package on npm to trust this workflow to publish.
 
 
 ## v1.3.3 (2025-09-14)
