@@ -63,6 +63,27 @@ jobs:
       - run: npm install
       - run: npm run build --if-present
       - run: npm test
+      - name: Dump OIDC token claims
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
+        run: |
+          echo "Requesting OIDC token (value will NOT be printed)"
+          TOKEN_JSON=$(curl -s -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
+          TOKEN_VALUE=$(echo "$TOKEN_JSON" | jq -r .value)
+          if [ -z "$TOKEN_VALUE" ] || [ "$TOKEN_VALUE" = "null" ]; then
+            echo "No OIDC token returned"
+          else
+            PAYLOAD=$(echo "$TOKEN_VALUE" | awk -F. '{print $2}')
+            python - <<'PY'
+import sys, json, base64
+p = sys.argv[1]
+p += '=' * (-len(p) % 4)
+print('OIDC claims:')
+print(json.dumps(json.loads(base64.urlsafe_b64decode(p).decode()), indent=2))
+PY
+ "$PAYLOAD"
+          fi
       - name: Debug npm auth
         run: |
           echo "node: $(node -v)  npm: $(npm -v)"
