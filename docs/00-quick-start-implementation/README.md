@@ -58,10 +58,51 @@ For additional uses and options see [`tools.DebugAndLog`](../features/tools/READ
 
 ## Basic Endpoint Connections
 
+The simplest connection is to directly call an endpoint from a URI:
+
+```javascript
+const { endpoint } = require("@63klabs/cache-data");
+const data = await endpoint.get({uri: "https://api.example.com/data?q=Chicago"});
+
+// separate out the query string into the second argument:
+const data2 = await endpoint.get({uri: "https://api.example.com/data"}, { parameters: {q: "Chicago" }});
+
+// separate out the path from host
+const data3 = await endpoint.get({host: "api.example.com", path: "data"}, { parameters: {q: "Chicago" }});
+
+// use a POST method rather than default GET
+const data4 = await endpoint.get({host: "api.example.com", path: "data", method: "POST"}, { parameters: {q: "Chicago" }});
+```
+
+You can also pass a `connection` object:
+
+```javascript
+const data5 = await endpoint.get(connection);
+```
+
+A connection object has the following properties:
+
+```js
+/**
+ * @typedef ConnectionObject
+ * @property {Object} connection
+ * @property {string} connection.method
+ * @property {string} connection.uri
+ * @property {string} connection.protocol http or https
+ * @property {string} connection.host
+ * @property {string} connection.path
+ * @property {string} connection.body
+ * @property {object} connection.parameters
+ * @property {object} connection.headers
+ * @property {object} connection.options
+ * @property {number} connection.options.timeout
+ * @property {string} connection.note
+ */
+```
+
+This will be described later.
 
 ## Connections
-
-
 
 ### Config
 
@@ -604,9 +645,9 @@ Cache does not have to be from a remote endpoint.
 
 Suppose you gather data from six endpoints and process the data in a resource and time intensive process and would like to cache the result for 6 or 24 hours. You can use the Cache object to store any data from any source, either externally or internally.
 
-The function parameter passed to the Cache object is the method used to obtain data. Remember the `endpoint.getDataDirectFromURI` from the code sample above? That is just a function to return a bare bones response from an api endpoint. (You can actually extend the `endpoint.Endpoint` class and create your own DAOs that can pre and post process data before returning to your application's cache.)
+The function parameter passed to the Cache object is the method used to obtain data. Remember the `endpoint.get` from the code sample above? That is just a function to return a bare bones response from an api endpoint. (You can actually extend the `endpoint.Endpoint` class and create your own DAOs that can pre and post process data before returning to your application's cache.)
 
-Instead of passing in the function `endpoint.getDataDirectFromURI` you can create any function that will grab or process data and return an object.
+Instead of passing in the function `endpoint.get` you can create any function that will grab or process data and return an object.
 
 Remember, when passing functions for another function to execute, do not include the `()` at the end.
 
