@@ -350,9 +350,9 @@ let cacheProfile = connection.getCacheProfile("games"); // corresponds with the 
 
 const cacheObj = await cache.CacheableDataAccess.getData(
 	cacheProfile, // this is your cache profile for an endpoint, included from connection object
-	endpoint.getDataDirectFromURI, // this is the function you want to invoke to get fresh data if the cache is stale. (conn and null will be passed to it)
-	conn, // connection information which will be passed to endpoint.getDataDirectFromURI() to get fresh data. Also used to identify the object in cache
-	null // this parameter can be used to pass additional data to endpoint.getDataDirectFromURI (or any other DAO)
+	endpoint.get, // this is the function you want to invoke to get fresh data if the cache is stale. (conn and null will be passed to it)
+	conn, // connection information which will be passed to endpoint.get() to get fresh data. Also used to identify the object in cache
+	null // this parameter can be used to pass additional data to endpoint.get (or any other DAO)
 );
 
 let games = cacheObj.getBody(true); // return the data as an object (true) instead of a string (false). You could use false if you want to keep the data as a string (as in xml or html or text)

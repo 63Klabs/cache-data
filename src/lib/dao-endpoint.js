@@ -11,7 +11,7 @@
  * via the APIRequest class.
  * 
  * The class itself is not exposed, instead various functions can be used
- * to access the class. For exmaple, getDataDirectFromURI(connection, data)
+ * to access the class. For exmaple, get(connection, data)
  * 
  * The connection parameter is used to pass connection information to the 
  * API (host, path, query, etc).
@@ -21,7 +21,7 @@
  * 
  * @example
  *  // access function that utilizes the class
- *  const getDataDirectFromURI = async (connection, data = null) => {
+ *  const get = async (connection, data = null) => {
  *      return (new Endpoint(connection).get());
  *  };
  */
@@ -64,8 +64,10 @@ const tools = require("./tools/index.js");
  * @example
     const { endpoint } = require("@63klabs/cache-data");
     const data = await endpoint.get({host: "api.example.com", path: "data"}, { parameters: {q: "Chicago" }});
+	const data = await endpoint.get({uri: "https://api.example.com/data"}, { parameters: {q: "Chicago" }});
  */
-const get = async (connection, query = null) => {
+const get = async (connection, query = {}) => {
+	if (query === null) { query = {} };
 	return (new Endpoint(connection, query).get());
 };
 
@@ -133,7 +135,7 @@ class Endpoint {
 	 * 
 	 * @example
 	 *  // access function that utilizes the class
-	 *  const getDataDirectFromURI = async (connection, data = null) => {
+	 *  const get = async (connection, data = null) => {
 	 *      return (new Endpoint(connection).get());
 	 *  };
 	 * @returns {object} Response data from the completed request
