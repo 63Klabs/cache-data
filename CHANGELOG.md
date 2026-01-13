@@ -8,12 +8,18 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## v1.3.5 (2025-xx-xx)
+## v1.3.5 (2025-01-13)
 
 ### Enhancements
 
-- endpoint.getDataDirectFromURI() has been renamed to endpoint.get() and the old name is now a deprecated alias. This was just to simplify naming.
-- added new method to CachedObj cacheObj.isFromCache()
+- `endpoint.getDataDirectFromURI()` has been renamed to `endpoint.get()` and the old name is now a deprecated alias. This was just to simplify naming.
+
+Example Use:
+
+```javascript
+const { endpoint } = require("@63klabs/cache-data");
+const data = await endpoint.get({host: "api.example.com", path: "data"}, { parameters: {q: "Chicago" }});
+```
 
 ## v1.3.4 (2025-01-12)
 

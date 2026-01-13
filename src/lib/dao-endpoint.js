@@ -61,6 +61,9 @@ const tools = require("./tools/index.js");
  * @param {ConnectionObject} connection An object with details about the connection (method, uri, host, etc)
  * @param {Object} query Additional data to perform a query for the request.
  * @returns {Object} The response
+ * @example
+    const { endpoint } = require("@63klabs/cache-data");
+    const data = await endpoint.get({host: "api.example.com", path: "data"}, { parameters: {q: "Chicago" }});
  */
 const get = async (connection, query = null) => {
 	return (new Endpoint(connection, query).get());
