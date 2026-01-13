@@ -59,16 +59,16 @@ const tools = require("./tools/index.js");
 /**
  * 
  * @param {ConnectionObject} connection An object with details about the connection (method, uri, host, etc)
- * @param {*} data Additional data to perform a query for the request, or transformation of the response within the DAO object. This data is not directly sent to the endpoint. It is used within the DAO object to transform the request and/or response. Any data sent to the endpoint should be in the connection or handled within the DAO
- * @returns {object} The response
+ * @param {Object} query Additional data to perform a query for the request.
+ * @returns {Object} The response
  */
-const getDataDirectFromURI = async (connection, data = null) => {
-	return (new Endpoint(connection).get());
+const get = async (connection, query = null) => {
+	return (new Endpoint(connection, query).get());
 };
 
 /**
  * A bare bones request to an endpoint. Can be used as a template to
- * create more elaboarate requests. 
+ * create more elaborate requests. 
  */
 class Endpoint {
 
@@ -76,9 +76,20 @@ class Endpoint {
 	 * 
 	 * @param {ConnectionObject} connection An object with connection data
 	 */
-	constructor(connection) {
+	constructor(connection, query = {}) {
 
 		this.response = null;
+
+		// if query has parameters property then we will combine with connection parameters
+		if ( query !== null && "parameters" in query ) {
+			if ( !("parameters" in connection) || connection.parameters === null ) {
+				connection.parameters = {};
+			}
+			
+			for ( const [key, value] of Object.entries( query.parameters ) ) {
+				connection.parameters[key] = value;
+			}
+		}
 
 		this.request = {
 			method: this._setRequestSetting(connection, "method", "GET"),
@@ -182,5 +193,6 @@ class Endpoint {
 };
 
 module.exports = {
-	getDataDirectFromURI
+	getDataDirectFromURI: get, // deprecated alias
+	get
 };

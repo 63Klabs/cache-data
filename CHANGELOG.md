@@ -8,6 +8,13 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
+## v1.3.5 (2025-xx-xx)
+
+### Enhancements
+
+- endpoint.getDataDirectFromURI() has been renamed to endpoint.get() and the old name is now a deprecated alias. This was just to simplify naming.
+- added new method to CachedObj cacheObj.isFromCache()
+
 ## v1.3.4 (2025-01-12)
 
 ### Fixes
