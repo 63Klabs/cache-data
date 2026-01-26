@@ -1021,6 +1021,7 @@ class Cache {
 	static STATUS_NO_CACHE = "original";
 	static STATUS_EXPIRED = "original:cache-expired";
 	static STATUS_CACHE_SAME = "cache:original-same-as-cache";
+	static STATUS_CACHE_IN_MEM = "cache:memory";
 	static STATUS_CACHE = "cache";
 	static STATUS_CACHE_ERROR = "error:cache"
 	static STATUS_ORIGINAL_NOT_MODIFIED = "cache:original-not-modified";
