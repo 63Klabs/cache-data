@@ -64,10 +64,29 @@ class InMemoryCache {
   /**
    * Retrieves a cache entry by key
    * 
+   * Returns an object containing the cache status and the cached data (if available).
+   * The cache status indicates whether the lookup was a hit (1), miss (0), or expired (-1).
+   * For cache hits, the data property contains the stored CacheDataFormat object. For misses, data is null.
+   * For expired entries, data contains the expired CacheDataFormat object before it's removed from cache.
+   * 
    * @param {string} key - Cache key to look up
-   * @returns {Object} Lookup result
-   * @returns {number} return.cache - Status: 1=hit, 0=miss, -1=expired
-   * @returns {Object|null} return.data - Cached data or null
+   * @returns {{cache: number, data: Object|null}} Lookup result with cache status and data
+   * @returns {number} return.cache - Cache status: 1 (hit), 0 (miss), or -1 (expired)
+   * @returns {Object|null} return.data - The cached CacheDataFormat object on hit/expired, or null on miss
+   * 
+   * @example
+   * // Cache hit
+   * cache.get('myKey') 
+   * // => { cache: 1, data: { cache: { body: '...', headers: {...}, expires: 1234567890, statusCode: '200' } } }
+   * 
+   * @example
+   * // Cache miss
+   * cache.get('nonExistent') // => { cache: 0, data: null }
+   * 
+   * @example
+   * // Expired entry
+   * cache.get('expiredKey') 
+   * // => { cache: -1, data: { cache: { body: '...', headers: {...}, expires: 1234567890, statusCode: '200' } } }
    */
   get(key) {
     // Check if key exists
@@ -95,9 +114,29 @@ class InMemoryCache {
   /**
    * Stores a cache entry with expiration
    * 
-   * @param {string} key - Cache key
-   * @param {Object} value - CacheDataFormat object to store
-   * @param {number} expiresAt - Expiration timestamp in milliseconds
+   * Adds or updates a cache entry with the specified key, value, and expiration time.
+   * If the key already exists, it will be updated and moved to the most recent position (LRU).
+   * If the cache is at maximum capacity, the least recently used entry will be evicted automatically.
+   * The expiresAt timestamp should be in milliseconds since epoch (e.g., Date.now() + ttl).
+   * 
+   * @param {string} key - Cache key to store the value under
+   * @param {Object} value - CacheDataFormat object or any data structure to cache
+   * @param {number} expiresAt - Expiration timestamp in milliseconds since epoch (e.g., Date.now() + 60000 for 1 minute)
+   * @returns {void}
+   * 
+   * @example
+   * // Store a cache entry that expires in 5 minutes
+   * const fiveMinutes = 5 * 60 * 1000;
+   * cache.set('myKey', { cache: { body: 'response data', headers: {}, expires: Date.now() + fiveMinutes, statusCode: '200' } }, Date.now() + fiveMinutes);
+   * 
+   * @example
+   * // Store with a specific expiration timestamp
+   * const expirationTime = Date.now() + (60 * 60 * 1000); // 1 hour from now
+   * cache.set('sessionData', { userId: 123, token: 'abc' }, expirationTime);
+   * 
+   * @example
+   * // Update an existing entry (moves to most recent position)
+   * cache.set('existingKey', { updated: 'data' }, Date.now() + 300000);
    */
   set(key, value, expiresAt) {
     // If key exists, delete it first for LRU repositioning
