@@ -8,11 +8,13 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## v1.3.6 (2025-02-10)
+## v1.3.6 (2025-02-xx)
 
 ### Enhancement
 
 - Added in-memory cache option for `Cache`. Even though concurrent functions will not be able to make use of another function's in memory cache, it will improve response time and lessen calls to DynamoDb.
+- Documentation has been enhanced and expanded
+- Reduced internal use of JSON.parse() and JSON.stringify()
 
 ## v1.3.5 (2025-01-13)
 

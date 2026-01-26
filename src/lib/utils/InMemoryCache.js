@@ -1,0 +1,143 @@
+/**
+ * InMemoryCache - Ultra-fast in-memory L0 cache for AWS Lambda
+ * 
+ * Provides microsecond-level cache access using JavaScript Map with LRU eviction.
+ * Designed for Lambda execution model with synchronous operations and no background processes.
+ */
+
+class InMemoryCache {
+  #cache;
+  #maxEntries;
+  #memoryMB;
+
+  /**
+   * Creates a new InMemoryCache instance
+   * 
+   * @param {Object} options - Configuration options
+   * @param {number} [options.maxEntries] - Maximum number of entries (overrides calculation)
+   * @param {number} [options.entriesPerGB=5000] - Heuristic for calculating maxEntries from memory
+   * @param {number} [options.defaultMaxEntries=1000] - Fallback if Lambda memory unavailable
+   */
+  constructor(options = {}) {
+    const {
+      maxEntries,
+      entriesPerGB = 5000,
+      defaultMaxEntries = 1000
+    } = options;
+
+    // Initialize Map storage
+    this.#cache = new Map();
+
+    // Determine MAX_ENTRIES
+    if (maxEntries !== undefined && maxEntries !== null) {
+      // Use explicit maxEntries parameter
+      this.#maxEntries = maxEntries;
+      this.#memoryMB = null;
+    } else {
+      // Calculate from Lambda memory allocation
+      const lambdaMemory = process.env.AWS_LAMBDA_FUNCTION_MEMORY_SIZE;
+      
+      if (lambdaMemory !== undefined && lambdaMemory !== null) {
+        this.#memoryMB = parseInt(lambdaMemory, 10);
+        
+        if (!isNaN(this.#memoryMB) && this.#memoryMB > 0) {
+          // Calculate: (memoryMB / 1024) * entriesPerGB
+          this.#maxEntries = Math.floor((this.#memoryMB / 1024) * entriesPerGB);
+        } else {
+          // Invalid memory value, use default
+          this.#maxEntries = defaultMaxEntries;
+          this.#memoryMB = null;
+        }
+      } else {
+        // Lambda memory not available, use default
+        this.#maxEntries = defaultMaxEntries;
+        this.#memoryMB = null;
+      }
+    }
+
+    // Ensure maxEntries is at least 1
+    if (this.#maxEntries < 1) {
+      this.#maxEntries = 1;
+    }
+  }
+
+  /**
+   * Retrieves a cache entry by key
+   * 
+   * @param {string} key - Cache key to look up
+   * @returns {Object} Lookup result
+   * @returns {number} return.cache - Status: 1=hit, 0=miss, -1=expired
+   * @returns {Object|null} return.data - Cached data or null
+   */
+  get(key) {
+    // Check if key exists
+    if (!this.#cache.has(key)) {
+      return { cache: 0, data: null };
+    }
+
+    const entry = this.#cache.get(key);
+    const now = Date.now();
+
+    // Check if expired
+    if (entry.expiresAt <= now) {
+      // Delete expired entry
+      this.#cache.delete(key);
+      return { cache: -1, data: entry.value };
+    }
+
+    // Valid entry - update LRU position by deleting and re-setting
+    this.#cache.delete(key);
+    this.#cache.set(key, entry);
+
+    return { cache: 1, data: entry.value };
+  }
+
+  /**
+   * Stores a cache entry with expiration
+   * 
+   * @param {string} key - Cache key
+   * @param {Object} value - CacheDataFormat object to store
+   * @param {number} expiresAt - Expiration timestamp in milliseconds
+   */
+  set(key, value, expiresAt) {
+    // If key exists, delete it first for LRU repositioning
+    if (this.#cache.has(key)) {
+      this.#cache.delete(key);
+    }
+
+    // Check capacity and evict if necessary
+    if (this.#cache.size >= this.#maxEntries) {
+      // Get first (oldest) entry
+      const oldestKey = this.#cache.keys().next().value;
+      this.#cache.delete(oldestKey);
+    }
+
+    // Store new entry
+    this.#cache.set(key, { value, expiresAt });
+  }
+
+  /**
+   * Clears all entries from the cache
+   */
+  clear() {
+    this.#cache.clear();
+  }
+
+  /**
+   * Returns information about the cache state
+   * 
+   * @returns {Object} Cache information
+   * @returns {number} return.size - Current number of entries
+   * @returns {number} return.maxEntries - Maximum capacity
+   * @returns {number|null} return.memoryMB - Lambda memory allocation (if available)
+   */
+  info() {
+    return {
+      size: this.#cache.size,
+      maxEntries: this.#maxEntries,
+      memoryMB: this.#memoryMB
+    };
+  }
+}
+
+module.exports = InMemoryCache;
