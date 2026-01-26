@@ -136,3 +136,108 @@ describe("ClientRequest Class", () => {
 		})
 	});
 });
+
+	describe("ClientRequest - Edge Cases for structuredClone optimization", () => {
+		
+		describe("Empty authorization arrays", () => {
+			it("should handle empty authorization arrays correctly", () => {
+				// Create a ClientRequest instance
+				const req = new ClientRequest(testEventA, testContextA);
+				
+				// Get authorizations
+				const auths = req.getAuthorizations();
+				
+				// Verify it's an array
+				expect(Array.isArray(auths)).to.equal(true);
+				
+				// Verify it has the default value
+				expect(auths.length).to.be.greaterThan(0);
+			});
+		});
+
+		describe("Authorization arrays with various structures", () => {
+			it("should return defensive copy that doesn't affect internal state", () => {
+				const req = new ClientRequest(testEventA, testContextA);
+				
+				// Get authorizations multiple times
+				const auths1 = req.getAuthorizations();
+				const auths2 = req.getAuthorizations();
+				
+				// Modify first copy
+				auths1.push('new-auth');
+				auths1[0] = 'modified';
+				
+				// Verify second copy is unaffected
+				expect(auths2).to.not.deep.equal(auths1);
+				expect(auths2).to.deep.equal(['all']);
+			});
+
+			it("should handle authorization arrays with string values", () => {
+				const req = new ClientRequest(testEventA, testContextA);
+				
+				// Get authorizations
+				const auths = req.getAuthorizations();
+				
+				// Verify all elements are strings
+				auths.forEach(auth => {
+					expect(typeof auth).to.equal('string');
+				});
+			});
+
+			it("should maintain array structure after cloning", () => {
+				const req = new ClientRequest(testEventA, testContextA);
+				
+				// Get authorizations
+				const auths = req.getAuthorizations();
+				
+				// Verify it's an array
+				expect(Array.isArray(auths)).to.equal(true);
+				
+				// Verify array methods work
+				expect(typeof auths.push).to.equal('function');
+				expect(typeof auths.pop).to.equal('function');
+				expect(typeof auths.slice).to.equal('function');
+			});
+
+			it("should handle multiple authorization values", () => {
+				const req = new ClientRequest(testEventA, testContextA);
+				
+				// Get authorizations
+				const auths = req.getAuthorizations();
+				
+				// Verify default authorization
+				expect(auths).to.include('all');
+			});
+		});
+
+		describe("Authorization cloning consistency", () => {
+			it("should produce identical results across multiple calls", () => {
+				const req = new ClientRequest(testEventA, testContextA);
+				
+				// Get authorizations multiple times
+				const auths1 = req.getAuthorizations();
+				const auths2 = req.getAuthorizations();
+				const auths3 = req.getAuthorizations();
+				
+				// Verify all are identical
+				expect(JSON.stringify(auths1)).to.equal(JSON.stringify(auths2));
+				expect(JSON.stringify(auths2)).to.equal(JSON.stringify(auths3));
+			});
+
+			it("should maintain independence between instances", () => {
+				const req1 = new ClientRequest(testEventA, testContextA);
+				const req2 = new ClientRequest(testEventA, testContextA);
+				
+				// Get authorizations from both
+				const auths1 = req1.getAuthorizations();
+				const auths2 = req2.getAuthorizations();
+				
+				// Modify first
+				auths1.push('modified');
+				
+				// Verify second is unaffected
+				expect(auths2).to.not.deep.equal(auths1);
+				expect(auths2).to.deep.equal(['all']);
+			});
+		});
+	});

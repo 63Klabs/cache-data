@@ -12,6 +12,35 @@ const printMsg = function() {
 };
 
 /**
+ * Safely clones an object, handling Promises and other non-cloneable values.
+ * If the object contains Promises, they will be converted to empty objects.
+ * Falls back to JSON.parse(JSON.stringify()) if structuredClone fails.
+ * 
+ * @param {*} obj - The object to clone
+ * @returns {*} A deep clone of the object
+ */
+const safeClone = function(obj) {
+	if (obj === null || typeof obj !== 'object') {
+		return obj;
+	}
+
+	try {
+		// Try structuredClone first (fastest for most cases)
+		return structuredClone(obj);
+	} catch (e) {
+		// If structuredClone fails (e.g., due to Promises), fall back to JSON pattern
+		// This will convert Promises to empty objects, but won't throw
+		try {
+			return JSON.parse(JSON.stringify(obj));
+		} catch (jsonError) {
+			// If even JSON fails, return the original object
+			// This handles circular references and other edge cases
+			return obj;
+		}
+	}
+};
+
+/**
  * Given a secret string, returns a string padded out at the beginning
  * with * or passed character leaving only the specified number of characters unobfuscated.
  * 
@@ -227,6 +256,9 @@ const sanitize = function (obj) {
  */
 const hashThisData = function(algorithm, data, options = {}) {
 
+	// Clone options to avoid modifying the original
+	options = safeClone(options);
+	
 	// set default values for options
 	if ( !( "salt" in options) ) { options.salt = ""; }
 	if ( !( "iterations" in options) || options.iterations < 1 ) { options.iterations = 1; }
@@ -234,7 +266,8 @@ const hashThisData = function(algorithm, data, options = {}) {
 
 	// if it is an object or array, then parse it to remove non-data elements (functions, etc)
 	if ( !options.skipParse && (typeof data === "object" || Array.isArray(data))) {
-		data = JSON.parse(JSON.stringify(data, (key, value) => {
+		// Normalize the data structure first using JSON.stringify with custom replacer
+		const normalized = JSON.parse(JSON.stringify(data, (key, value) => {
 			switch (typeof value) {
 				case 'bigint':
 					return value.toString();
@@ -244,6 +277,8 @@ const hashThisData = function(algorithm, data, options = {}) {
 					return value;
 			}
 		}));
+		// Then clone for safety
+		data = safeClone(normalized);
 		options.skipParse = true; // set to true so we don't parse during recursion
 	}
 
@@ -272,7 +307,7 @@ const hashThisData = function(algorithm, data, options = {}) {
 		// iterate through the keys alphabetically and add the key and value to the arrayOfStuff
 		keys.forEach((key) => {
 			// clone options
-			const opts = JSON.parse(JSON.stringify(options));
+			const opts = safeClone(options);
 			opts.iterations = 1; // don't iterate during recursion, only at end
 
 			const value = hashThisData(algorithm, data[key], opts);
@@ -285,11 +320,11 @@ const hashThisData = function(algorithm, data, options = {}) {
 		valueStr = `-:::${dataType}:::${data.toString()}`;
 	}
 
-	const hash = crypto.createHash(algorithm);
 	let hashOfData = "";
 
 	// hash for the number of iterations
 	for (let i = 0; i < options.iterations; i++) {
+		const hash = crypto.createHash(algorithm);
 		hash.update(valueStr + hashOfData + options.salt);
 		hashOfData = hash.digest('hex');
 	}
@@ -301,5 +336,6 @@ module.exports = {
 	printMsg,
 	sanitize,
 	obfuscate,
-	hashThisData
+	hashThisData,
+	safeClone
 };

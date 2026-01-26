@@ -1,6 +1,7 @@
 const RequestInfo = require('./RequestInfo.class');
 const Timer = require('./Timer.class');
 const DebugAndLog = require('./DebugAndLog.class');
+const { safeClone } = require('./utils');
 
 
 /**
@@ -22,7 +23,7 @@ class ClientRequest extends RequestInfo {
 	/* What and who of the request */
 	#event = null;
 	#context = null;
-	#authorizations = JSON.parse(JSON.stringify(ClientRequest.#unauthenticatedAuthorizations));
+	#authorizations = safeClone(ClientRequest.#unauthenticatedAuthorizations);
 	#roles = [];
 
 	/* The request data */
@@ -352,7 +353,7 @@ class ClientRequest extends RequestInfo {
 		if (this.isAuthenticated()) {
 			return this.#authorizations;
 		} else {
-			return JSON.parse(JSON.stringify(ClientRequest.#unauthenticatedAuthorizations));
+			return safeClone(ClientRequest.#unauthenticatedAuthorizations);
 		}
 	};
 

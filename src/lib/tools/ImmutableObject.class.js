@@ -1,3 +1,4 @@
+const { safeClone } = require('./utils');
 
 /**
  * Create an object that is able to return a copy and not
@@ -25,7 +26,7 @@ class ImmutableObject {
 		if ( !this.locked ) {
 			/* We'll stringify the object to break all references,
 			then change it back to an object */
-			this.obj = JSON.parse(JSON.stringify(this.obj));
+			this.obj = safeClone(this.obj);
 			this.locked = true;            
 		}
 	};
@@ -63,7 +64,9 @@ class ImmutableObject {
 		//return {...this.connection[key]}; // doesn't make a deep copy
 		//return Object.assign({}, this.connection[key]);
 
-		return JSON.parse(JSON.stringify( (key === "" || !(key in this.obj)) ? this.obj : this.obj[key] ));
+		// If no key argument was provided (undefined), return the whole object
+		// Otherwise, return the value at the specified key (even if key is "")
+		return safeClone( (arguments.length === 0 || !(key in this.obj)) ? this.obj : this.obj[key] );
 
 	};
 };

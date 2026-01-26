@@ -14,7 +14,26 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 - Added in-memory cache option for `Cache`. Even though concurrent functions will not be able to make use of another function's in memory cache, it will improve response time and lessen calls to DynamoDb.
 - Documentation has been enhanced and expanded
-- Reduced internal use of JSON.parse() and JSON.stringify()
+- Reduced internal use of JSON.parse() and JSON.stringify() to improve speed (1-2x improvement)
+- New `Config.getConnCacheProfile("myConnection", "myProfile")` method to get both `conn` and `cacheProfile` in one line rather than 3
+- New `Config.getConn("myConnection")` to get the connection object directly in one line rather than 2
+
+```js
+// Config.getConnection('name') old:
+const connection = Config.getConnection('myConnection');
+const conn = connection.toObject();
+
+// Config.getConn('name') new:
+const conn = Config.getConn('myConnection');
+
+// Get connection object and cache profile old:
+const connection = Config.getConnection('myConnection');
+const conn = connection.toObject();
+const cacheProfile = connection.getCacheProfile();
+
+// Get connection object and cache profile new:
+const { conn, cacheProfile } = Config.getConnCacheProfile('myConnection', 'myProfile');
+```
 
 ## v1.3.5 (2025-01-13)
 

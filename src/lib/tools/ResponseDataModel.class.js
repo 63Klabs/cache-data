@@ -1,3 +1,4 @@
+const { safeClone } = require('./utils');
 
 /* ****************************************************************************
  * Response Data Model
@@ -64,7 +65,7 @@ class ResponseDataModel {
 	 * @returns {*} A copy of the data object
 	 */
 	getResponseData() {
-		return JSON.parse(JSON.stringify(this._responseData));
+		return safeClone(this._responseData);
 	};
 
 	/**
@@ -83,7 +84,18 @@ class ResponseDataModel {
 			data = item.getResponseData();
 			label = item.getLabel(); // see if there is an override key/label
 		} else {
-			data = item;
+			// Clone plain objects to prevent external mutation
+			// If cloning fails (e.g., functions, symbols), use the original value
+			if (typeof item === 'object' && item !== null) {
+				try {
+					data = safeClone(item);
+				} catch (e) {
+					// If safeClone fails, fall back to original value
+					data = item;
+				}
+			} else {
+				data = item;
+			}
 		}
 
 		if ( label === "" ) {
@@ -131,7 +143,18 @@ class ResponseDataModel {
 			data = item.getResponseData();
 			label = (key !== "" ? key : item.getLabel() ); // see if there is an override key/label
 		} else {
-			data = item;
+			// Clone plain objects to prevent external mutation
+			// If cloning fails (e.g., functions, symbols), use the original value
+			if (typeof item === 'object' && item !== null) {
+				try {
+					data = safeClone(item);
+				} catch (e) {
+					// If safeClone fails, fall back to original value
+					data = item;
+				}
+			} else {
+				data = item;
+			}
 			label = key;
 		}
 
@@ -144,7 +167,7 @@ class ResponseDataModel {
 			) {
 			// if it is not yet an array, convert to array and move existing data to index 0
 			if ( !Array.isArray(this._responseData[label]) ) {
-				let temp = JSON.parse(JSON.stringify(this._responseData[label])); // no pointers, create copy
+				let temp = safeClone(this._responseData[label]); // no pointers, create copy
 				this._responseData[label] = []; // reassign to array
 				this._responseData[label].push(temp); // move original element to array
 			}

@@ -105,12 +105,83 @@ class _ConfigSuperClass {
 	};
 
 	/**
+	 * Get a connection by name and return the Connection instance
 	 * 
-	 * @param {string} name 
-	 * @returns {Connection}
+	 * @param {string} name The name of the connection to retrieve
+	 * @returns {Connection|null} Connection instance or null if not found
 	 */
 	static getConnection(name) {
+		if (_ConfigSuperClass._connections === null) {
+			return null;
+		}
 		return _ConfigSuperClass._connections.get(name);
+	}
+
+	/**
+	 * Get a connection by name and return it as a plain object
+	 * 
+	 * @param {string} name The name of the connection to retrieve
+	 * @returns {{method: string, uri: string, protocol: string, host: string, path: string, headers: object, parameters: object, body: string, options: object, note: string, authentication: object}|null} Connection object with properties or null if not found
+	 * @example
+	 * const conn = Config.getConn('myConnection');
+	 * const cacheObj = await CacheableDataAccess.getData(
+	 *    cacheProfile,
+	 *    endpoint.get
+	 *    conn
+	 * )
+	 * */
+	static getConn(name) {
+		if (_ConfigSuperClass._connections === null) {
+			return null;
+		}
+		
+		const connection = _ConfigSuperClass._connections.get(name);
+		
+		if (connection === null) {
+			return null;
+		}
+		
+		return connection.toObject();
+	}
+
+	/**
+	 * Get a connection AND one of its Cache Profiles by name and return as plain objects
+	 * @param {string} connectionName The name of the connection to retrieve
+	 * @param {string} cacheProfileName The name of the cache profile to retrieve from the connection
+	 * @returns {{conn: {method: string, uri: string, protocol: string, host: string, path: string, headers: object, parameters: object, body: string, options: object, note: string, authentication: object}|null, cacheProfile: {profile: string, overrideOriginHeaderExpiration: boolean, defaultExpirationInSeconds: number, expirationIsOnInterval: boolean, hostId: string, pathId: string, encrypt: boolean, defaultExpirationExtensionOnErrorInSeconds: number}|null}} Connection and Cache Profile objects or null if not found
+	 * @example
+	 * const { conn, cacheProfile } = Config.getConnCacheProfile('myConnection', 'myCacheProfile');
+	 * const cacheObj = await CacheableDataAccess.getData(
+	 *    cacheProfile,
+	 *    endpoint.get
+	 *    conn
+	 * )
+	 */
+	static getConnCacheProfile(connectionName, cacheProfileName) {
+
+		if (_ConfigSuperClass._connections === null) {
+			return { conn: null, cacheProfile: null };
+		}
+
+		const connection = _ConfigSuperClass._connections.get(connectionName);
+
+		if (connection === null) {
+			return { conn: null, cacheProfile: null };
+		}
+
+		let cacheProfile = null;
+		try {
+			const profile = connection.getCacheProfile(cacheProfileName);
+			cacheProfile = (profile === undefined) ? null : profile;
+		} catch (error) {
+			// getCacheProfile throws if _cacheProfiles is null
+			cacheProfile = null;
+		}
+
+		return {
+			conn: connection.toObject(),
+			cacheProfile: cacheProfile
+		};
 	}
 
 	/**

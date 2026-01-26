@@ -5,3 +5,5 @@ JSON.stringify and JSON.parse are expensive operations, and we are doing them a 
 Identify where they are being used, what they are being used for, and if they are essential. They may be used when a simple clone is needed. 
 
 When certain operations are chained together they may be used multiple times in a chain parse -> stringify -> parse -> stringify etc. Identify where this might be happening.
+
+Find where JSON.stringify and JSON.parse are used and produce a report in the specs/1-3-6-reduce-json-stringify directory. Let me choose what to fix from a list of options.

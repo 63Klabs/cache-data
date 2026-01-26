@@ -1,4 +1,5 @@
 const DebugAndLog = require('./DebugAndLog.class');
+const { safeClone } = require('./utils');
 
 
 /* ****************************************************************************
@@ -150,7 +151,7 @@ class Connection {
 	 * @returns {Object}
 	 */
 	getParameters() {
-		let params = (this._parameters !== null) ? JSON.parse(JSON.stringify(this._parameters)) : null;
+		let params = (this._parameters !== null) ? safeClone(this._parameters) : null;
 
 		if ("parameters" in this._getAuthenticationObject()) {
 			if (params === null) { params = {}; }
@@ -166,7 +167,7 @@ class Connection {
 	 * @returns {Object}
 	 */
 	getHeaders() {
-		let headers = (this._headers !== null) ? JSON.parse(JSON.stringify(this._headers)) : null;
+		let headers = (this._headers !== null) ? safeClone(this._headers) : null;
 
 		if ("headers" in this._getAuthenticationObject()) {
 			if (headers === null) { headers = {}; }
@@ -204,11 +205,16 @@ class Connection {
 	 */
 	getCacheProfile( profileName ) {
 
+		if (this._cacheProfiles === null) {
+			return undefined;
+		}
+
 		function isProfile(item) {
 			return item.profile === profileName;
 		};
 
-		return JSON.parse(JSON.stringify(this._cacheProfiles.find(isProfile)));
+		const profile = this._cacheProfiles.find(isProfile);
+		return profile ? safeClone(profile) : undefined;
 	};
 
 	_setAuthentication(authentication) {
@@ -248,7 +254,10 @@ class Connection {
 		if ( parameters !== null ) { obj.parameters = parameters; }
 		if ( body !== null ) { obj.body = body; }
 
-		if ( this._authentication !== null ) { obj.authentication = this._authentication.toObject(); }
+		const authObj = this._getAuthenticationObject();
+		if ( Object.keys(authObj).length > 0 ) { obj.authentication = authObj; }
+
+		if ( this._cacheProfiles !== null ) { obj.cache = this._cacheProfiles; }
 
 		return obj;
 	};
@@ -414,7 +423,7 @@ class ConnectionAuthentication {
 		let body = this._getBody();
 		if ( Object.keys(body).length ) { obj.body = body; }
 
-		return JSON.parse(JSON.stringify(obj));
+		return safeClone(obj);
 	};
 
 	// Static methods that could perform authentication could go here

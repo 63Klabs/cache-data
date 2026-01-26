@@ -792,4 +792,152 @@ describe("Hash Data", () => {
 		})
 
 	});
+
+	// Feature: reduce-json-stringify - Edge Cases for structuredClone optimization
+	describe("Edge Cases for structuredClone optimization", () => {
+
+		describe("hashThisData with various data types", () => {
+			it("should handle empty objects", () => {
+				const hash = hashThisData("SHA256", {});
+				expect(typeof hash).to.equal("string");
+				expect(hash.length).to.be.greaterThan(0);
+			});
+
+			it("should handle empty arrays", () => {
+				const hash = hashThisData("SHA256", []);
+				expect(typeof hash).to.equal("string");
+				expect(hash.length).to.be.greaterThan(0);
+			});
+
+			it("should handle objects with null values", () => {
+				const data = { a: null, b: null };
+				const hash = hashThisData("SHA256", data);
+				expect(typeof hash).to.equal("string");
+			});
+
+			it("should handle arrays with null values", () => {
+				const data = [null, null, null];
+				const hash = hashThisData("SHA256", data);
+				expect(typeof hash).to.equal("string");
+			});
+
+			it("should handle mixed types in objects", () => {
+				const data = {
+					string: "test",
+					number: 123,
+					boolean: true,
+					null: null,
+					array: [1, 2, 3],
+					object: { nested: "value" }
+				};
+				const hash = hashThisData("SHA256", data);
+				expect(typeof hash).to.equal("string");
+			});
+
+			it("should handle mixed types in arrays", () => {
+				const data = ["string", 123, true, null, [1, 2], { key: "value" }];
+				const hash = hashThisData("SHA256", data);
+				expect(typeof hash).to.equal("string");
+			});
+		});
+
+		describe("Options cloning with nested structures", () => {
+			it("should handle options with salt", () => {
+				const data = { test: "value" };
+				const hash1 = hashThisData("SHA256", data, { salt: "salt1" });
+				const hash2 = hashThisData("SHA256", data, { salt: "salt2" });
+				expect(hash1).to.not.equal(hash2);
+			});
+
+			it("should handle options with iterations", () => {
+				const data = { test: "value" };
+				const hash1 = hashThisData("SHA256", data, { iterations: 1 });
+				const hash2 = hashThisData("SHA256", data, { iterations: 2 });
+				expect(hash1).to.not.equal(hash2);
+			});
+
+			it("should handle options with both salt and iterations", () => {
+				const data = { test: "value" };
+				const hash = hashThisData("SHA256", data, { salt: "test", iterations: 3 });
+				expect(typeof hash).to.equal("string");
+			});
+
+			it("should handle empty options object", () => {
+				const data = { test: "value" };
+				const hash = hashThisData("SHA256", data, {});
+				expect(typeof hash).to.equal("string");
+			});
+		});
+
+		describe("Normalization behavior preservation", () => {
+			it("should normalize BigInt values", () => {
+				const data1 = { value: BigInt(123) };
+				const data2 = { value: BigInt(123) };
+				const hash1 = hashThisData("SHA256", data1);
+				const hash2 = hashThisData("SHA256", data2);
+				expect(hash1).to.equal(hash2);
+			});
+
+			it("should normalize undefined values", () => {
+				const data1 = { a: undefined, b: "test" };
+				const data2 = { a: undefined, b: "test" };
+				const hash1 = hashThisData("SHA256", data1);
+				const hash2 = hashThisData("SHA256", data2);
+				expect(hash1).to.equal(hash2);
+			});
+
+			it("should produce consistent hashes for objects with same content but different key order", () => {
+				const data1 = { a: 1, b: 2, c: 3 };
+				const data2 = { c: 3, a: 1, b: 2 };
+				const hash1 = hashThisData("SHA256", data1);
+				const hash2 = hashThisData("SHA256", data2);
+				expect(hash1).to.equal(hash2);
+			});
+
+			it("should produce consistent hashes for arrays with same content but different order", () => {
+				const data1 = [1, 2, 3];
+				const data2 = [3, 2, 1];
+				const hash1 = hashThisData("SHA256", data1);
+				const hash2 = hashThisData("SHA256", data2);
+				// Arrays are sorted, so hashes should be equal
+				expect(hash1).to.equal(hash2);
+			});
+
+			it("should handle deeply nested objects", () => {
+				const data = {
+					level1: {
+						level2: {
+							level3: {
+								level4: {
+									value: "deep"
+								}
+							}
+						}
+					}
+				};
+				const hash = hashThisData("SHA256", data);
+				expect(typeof hash).to.equal("string");
+			});
+
+			it("should handle deeply nested arrays", () => {
+				const data = [[[[[1, 2, 3]]]]];
+				const hash = hashThisData("SHA256", data);
+				expect(typeof hash).to.equal("string");
+			});
+
+			it("should handle mixed nested structures", () => {
+				const data = {
+					array: [
+						{ nested: [1, 2, 3] },
+						{ nested: [4, 5, 6] }
+					],
+					object: {
+						array: [7, 8, 9]
+					}
+				};
+				const hash = hashThisData("SHA256", data);
+				expect(typeof hash).to.equal("string");
+			});
+		});
+	});
 });
