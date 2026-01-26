@@ -282,4 +282,212 @@ describe('InMemoryCache - Property-Based Tests', () => {
       );
     });
   });
+
+  describe('Property 6: LRU Eviction When At Capacity', () => {
+    // Feature: in-memory-cache, Property 6: LRU Eviction When At Capacity
+    // Validates: Requirements 4.1
+    it('should evict the least recently used entry when cache is at maximum capacity', () => {
+      fc.assert(
+        fc.property(
+          // Generate random maxEntries between 2 and 20
+          fc.integer({ min: 2, max: 20 }),
+          // Generate array of unique keys (more than maxEntries to test eviction)
+          fc.array(fc.string({ minLength: 1, maxLength: 50 }), { minLength: 3, maxLength: 30 }),
+          // Generate random CacheDataFormat objects
+          fc.array(
+            fc.record({
+              cache: fc.record({
+                body: fc.string(),
+                headers: fc.dictionary(fc.string(), fc.string()),
+                expires: fc.integer({ min: Math.floor(Date.now() / 1000), max: Math.floor(Date.now() / 1000) + 86400 }),
+                statusCode: fc.string()
+              })
+            }),
+            { minLength: 3, maxLength: 30 }
+          ),
+          (maxEntries, keys, cacheDataArray) => {
+            // Ensure we have unique keys
+            const uniqueKeys = [...new Set(keys)];
+            
+            // Ensure we have at least maxEntries + 1 unique keys
+            fc.pre(uniqueKeys.length >= maxEntries + 1);
+            
+            // Ensure we have enough cache data objects
+            fc.pre(cacheDataArray.length >= maxEntries + 1);
+            
+            const cache = new InMemoryCache({ maxEntries });
+            const expiresAt = Date.now() + 10000; // 10 seconds from now
+            
+            // Fill cache to capacity with first maxEntries keys
+            for (let i = 0; i < maxEntries; i++) {
+              cache.set(uniqueKeys[i], cacheDataArray[i], expiresAt);
+            }
+            
+            // Verify cache is at capacity
+            assert.strictEqual(cache.info().size, maxEntries, 'Cache should be at capacity');
+            
+            // Add one more entry - this should evict the first (oldest) key
+            // Note: We don't verify the first key exists before eviction because calling get()
+            // would update its LRU position, making it no longer the oldest entry
+            cache.set(uniqueKeys[maxEntries], cacheDataArray[maxEntries], expiresAt);
+            
+            // Verify cache is still at capacity (not over)
+            assert.strictEqual(cache.info().size, maxEntries, 'Cache should remain at capacity after eviction');
+            
+            // Verify first key (oldest) was evicted
+            const afterEviction = cache.get(uniqueKeys[0]);
+            assert.strictEqual(afterEviction.cache, 0, 'First key (oldest) should be evicted');
+            assert.strictEqual(afterEviction.data, null, 'Evicted key should return null data');
+            
+            // Verify new key was added
+            const newKeyResult = cache.get(uniqueKeys[maxEntries]);
+            assert.strictEqual(newKeyResult.cache, 1, 'New key should be added successfully');
+            assert.deepStrictEqual(newKeyResult.data, cacheDataArray[maxEntries], 'New key should have correct data');
+            
+            // Verify other keys (not the first) are still present
+            for (let i = 1; i < maxEntries; i++) {
+              const result = cache.get(uniqueKeys[i]);
+              assert.strictEqual(result.cache, 1, `Key at index ${i} should still exist after eviction`);
+            }
+            
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Property 7: Access Updates LRU Position', () => {
+    // Feature: in-memory-cache, Property 7: Access Updates LRU Position
+    // Validates: Requirements 4.3
+    it('should move accessed entry to most recently used position, preventing premature eviction', () => {
+      fc.assert(
+        fc.property(
+          // Generate random maxEntries between 3 and 20 (need at least 3 for meaningful test)
+          fc.integer({ min: 3, max: 20 }),
+          // Generate array of unique keys
+          fc.array(fc.string({ minLength: 1, maxLength: 50 }), { minLength: 4, maxLength: 30 }),
+          // Generate random CacheDataFormat objects
+          fc.array(
+            fc.record({
+              cache: fc.record({
+                body: fc.string(),
+                headers: fc.dictionary(fc.string(), fc.string()),
+                expires: fc.integer({ min: Math.floor(Date.now() / 1000), max: Math.floor(Date.now() / 1000) + 86400 }),
+                statusCode: fc.string()
+              })
+            }),
+            { minLength: 4, maxLength: 30 }
+          ),
+          (maxEntries, keys, cacheDataArray) => {
+            // Ensure we have unique keys
+            const uniqueKeys = [...new Set(keys)];
+            
+            // Ensure we have at least maxEntries + 1 unique keys
+            fc.pre(uniqueKeys.length >= maxEntries + 1);
+            
+            // Ensure we have enough cache data objects
+            fc.pre(cacheDataArray.length >= maxEntries + 1);
+            
+            const cache = new InMemoryCache({ maxEntries });
+            const expiresAt = Date.now() + 10000; // 10 seconds from now
+            
+            // Fill cache to capacity
+            for (let i = 0; i < maxEntries; i++) {
+              cache.set(uniqueKeys[i], cacheDataArray[i], expiresAt);
+            }
+            
+            // Access the first key (oldest) - this should move it to most recent position
+            const accessResult = cache.get(uniqueKeys[0]);
+            assert.strictEqual(accessResult.cache, 1, 'First key should exist and be accessible');
+            
+            // Add one more entry - this should evict the second key (now oldest), not the first
+            cache.set(uniqueKeys[maxEntries], cacheDataArray[maxEntries], expiresAt);
+            
+            // Verify first key (which was accessed) still exists
+            const firstKeyResult = cache.get(uniqueKeys[0]);
+            assert.strictEqual(firstKeyResult.cache, 1, 'First key should still exist after being accessed');
+            assert.deepStrictEqual(firstKeyResult.data, cacheDataArray[0], 'First key should have correct data');
+            
+            // Verify second key (now oldest after first was accessed) was evicted
+            const secondKeyResult = cache.get(uniqueKeys[1]);
+            assert.strictEqual(secondKeyResult.cache, 0, 'Second key (now oldest) should be evicted');
+            assert.strictEqual(secondKeyResult.data, null, 'Evicted key should return null data');
+            
+            // Verify new key was added
+            const newKeyResult = cache.get(uniqueKeys[maxEntries]);
+            assert.strictEqual(newKeyResult.cache, 1, 'New key should be added successfully');
+            
+            // Verify cache is still at capacity
+            assert.strictEqual(cache.info().size, maxEntries, 'Cache should remain at capacity');
+            
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Property 8: MAX_ENTRIES Calculation From Memory', () => {
+    // Feature: in-memory-cache, Property 8: MAX_ENTRIES Calculation From Memory
+    // Validates: Requirements 5.2
+    it('should calculate maxEntries correctly from Lambda memory allocation using the formula (memoryMB / 1024) * entriesPerGB', () => {
+      fc.assert(
+        fc.property(
+          // Generate random Lambda memory sizes (typical values: 128, 256, 512, 1024, 2048, 3008, etc.)
+          fc.integer({ min: 128, max: 10240 }),
+          // Generate random entriesPerGB heuristic
+          fc.integer({ min: 1000, max: 20000 }),
+          (memoryMB, entriesPerGB) => {
+            // Save original environment variable
+            const originalMemory = process.env.AWS_LAMBDA_FUNCTION_MEMORY_SIZE;
+            
+            try {
+              // Set Lambda memory environment variable
+              process.env.AWS_LAMBDA_FUNCTION_MEMORY_SIZE = memoryMB.toString();
+              
+              // Create cache with the entriesPerGB heuristic
+              const cache = new InMemoryCache({ entriesPerGB });
+              const info = cache.info();
+              
+              // Calculate expected maxEntries: (memoryMB / 1024) * entriesPerGB
+              const expectedMaxEntries = Math.floor((memoryMB / 1024) * entriesPerGB);
+              
+              // Verify maxEntries matches the calculation
+              assert.strictEqual(
+                info.maxEntries,
+                expectedMaxEntries,
+                `maxEntries should be calculated as (${memoryMB} / 1024) * ${entriesPerGB} = ${expectedMaxEntries}`
+              );
+              
+              // Verify memoryMB is stored correctly
+              assert.strictEqual(
+                info.memoryMB,
+                memoryMB,
+                `memoryMB should be stored as ${memoryMB}`
+              );
+              
+              // Verify maxEntries is at least 1 (even if calculation results in 0)
+              assert.ok(
+                info.maxEntries >= 1,
+                'maxEntries should always be at least 1'
+              );
+              
+              return true;
+            } finally {
+              // Restore original environment variable
+              if (originalMemory !== undefined) {
+                process.env.AWS_LAMBDA_FUNCTION_MEMORY_SIZE = originalMemory;
+              } else {
+                delete process.env.AWS_LAMBDA_FUNCTION_MEMORY_SIZE;
+              }
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
 });

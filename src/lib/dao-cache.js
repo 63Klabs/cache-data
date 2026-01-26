@@ -1030,6 +1030,8 @@ class Cache {
 
 	static #idHashAlgorithm = null;
 	static #useToolsHash = null; // gets set in Cache.init()
+	static #useInMemoryCache = false;
+	static #inMemoryCache = null;
 
 	#syncedNowTimestampInSeconds = 0; // consistent time base for calculations
 	#syncedLaterTimestampInSeconds = 0; // default expiration if not adjusted
@@ -1142,6 +1144,22 @@ class Cache {
 		this.#useToolsHash = ( "useToolsHash" in parameters ) ? Cache.bool(parameters.useToolsHash) : 
 			("CACHE_DATA_USE_TOOLS_HASH" in process.env ? Cache.bool(process.env.CACHE_DATA_USE_TOOLS_HASH_METHOD) : false);
 		
+		// Initialize in-memory cache feature flag
+		this.#useInMemoryCache = parameters.useInMemoryCache || 
+			(process.env.CACHE_USE_IN_MEMORY === 'true') || 
+			false;
+		
+		// Initialize InMemoryCache if enabled
+		if (this.#useInMemoryCache) {
+			const InMemoryCache = require('./utils/InMemoryCache.js');
+			this.#inMemoryCache = new InMemoryCache({
+				maxEntries: parameters.inMemoryCacheMaxEntries,
+				entriesPerGB: parameters.inMemoryCacheEntriesPerGB,
+				defaultMaxEntries: parameters.inMemoryCacheDefaultMaxEntries
+			});
+			tools.DebugAndLog.debug('In-memory cache initialized');
+		}
+		
 		// Let CacheData handle the rest of the initialization
 		CacheData.init(parameters);
 	};
@@ -1162,7 +1180,15 @@ class Cache {
 	 * }}
 	 */
 	static info() {
-		return Object.assign({ idHashAlgorithm: this.#idHashAlgorithm }, CacheData.info()); // merge into 1 object and return
+		const info = Object.assign({ idHashAlgorithm: this.#idHashAlgorithm }, CacheData.info()); // merge into 1 object
+		
+		// Add in-memory cache info
+		info.useInMemoryCache = this.#useInMemoryCache;
+		if (this.#useInMemoryCache && this.#inMemoryCache !== null) {
+			info.inMemoryCache = this.#inMemoryCache.info();
+		}
+		
+		return info;
 	};
 
 	/**
@@ -1464,15 +1490,63 @@ class Cache {
 				resolve(this.#store);
 			} else {
 				try {
+					let staleData = null;
+					
+					// Check L0_Cache if feature is enabled
+					if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null) {
+						const memResult = Cache.#inMemoryCache.get(this.#idHash);
+						
+						if (memResult.cache === 1) {
+							// Cache hit - return immediately
+							this.#store = memResult.data;
+							this.#status = Cache.STATUS_CACHE_IN_MEM;
+							tools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);
+							resolve(this.#store);
+							return;
+						} else if (memResult.cache === -1) {
+							// Expired - retain for potential fallback
+							staleData = memResult.data;
+							tools.DebugAndLog.debug(`In-memory cache expired, retaining stale data: ${this.#idHash}`);
+						}
+						// cache === 0 means miss, continue to DynamoDB
+					}
+					
+					// Fetch from DynamoDB
 					this.#store = await CacheData.read(this.#idHash, this.#syncedLaterTimestampInSeconds);
 					this.#status = ( this.#store.cache.statusCode === null ) ? Cache.STATUS_NO_CACHE : Cache.STATUS_CACHE;
+					
+					// Store in L0_Cache if successful and feature enabled
+					if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null && this.#store.cache.statusCode !== null) {
+						const expiresAt = this.#store.cache.expires * 1000; // Convert to milliseconds
+						Cache.#inMemoryCache.set(this.#idHash, this.#store, expiresAt);
+						tools.DebugAndLog.debug(`Stored in L0_Cache: ${this.#idHash}`);
+					}
 
 					tools.DebugAndLog.debug(`Cache Read status: ${this.#status}`);
 
 					resolve(this.#store);
 				} catch (error) {
-					this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
-					this.#status = Cache.STATUS_CACHE_ERROR;
+					// Error occurred - check if we have stale data to return
+					if (staleData !== null) {
+						// Calculate new expiration using error extension
+						const newExpires = this.#syncedNowTimestampInSeconds + this.#defaultExpirationExtensionOnErrorInSeconds;
+						const newExpiresAt = newExpires * 1000;
+						
+						// Update stale data expiration
+						staleData.cache.expires = newExpires;
+						
+						// Store updated stale data back in L0_Cache
+						if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null) {
+							Cache.#inMemoryCache.set(this.#idHash, staleData, newExpiresAt);
+						}
+						
+						this.#store = staleData;
+						this.#status = Cache.STATUS_CACHE_ERROR;
+						tools.DebugAndLog.warn(`Returning stale data due to error: ${this.#idHash}`);
+					} else {
+						this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
+						this.#status = Cache.STATUS_CACHE_ERROR;
+					}
 
 					tools.DebugAndLog.error(`Cache Read: Cannot read cached data for ${this.#idHash}: ${error?.message || 'Unknown error'}`, error?.stack);
 
