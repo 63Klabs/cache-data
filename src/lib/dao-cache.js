@@ -33,9 +33,24 @@ const objHash = require('object-hash');
 const moment = require('moment-timezone');
 
 /**
- * Basic S3 read/write for cache data. No cache logic,
- * only handles the storage format and retrieval.
- * Logic is handled by CacheData.
+ * Basic S3 read/write for cache data. Provides low-level storage operations
+ * for cached data in Amazon S3. This class handles only the storage format
+ * and retrieval operations - cache expiration logic and data management are
+ * handled by the CacheData class.
+ * 
+ * Use this class when you need direct access to S3 cache storage operations.
+ * For most use cases, use the Cache or CacheableDataAccess classes instead.
+ * 
+ * @example
+ * // Initialize S3Cache with bucket name
+ * S3Cache.init('my-cache-bucket');
+ * 
+ * // Write data to cache
+ * const data = JSON.stringify({ body: 'content', headers: {} });
+ * await S3Cache.write('cache-key-hash', data);
+ * 
+ * // Read data from cache
+ * const cachedData = await S3Cache.read('cache-key-hash');
  */
 class S3Cache {
 
@@ -46,24 +61,50 @@ class S3Cache {
 	};
 
 	/**
+	 * Get the S3 bucket name configured for cache storage.
+	 * Returns null if S3Cache has not been initialized.
 	 * 
-	 * @returns {string} The bucket name used for cached data
+	 * @returns {string|null} The bucket name used for cached data, or null if not initialized
+	 * @example
+	 * const bucketName = S3Cache.getBucket();
+	 * console.log(`Cache bucket: ${bucketName}`);
 	 */
 	static getBucket() {
 		return this.#bucket;
 	};
 
 	/**
+	 * Get the S3 object key prefix (path) used for all cache objects.
+	 * This prefix is prepended to all cache object keys to organize
+	 * cached data within the bucket.
 	 * 
-	 * @returns {string} The object key (path) for cache objects
+	 * @returns {string} The object key prefix for cache objects (default: "cache/")
+	 * @example
+	 * const cachePath = S3Cache.getPath();
+	 * console.log(`Cache path prefix: ${cachePath}`); // "cache/"
 	 */
 	static getPath() {
 		return this.#objPath;
 	};
 
 	/**
-	 * Initialize the S3 bucket for storing cached data.
-	 * @param {string} bucket The bucket name for storing cached data
+	 * Initialize the S3 bucket for storing cached data. This method must be
+	 * called before any read or write operations. Can only be initialized once -
+	 * subsequent calls will be ignored with a warning.
+	 * 
+	 * The bucket name can be provided as a parameter or via the
+	 * CACHE_DATA_S3_BUCKET environment variable.
+	 * 
+	 * @param {string|null} [bucket=null] The bucket name for storing cached data. If null, uses CACHE_DATA_S3_BUCKET environment variable
+	 * @throws {Error} If no bucket name is provided and CACHE_DATA_S3_BUCKET environment variable is not set
+	 * @example
+	 * // Initialize with explicit bucket name
+	 * S3Cache.init('my-cache-bucket');
+	 * 
+	 * @example
+	 * // Initialize using environment variable
+	 * process.env.CACHE_DATA_S3_BUCKET = 'my-cache-bucket';
+	 * S3Cache.init();
 	 */
 
 	static init(bucket = null) {
@@ -81,8 +122,13 @@ class S3Cache {
 	};
 
 	/**
-	 * S3Cache information
-	 * @returns {{bucket: string, path: string}} The bucket and path (key) used for cached data
+	 * Get configuration information about the S3Cache instance.
+	 * Returns the bucket name and object key prefix currently in use.
+	 * 
+	 * @returns {{bucket: string|null, path: string}} Object containing bucket name and path prefix used for cached data
+	 * @example
+	 * const info = S3Cache.info();
+	 * console.log(`Bucket: ${info.bucket}, Path: ${info.path}`);
 	 */
 	static info() {
 		return {
@@ -92,8 +138,16 @@ class S3Cache {
 	};
 
 	/**
-	 * @param {Buffer|ReadableStream} s3Body
-	 * @returns {object} a parsed JSON object
+	 * Convert an S3 response body to a JavaScript object. Handles both Buffer
+	 * and ReadableStream response types from the AWS SDK, parsing the JSON
+	 * content into a usable object.
+	 * 
+	 * @param {Buffer|ReadableStream} s3Body The S3 response body to convert
+	 * @returns {Promise<Object>} A parsed JSON object from the S3 body content
+	 * @throws {SyntaxError} If the body content is not valid JSON
+	 * @example
+	 * const s3Response = await tools.AWS.s3.get(params);
+	 * const dataObject = await S3Cache.s3BodyToObject(s3Response.Body);
 	 */
 	static async s3BodyToObject(s3Body) {
 		let str = "";
@@ -112,9 +166,21 @@ class S3Cache {
 	}
 	
 	/**
-	 * Read cache data from S3 for given idHash
-	 * @param {string} idHash The id of the cached content to retrieve
-	 * @returns {Promise<object>} Cache data
+	 * Read cached data from S3 for the given cache identifier hash.
+	 * Retrieves the JSON object stored at the cache key location and parses it.
+	 * Returns null if the object doesn't exist or if an error occurs during retrieval.
+	 * 
+	 * The cache object is stored at: {bucket}/{path}{idHash}.json
+	 * 
+	 * @param {string} idHash The unique identifier hash of the cached content to retrieve
+	 * @returns {Promise<Object|null>} The cached data object, or null if not found or on error
+	 * @example
+	 * const cachedData = await S3Cache.read('abc123def456');
+	 * if (cachedData) {
+	 *   console.log('Cache hit:', cachedData);
+	 * } else {
+	 *   console.log('Cache miss or error');
+	 * }
 	 */
 	static async read (idHash) {
 
@@ -154,10 +220,21 @@ class S3Cache {
 	};
 
 	/**
-	 * Write data to cache in S3
-	 * @param {string} idHash ID of data to write
-	 * @param {Object} data Data to write to cache
-	 * @returns {Promise<boolean>} Whether or not the write was successful
+	 * Write data to the cache in S3. Stores the provided data as a JSON object
+	 * at the cache key location. The data should already be in string format
+	 * (typically JSON.stringify'd).
+	 * 
+	 * The cache object is stored at: {bucket}/{path}{idHash}.json
+	 * 
+	 * @param {string} idHash The unique identifier hash for the cache entry
+	 * @param {string} data The data to write to cache (should be a JSON string)
+	 * @returns {Promise<boolean>} True if write was successful, false if an error occurred
+	 * @example
+	 * const cacheData = JSON.stringify({ body: 'content', headers: {}, expires: 1234567890 });
+	 * const success = await S3Cache.write('abc123def456', cacheData);
+	 * if (success) {
+	 *   console.log('Cache written successfully');
+	 * }
 	 */
 	static async write (idHash, data) {
 
@@ -191,9 +268,24 @@ class S3Cache {
 };
 
 /**
- * Basic DynamoDb read/write for cache data. No cache logic,
- * only handles the storage format and retrieval.
- * Logic is handled by CacheData.
+ * Basic DynamoDb read/write for cache data. Provides low-level storage operations
+ * for cached data in Amazon DynamoDB. This class handles only the storage format
+ * and retrieval operations - cache expiration logic and data management are
+ * handled by the CacheData class.
+ * 
+ * Use this class when you need direct access to DynamoDB cache storage operations.
+ * For most use cases, use the Cache or CacheableDataAccess classes instead.
+ * 
+ * @example
+ * // Initialize DynamoDbCache with table name
+ * DynamoDbCache.init('my-cache-table');
+ * 
+ * // Write data to cache
+ * const item = { id_hash: 'cache-key', data: {}, expires: 1234567890 };
+ * await DynamoDbCache.write(item);
+ * 
+ * // Read data from cache
+ * const cachedData = await DynamoDbCache.read('cache-key');
  */
 class DynamoDbCache {
 
@@ -203,8 +295,23 @@ class DynamoDbCache {
 	};
 
 	/**
-	 * Initialize the DynamoDb settings for storing cached data
-	 * @param {string|null} table The table name to store cached data
+	 * Initialize the DynamoDB table for storing cached data. This method must be
+	 * called before any read or write operations. Can only be initialized once -
+	 * subsequent calls will be ignored with a warning.
+	 * 
+	 * The table name can be provided as a parameter or via the
+	 * CACHE_DATA_DYNAMO_DB_TABLE environment variable.
+	 * 
+	 * @param {string|null} [table=null] The table name to store cached data. If null, uses CACHE_DATA_DYNAMO_DB_TABLE environment variable
+	 * @throws {Error} If no table name is provided and CACHE_DATA_DYNAMO_DB_TABLE environment variable is not set
+	 * @example
+	 * // Initialize with explicit table name
+	 * DynamoDbCache.init('my-cache-table');
+	 * 
+	 * @example
+	 * // Initialize using environment variable
+	 * process.env.CACHE_DATA_DYNAMO_DB_TABLE = 'my-cache-table';
+	 * DynamoDbCache.init();
 	 */
 	static init(table = null) {
 		if ( this.#table === null ) {
@@ -221,17 +328,35 @@ class DynamoDbCache {
 	};
 
 	/**
-	 * Information about the DynamoDb table storing cached data
-	 * @returns {string} The DynamoDb table name
+	 * Get configuration information about the DynamoDbCache instance.
+	 * Returns the table name currently in use for cache storage.
+	 * 
+	 * @returns {string|null} The DynamoDB table name, or null if not initialized
+	 * @example
+	 * const tableName = DynamoDbCache.info();
+	 * console.log(`Cache table: ${tableName}`);
 	 */
 	static info() {
 		return this.#table;
 	};
 
 	/**
-	 * Read cache data from DynamoDb for given idHash
-	 * @param {string} idHash The id of the cached content to retrieve
-	 * @returns {Promise<object>} Cached data
+	 * Read cached data from DynamoDB for the given cache identifier hash.
+	 * Retrieves the cache record using the id_hash as the primary key.
+	 * Returns an empty object if the record doesn't exist or if an error occurs.
+	 * 
+	 * The query uses ProjectionExpression to retrieve only the necessary fields:
+	 * id_hash, data, and expires.
+	 * 
+	 * @param {string} idHash The unique identifier hash of the cached content to retrieve
+	 * @returns {Promise<Object>} The DynamoDB query result containing the Item property with cached data, or empty object on error
+	 * @example
+	 * const result = await DynamoDbCache.read('abc123def456');
+	 * if (result.Item) {
+	 *   console.log('Cache hit:', result.Item);
+	 * } else {
+	 *   console.log('Cache miss or error');
+	 * }
 	 */
 	static async read (idHash) {
 
@@ -269,9 +394,27 @@ class DynamoDbCache {
 	};
 
 	/**
-	 * Write data to cache in DynamoDb
-	 * @param {object} item JSON object to write to DynamoDb
-	 * @returns {Promise<boolean>} Whether or not the write was successful
+	 * Write data to the cache in DynamoDB. Stores the provided item object
+	 * as a record in the DynamoDB table. The item must contain an id_hash
+	 * property which serves as the primary key.
+	 * 
+	 * @param {Object} item The cache item object to write to DynamoDB. Must include id_hash property
+	 * @param {string} item.id_hash The unique identifier hash for the cache entry (primary key)
+	 * @param {Object} item.data The cached data object
+	 * @param {number} item.expires The expiration timestamp in seconds
+	 * @param {number} item.purge_ts The timestamp when the expired entry should be purged
+	 * @returns {Promise<boolean>} True if write was successful, false if an error occurred
+	 * @example
+	 * const item = {
+	 *   id_hash: 'abc123def456',
+	 *   data: { body: 'content', headers: {} },
+	 *   expires: 1234567890,
+	 *   purge_ts: 1234654290
+	 * };
+	 * const success = await DynamoDbCache.write(item);
+	 * if (success) {
+	 *   console.log('Cache written successfully');
+	 * }
 	 */
 	static async write (item) {
 
@@ -303,9 +446,34 @@ class DynamoDbCache {
 };
 
 /**
- * Accesses cached data stored in DynamoDb and S3. CacheData is a static 
- * object that manages expiration calculations, accessing and storing data. 
- * This class is used by the publicly exposed class Cache
+ * Manages cached data stored in DynamoDB and S3. CacheData is a static class
+ * that handles expiration calculations, data encryption/decryption, and
+ * coordinates storage between DynamoDB (for small items) and S3 (for large items).
+ * 
+ * This class is used internally by the publicly exposed Cache class and should
+ * not be used directly in most cases. Use the Cache or CacheableDataAccess
+ * classes instead for application-level caching.
+ * 
+ * Key responsibilities:
+ * - Expiration time calculations and interval-based caching
+ * - Data encryption for private/sensitive content
+ * - Automatic routing between DynamoDB and S3 based on size
+ * - ETag and Last-Modified header generation
+ * 
+ * @example
+ * // Initialize CacheData (typically done through Cache.init())
+ * CacheData.init({
+ *   dynamoDbTable: 'my-cache-table',
+ *   s3Bucket: 'my-cache-bucket',
+ *   secureDataKey: Buffer.from('...'),
+ *   secureDataAlgorithm: 'aes-256-cbc'
+ * });
+ * 
+ * // Read from cache
+ * const cacheData = await CacheData.read('cache-key-hash', expiresTimestamp);
+ * 
+ * // Write to cache
+ * await CacheData.write('cache-key-hash', now, body, headers, host, path, expires, statusCode, true);
  */
 class CacheData {
 
@@ -326,15 +494,34 @@ class CacheData {
 	};
 
 	/**
+	 * Initialize CacheData with configuration parameters. This method must be called
+	 * before any cache operations. It initializes both DynamoDbCache and S3Cache,
+	 * sets up encryption parameters, and configures cache behavior settings.
 	 * 
-	 * @param {Object} parameters
-	 * @param {string} parameters.dynamoDbTable
-	 * @param {string} parameters.s3Bucket
-	 * @param {string} parameters.secureDataAlgorithm
-	 * @param {string|Buffer|tools.Secret|tools.CachedSSMParameter|tools.CachedSecret} parameters.secureDataKey
-	 * @param {number} parameters.DynamoDbMaxCacheSize_kb
-	 * @param {number} parameters.purgeExpiredCacheEntriesAfterXHours
-	 * @param {string} parameters.timeZoneForInterval
+	 * Configuration can be provided via parameters or environment variables.
+	 * 
+	 * @param {Object} parameters Configuration object
+	 * @param {string} [parameters.dynamoDbTable] DynamoDB table name (or use CACHE_DATA_DYNAMO_DB_TABLE env var)
+	 * @param {string} [parameters.s3Bucket] S3 bucket name (or use CACHE_DATA_S3_BUCKET env var)
+	 * @param {string} [parameters.secureDataAlgorithm='aes-256-cbc'] Encryption algorithm (or use CACHE_DATA_SECURE_DATA_ALGORITHM env var)
+	 * @param {string|Buffer|tools.Secret|tools.CachedSSMParameter|tools.CachedSecret} parameters.secureDataKey Encryption key (required, no env var for security)
+	 * @param {number} [parameters.DynamoDbMaxCacheSize_kb=10] Max size in KB for DynamoDB storage (or use CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB env var)
+	 * @param {number} [parameters.purgeExpiredCacheEntriesAfterXHours=24] Hours after expiration to purge entries (or use CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS env var)
+	 * @param {string} [parameters.timeZoneForInterval='Etc/UTC'] Timezone for interval calculations (or use CACHE_DATA_TIME_ZONE_FOR_INTERVAL env var)
+	 * @throws {Error} If secureDataKey is not provided
+	 * @throws {Error} If DynamoDbMaxCacheSize_kb is not a positive integer
+	 * @throws {Error} If purgeExpiredCacheEntriesAfterXHours is not a positive integer
+	 * @throws {Error} If timeZoneForInterval is not a non-empty string
+	 * @example
+	 * CacheData.init({
+	 *   dynamoDbTable: 'my-cache-table',
+	 *   s3Bucket: 'my-cache-bucket',
+	 *   secureDataKey: Buffer.from('my-32-byte-key-here', 'hex'),
+	 *   secureDataAlgorithm: 'aes-256-cbc',
+	 *   DynamoDbMaxCacheSize_kb: 10,
+	 *   purgeExpiredCacheEntriesAfterXHours: 24,
+	 *   timeZoneForInterval: 'America/Chicago'
+	 * });
 	 */
 	static init(parameters) {
 
@@ -399,10 +586,21 @@ class CacheData {
 	};
 
 	/**
-	 * Similar to init, but runs during execution time to refresh environment variables that may have changed since init.
-	 * Calling .prime() without an await can help get runtime refreshes started.
-	 * You can safely call .prime() again with an await to make sure it has completed just before you need it.
-	 * @returns {Promise<boolean>}
+	 * Refresh runtime environment variables and cached secrets. This method can be
+	 * called during execution to update values that may have changed since init().
+	 * 
+	 * Calling prime() without await can help get runtime refreshes started in the
+	 * background. You can safely call prime() again with await just before you need
+	 * the refreshed values to ensure completion.
+	 * 
+	 * @returns {Promise<boolean>} True if priming was successful, false if an error occurred
+	 * @example
+	 * // Start priming in background
+	 * CacheData.prime();
+	 * 
+	 * // Later, ensure priming is complete before using
+	 * await CacheData.prime();
+	 * const data = await CacheData.read(idHash, expires);
 	 */
 	static async prime() {
 		return new Promise(async (resolve) => {
@@ -433,33 +631,53 @@ class CacheData {
 	};
 
 	/**
+	 * Get the timezone offset in minutes from UTC, accounting for daylight saving time.
+	 * This offset is used for interval-based cache expiration calculations to align
+	 * intervals with local midnight rather than UTC midnight.
 	 * 
-	 * @returns {number} The offset in minutes taking into account whether or not daylight savings is in effect AND observed
+	 * The offset is calculated based on the timeZoneForInterval setting and the
+	 * current date/time to account for DST transitions.
+	 * 
+	 * @returns {number} The offset in minutes from UTC (positive for west of UTC, negative for east)
+	 * @example
+	 * const offset = CacheData.getOffsetInMinutes();
+	 * console.log(`Timezone offset: ${offset} minutes from UTC`);
 	 */
 	static getOffsetInMinutes() {
 		return this.#offsetInMinutes;
 	};
 
 	/**
-	 * https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-	 * @returns {string} Returns the TZ database name assigned to the time zone
+	 * Get the TZ database timezone name used for interval calculations.
+	 * This timezone is used to align cache expiration intervals with local time
+	 * rather than UTC, which is useful for aligning with business hours or
+	 * batch processing schedules.
+	 * 
+	 * See: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+	 * 
+	 * @returns {string} The TZ database name (e.g., 'America/Chicago', 'Etc/UTC')
+	 * @example
+	 * const tz = CacheData.getTimeZoneForInterval();
+	 * console.log(`Cache intervals aligned to: ${tz}`);
 	 */
 	static getTimeZoneForInterval() {
 		return this.#timeZoneForInterval;
 	};
 
 	/**
-	 * Get information about the cache settings
-	 * @returns {{
-	 * 		dynamoDbTable: string, 
-	 * 		s3Bucket: string,
-	 * 		secureDataAlgorithm: string,
-	 * 		secureDataKey: string,
-	 * 		DynamoDbMaxCacheSize_kb: number,
-	 * 		purgeExpiredCacheEntriesAfterXHours: number,
-	 * 		timeZoneForInterval: string,
-	 * 		offsetInMinutes: number
-	 * }}
+	 * Get comprehensive information about the cache configuration settings.
+	 * Returns an object containing all configuration parameters including
+	 * DynamoDB table, S3 bucket, encryption settings, size limits, and
+	 * timezone information.
+	 * 
+	 * Note: The secureDataKey is masked for security and shows only the key type.
+	 * 
+	 * @returns {{dynamoDbTable: string, s3Bucket: Object, secureDataAlgorithm: string, secureDataKey: string, DynamoDbMaxCacheSize_kb: number, purgeExpiredCacheEntriesAfterXHours: number, timeZoneForInterval: string, offsetInMinutes: number}} Configuration information object
+	 * @example
+	 * const info = CacheData.info();
+	 * console.log(`Cache table: ${info.dynamoDbTable}`);
+	 * console.log(`Max DynamoDB size: ${info.DynamoDbMaxCacheSize_kb} KB`);
+	 * console.log(`Timezone: ${info.timeZoneForInterval}`);
 	 */
 	static info() {
 
@@ -477,12 +695,18 @@ class CacheData {
 	};
 
 	/**
-	 * Format the cache object for returning to main program
-	 * @param {number} expires 
-	 * @param {Object} body 
-	 * @param {Object} headers 
-	 * @param {string} statusCode 
-	 * @returns {CacheDataFormat} Formatted cache object
+	 * Format cache data into the standard CacheDataFormat structure.
+	 * Creates a cache object with the specified expiration, body, headers, and status code.
+	 * 
+	 * @param {number|null} [expires=null] Expiration timestamp in seconds
+	 * @param {string|null} [body=null] The cached content body
+	 * @param {Object|null} [headers=null] HTTP headers object
+	 * @param {string|null} [statusCode=null] HTTP status code
+	 * @returns {CacheDataFormat} Formatted cache object with cache property containing body, headers, expires, and statusCode
+	 * @example
+	 * const cacheData = CacheData.format(1234567890, '{"data":"value"}', {'content-type':'application/json'}, '200');
+	 * console.log(cacheData.cache.body); // '{"data":"value"}'
+	 * console.log(cacheData.cache.expires); // 1234567890
 	 */
 	static format(expires = null, body = null, headers = null, statusCode = null) {
 		return { "cache": { body: body, headers: headers, expires: expires, statusCode: statusCode } };
@@ -547,10 +771,25 @@ class CacheData {
 	};
 
 	/**
+	 * Read cached data from storage (DynamoDB and potentially S3). Retrieves the
+	 * cache entry for the given ID hash, handles decryption if needed, and returns
+	 * the formatted cache data.
 	 * 
-	 * @param {string} idHash 
-	 * @param {number} syncedLater 
-	 * @returns {Promise<CacheDataFormat>} 
+	 * If the cached item is stored in S3 (indicated by objInS3 flag), this method
+	 * automatically fetches it from S3. Handles both public and private (encrypted)
+	 * cache entries.
+	 * 
+	 * @param {string} idHash The unique identifier hash for the cache entry
+	 * @param {number} syncedLater Default expiration timestamp to use if cache is not found
+	 * @returns {Promise<CacheDataFormat>} Formatted cache data with body, headers, expires, and statusCode
+	 * @example
+	 * const expiresDefault = Math.floor(Date.now() / 1000) + 300; // 5 minutes from now
+	 * const cacheData = await CacheData.read('abc123def456', expiresDefault);
+	 * if (cacheData.cache.body) {
+	 *   console.log('Cache hit:', cacheData.cache.body);
+	 * } else {
+	 *   console.log('Cache miss');
+	 * }
 	 */
 	static async read(idHash, syncedLater) {
 
@@ -584,17 +823,40 @@ class CacheData {
 	};
 
 	/**
+	 * Write data to cache storage (DynamoDB and potentially S3). Handles encryption
+	 * for private data, generates ETags and headers, and automatically routes large
+	 * items to S3 while keeping a pointer in DynamoDB.
 	 * 
-	 * @param {string} idHash ID of data to write
-	 * @param {number} syncedNow 
-	 * @param {string} body 
-	 * @param {Object} headers 
-	 * @param {string} host 
-	 * @param {string} path 
-	 * @param {number} expires 
-	 * @param {number} statusCode 
-	 * @param {boolean} encrypt 
-	 * @returns {Promise<CacheDataFormat>}
+	 * Items larger than DynamoDbMaxCacheSize_kb are stored in S3 with a reference
+	 * in DynamoDB. Smaller items are stored entirely in DynamoDB for faster access.
+	 * 
+	 * @param {string} idHash The unique identifier hash for the cache entry
+	 * @param {number} syncedNow Current timestamp in seconds
+	 * @param {string} body The content body to cache
+	 * @param {Object} headers HTTP headers object
+	 * @param {string} host Host identifier for logging
+	 * @param {string} path Path identifier for logging
+	 * @param {number} expires Expiration timestamp in seconds
+	 * @param {string|number} statusCode HTTP status code
+	 * @param {boolean} [encrypt=true] Whether to encrypt the body (true for private, false for public)
+	 * @returns {Promise<CacheDataFormat>} Formatted cache data that was written
+	 * @example
+	 * const now = Math.floor(Date.now() / 1000);
+	 * const expires = now + 3600; // 1 hour from now
+	 * const body = JSON.stringify({ data: 'value' });
+	 * const headers = { 'content-type': 'application/json' };
+	 * 
+	 * const cacheData = await CacheData.write(
+	 *   'abc123def456',
+	 *   now,
+	 *   body,
+	 *   headers,
+	 *   'api.example.com',
+	 *   '/api/data',
+	 *   expires,
+	 *   '200',
+	 *   true
+	 * );
 	 */
 	static async write (idHash, syncedNow, body, headers, host, path, expires, statusCode, encrypt = true) {
 
@@ -727,9 +989,14 @@ class CacheData {
 	*/
 
 	/**
-	 * Returns the type of secureDataKey
+	 * Get the type of the secure data key being used for encryption.
+	 * Returns a string indicating whether the key is a Buffer, string, or
+	 * CachedParameterSecret object.
 	 * 
-	 * @returns {string} 'buffer', 'string', 'CachedParameterSecret'
+	 * @returns {string} One of: 'buffer', 'string', or 'CachedParameterSecret'
+	 * @example
+	 * const keyType = CacheData.getSecureDataKeyType();
+	 * console.log(`Encryption key type: ${keyType}`);
 	 */
 	static getSecureDataKeyType() {
 		// look at type of parameters.secureDataKey as it can be a string, Buffer, or object.
@@ -740,9 +1007,16 @@ class CacheData {
 	}
 
 	/**
-	 * Obtain the secureDataKey as a Buffer for encryption/decryption.
-	 *
-	 * @returns {Buffer|null} The Data key as a buffer in the format specified by CacheData.CRYPT_ENCODING
+	 * Obtain the secure data key as a Buffer for encryption/decryption operations.
+	 * Handles different key storage formats (Buffer, string, CachedParameterSecret)
+	 * and converts them to a Buffer in the format specified by CRYPT_ENCODING.
+	 * 
+	 * @returns {Buffer|null} The encryption key as a Buffer, or null if key cannot be retrieved
+	 * @example
+	 * const keyBuffer = CacheData.getSecureDataKey();
+	 * if (keyBuffer) {
+	 *   // Use keyBuffer for encryption/decryption
+	 * }
 	 */
 	static getSecureDataKey() {
 
@@ -826,18 +1100,19 @@ class CacheData {
 
 	// utility functions
 	/**
-	 * Generate an eTag hash
+	 * Generate an ETag hash for cache validation. Creates a unique hash by combining
+	 * the cache ID hash with the content. This is used for HTTP ETag headers to
+	 * enable conditional requests and cache validation.
 	 * 
-	 * This is very basic as there is no specification for doing this.
-	 * All an eTag needs to be is a unique hash for a particular request.
-	 * We already have a unique ID for the request, so it's not like we
-	 * need to make sure the content matches (or does not match) any content
-	 * throughout the rest of the world. We are just doing a quick check
-	 * at this exact endpoint. So we pair the idHash (this exact endpoint)
-	 * with it's content.
-	 * @param {string} idHash The id of the endpoint
-	 * @param {string} content The string to generate an eTag for
-	 * @returns {string} 10 character ETag hash
+	 * The ETag is a 10-character SHA-1 hash slice, which is sufficient for cache
+	 * validation at a specific endpoint without needing global uniqueness.
+	 * 
+	 * @param {string} idHash The unique identifier hash for the cache entry
+	 * @param {string} content The content body to include in the ETag calculation
+	 * @returns {string} A 10-character ETag hash
+	 * @example
+	 * const etag = CacheData.generateEtag('abc123', '{"data":"value"}');
+	 * console.log(`ETag: ${etag}`); // e.g., "a1b2c3d4e5"
 	 */
 	static generateEtag (idHash, content) {
 		const hasher = crypto.createHash('sha1');
@@ -847,16 +1122,22 @@ class CacheData {
 	};
 
 	/**
-	 * Generate an internet formatted date such as those used in headers.
+	 * Generate an internet-formatted date string for use in HTTP headers.
+	 * Converts a Unix timestamp to the standard HTTP date format.
 	 * 
-	 * Example: "Wed, 28 Jul 2021 12:24:11 GMT"
+	 * Example output: "Wed, 28 Jul 2021 12:24:11 GMT"
 	 * 
-	 * The timestamp passed is expected to be in seconds. If it is in
-	 * milliseconds then inMilliSeconds parameter needs to be set to
-	 * true.
-	 * @param {number} timestamp If in milliseconds, inMilliseconds parameter MUST be set to true
-	 * @param {boolean} inMilliSeconds Set to true if timestamp passed is in milliseconds. Default is false
-	 * @returns {string} An internet formatted date such as Wed, 28 Jul 2021 12:24:11 GMT
+	 * @param {number} timestamp Unix timestamp (in seconds by default, or milliseconds if inMilliSeconds is true)
+	 * @param {boolean} [inMilliSeconds=false] Set to true if timestamp is in milliseconds
+	 * @returns {string} Internet-formatted date string (e.g., "Wed, 28 Jul 2021 12:24:11 GMT")
+	 * @example
+	 * const now = Math.floor(Date.now() / 1000);
+	 * const dateStr = CacheData.generateInternetFormattedDate(now);
+	 * console.log(dateStr); // "Mon, 26 Jan 2026 15:30:45 GMT"
+	 * 
+	 * @example
+	 * const nowMs = Date.now();
+	 * const dateStr = CacheData.generateInternetFormattedDate(nowMs, true);
 	 */
 	static generateInternetFormattedDate (timestamp, inMilliSeconds = false) {
 
@@ -868,12 +1149,18 @@ class CacheData {
 	};
 
 	/**
-	 * Returns an object with lowercase keys. Note that if after
-	 * lowercasing the keys there is a collision one will be
-	 * over-written.
-	 * Can be used for headers, response, or more.
-	 * @param {Object} objectWithKeys 
-	 * @returns {Object} Same object but with lowercase keys
+	 * Convert all keys in an object to lowercase. Useful for normalizing HTTP headers
+	 * or other key-value pairs for case-insensitive comparison.
+	 * 
+	 * Note: If lowercasing keys causes a collision (e.g., "Content-Type" and "content-type"),
+	 * one value will overwrite the other.
+	 * 
+	 * @param {Object} objectWithKeys Object whose keys should be lowercased
+	 * @returns {Object} New object with all keys converted to lowercase
+	 * @example
+	 * const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
+	 * const normalized = CacheData.lowerCaseKeys(headers);
+	 * console.log(normalized); // { 'content-type': 'application/json', 'cache-control': 'no-cache' }
 	 */
 	static lowerCaseKeys (objectWithKeys) {
 		let objectWithLowerCaseKeys = {};
@@ -888,12 +1175,24 @@ class CacheData {
 	}
 
 	/**
-	 * Calculate the number of Kilobytes in memory a String takes up.
-	 * This function first calculates the number of bytes in the String using
-	 * Buffer.byteLength() and then converts it to KB = (bytes / 1024)
-	 * @param {string} aString A string to calculate on
-	 * @param {string} encode What character encoding should be used? Default is "utf8"
-	 * @returns {number} String size in estimated KB
+	 * Calculate the size of a string in kilobytes. Uses Buffer.byteLength() to
+	 * determine the byte size based on the specified character encoding, then
+	 * converts to KB (bytes / 1024).
+	 * 
+	 * The result is rounded to 3 decimal places for precision (0.001 KB = 1 byte).
+	 * 
+	 * @param {string} aString The string to measure
+	 * @param {string} [encode='utf8'] Character encoding to use for byte calculation
+	 * @returns {number} String size in kilobytes, rounded to 3 decimal places
+	 * @example
+	 * const text = 'Hello, World!';
+	 * const sizeKB = CacheData.calculateKBytes(text);
+	 * console.log(`Size: ${sizeKB} KB`);
+	 * 
+	 * @example
+	 * const largeText = 'x'.repeat(10000);
+	 * const sizeKB = CacheData.calculateKBytes(largeText);
+	 * console.log(`Size: ${sizeKB} KB`); // ~9.766 KB
 	 */
 	static calculateKBytes ( aString, encode = CacheData.PLAIN_ENCODING ) {
 		let kbytes = 0;		
@@ -961,9 +1260,19 @@ class CacheData {
 	};
 
 	/**
-	 * If no parameter is passed, Date.now() is used.
-	 * @param {number} timestampInMillseconds The timestamp in milliseconds to convert to seconds
-	 * @returns {number} The timestamp in seconds
+	 * Convert a Unix timestamp from milliseconds to seconds. If no parameter is
+	 * provided, uses the current time (Date.now()).
+	 * 
+	 * @param {number} [timestampInMillseconds=0] Timestamp in milliseconds (0 = use current time)
+	 * @returns {number} Timestamp in seconds (rounded up using Math.ceil)
+	 * @example
+	 * const nowMs = Date.now();
+	 * const nowSec = CacheData.convertTimestampFromMilliToSeconds(nowMs);
+	 * console.log(`${nowMs}ms = ${nowSec}s`);
+	 * 
+	 * @example
+	 * // Get current time in seconds
+	 * const nowSec = CacheData.convertTimestampFromMilliToSeconds();
 	 */
 	static convertTimestampFromMilliToSeconds (timestampInMillseconds = 0) {
 		if (timestampInMillseconds === 0) { timestampInMillseconds = Date.now().getTime(); }
@@ -971,9 +1280,19 @@ class CacheData {
 	};
 
 	/**
-	 * If no parameter is passed, Date.now() is used.
-	 * @param {number} timestampInSeconds 
+	 * Convert a Unix timestamp from seconds to milliseconds. If no parameter is
+	 * provided, uses the current time (Date.now()).
+	 * 
+	 * @param {number} [timestampInSeconds=0] Timestamp in seconds (0 = use current time)
 	 * @returns {number} Timestamp in milliseconds
+	 * @example
+	 * const nowSec = Math.floor(Date.now() / 1000);
+	 * const nowMs = CacheData.convertTimestampFromSecondsToMilli(nowSec);
+	 * console.log(`${nowSec}s = ${nowMs}ms`);
+	 * 
+	 * @example
+	 * // Get current time in milliseconds
+	 * const nowMs = CacheData.convertTimestampFromSecondsToMilli();
 	 */
 	static convertTimestampFromSecondsToMilli (timestampInSeconds = 0) {
 		let timestampInMilli = 0;

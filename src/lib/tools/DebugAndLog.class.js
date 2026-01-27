@@ -8,7 +8,26 @@ const _getNodeEnv = function() {
 "use strict"
 
 /**
- * A simple Debug and Logging class.
+ * A comprehensive debug and logging class for managing application logging with environment-aware log levels.
+ * Provides multiple logging levels (ERROR, WARN, INFO, MSG, DIAG, DEBUG) and automatic environment detection.
+ * Supports both production and development environments with appropriate log level restrictions.
+ * 
+ * @class DebugAndLog
+ * @example
+ * // Basic logging
+ * await DebugAndLog.info('Processing request');
+ * await DebugAndLog.error('Failed to connect', { error: err });
+ * 
+ * @example
+ * // Check environment
+ * if (DebugAndLog.isDevelopment()) {
+ *   await DebugAndLog.debug('Detailed debug info', { data });
+ * }
+ * 
+ * @example
+ * // Configure via environment variables
+ * // Set CACHE_DATA_LOG_LEVEL=5 for DEBUG level
+ * // Set CACHE_DATA_ENV=DEV for development environment
  */
 class DebugAndLog {
 
@@ -47,14 +66,32 @@ class DebugAndLog {
 
 	static PROD_DEFAULT_LEVEL_NUM = 2;
 
+	/**
+	 * Creates a new DebugAndLog instance.
+	 * Note: This class is typically used via static methods and does not require instantiation.
+	 * 
+	 * @example
+	 * // Use static methods directly (recommended)
+	 * await DebugAndLog.info('Application started');
+	 */
 	constructor() {
 	};
 
 	/**
-	 * Set the log level.
-	 * Deprecated. Set Lambda Environment variable CACHE_DATA_LOG_LEVEL, LOG_LEVEL, or AWS_LAMBDA_LOG_LEVEL instead.
-	 * @param {number} logLevel 0 - 5
-	 * @param {*} expiration Deprecated - no effect
+	 * Sets the log level (DEPRECATED).
+	 * This method is deprecated. Use environment variables instead:
+	 * - CACHE_DATA_LOG_LEVEL
+	 * - LOG_LEVEL
+	 * - AWS_LAMBDA_LOG_LEVEL
+	 * 
+	 * @deprecated Use environment variables CACHE_DATA_LOG_LEVEL, LOG_LEVEL, or AWS_LAMBDA_LOG_LEVEL instead
+	 * @param {number} [logLevel=-1] - Log level from 0-5 (0=ERROR, 1=WARN, 2=INFO, 3=MSG, 4=DIAG, 5=DEBUG)
+	 * @param {*} [expiration=-1] - Deprecated parameter with no effect
+	 * @returns {number} The set log level
+	 * @example
+	 * // Don't use this - it's deprecated
+	 * // Instead, set environment variable:
+	 * // process.env.CACHE_DATA_LOG_LEVEL = '5';
 	 */
 	static setLogLevel(logLevel = -1, expiration = -1) {
 		DebugAndLog.warn(`DebugAndLog.setLogLevel(${logLevel}, ${expiration}) is deprecated. Use CACHE_DATA_LOG_LEVEL, LOG_LEVEL, or AWS_LAMBDA_LOG_LEVEL environment variable instead.`);
@@ -73,8 +110,13 @@ class DebugAndLog {
 	};
 
 	/**
+	 * Gets the current log level.
+	 * If not explicitly set, returns the default log level based on environment variables.
 	 * 
-	 * @returns {number} The current log level
+	 * @returns {number} The current log level (0-5): 0=ERROR, 1=WARN, 2=INFO, 3=MSG, 4=DIAG, 5=DEBUG
+	 * @example
+	 * const level = DebugAndLog.getLogLevel();
+	 * console.log(`Current log level: ${level}`);
 	 */
 	static getLogLevel() {
 
@@ -87,19 +129,30 @@ class DebugAndLog {
 	}
 
 	/**
-	 * Alias for getEnvType()
+	 * Gets the application environment type (alias for getEnvType()).
+	 * 
+	 * @returns {string} Environment type: 'PROD', 'TEST', or 'DEV'
+	 * @example
+	 * const env = DebugAndLog.getEnv();
+	 * console.log(`Running in ${env} environment`);
 	 */
 	static getEnv() {
 		return DebugAndLog.getEnvType();
 	};
 
 	/**
-	 * Check process.env for an environment variable named
-	 * env, deployEnvironment, environment, or stage. If they
-	 * are not set it will return DebugAndLog.PROD which 
-	 * is considered safe (most restrictive)
-	 * Note: This is the application environment, not the NODE_ENV
-	 * @returns {string} PROD|TEST|DEV - The current environment.
+	 * Gets the environment type from environment variables.
+	 * Checks process.env for environment variables in priority order from ALLOWED_ENV_TYPE_VAR_NAMES.
+	 * Returns 'PROD' (most restrictive) if no valid environment variable is found.
+	 * Note: This is the application environment, not NODE_ENV.
+	 * 
+	 * @returns {string} Environment type: 'PROD', 'TEST', or 'DEV'
+	 * @example
+	 * // Set environment via CACHE_DATA_ENV=DEV
+	 * const envType = DebugAndLog.getEnvType();
+	 * if (envType === 'DEV') {
+	 *   // Development-specific logic
+	 * }
 	 */
 	static getEnvType() {
 		// We can switch if NODE_ENV is set to "development"
@@ -113,8 +166,12 @@ class DebugAndLog {
 		return this.#environment;
 	}
 	/**
+	 * Gets the environment type from the first matching environment variable.
+	 * Searches through ALLOWED_ENV_TYPE_VAR_NAMES in priority order.
 	 * 
-	 * @returns {string} PROD|TEST|DEV|NONE based upon first environment variable from DebugAndLog.ALLOWED_ENV_TYPE_VAR_NAMES found
+	 * @returns {string} Environment type: 'PROD', 'TEST', 'DEV', or 'NONE' if not found
+	 * @example
+	 * const envType = DebugAndLog.getEnvTypeFromEnvVar();
 	 */
 	static getEnvTypeFromEnvVar() {
 		let environmentType = "none";
@@ -132,23 +189,41 @@ class DebugAndLog {
 	}
 
 	/**
-	 * Is Environment Variable NODE_ENV set to "development"?
+	 * Checks if the NODE_ENV environment variable is set to "development".
+	 * 
+	 * @returns {boolean} True if NODE_ENV is "development", false otherwise
+	 * @example
+	 * if (DebugAndLog.nodeEnvIsDevelopment()) {
+	 *   console.log('Running in development mode');
+	 * }
 	 */
 	static nodeEnvIsDevelopment() {
 		return DebugAndLog.getNodeEnv() === "development";
 	}
 
 	/**
-	 * Is Environment Variable NODE_ENV set to "production" or "" or undefined?
+	 * Checks if the NODE_ENV environment variable is set to "production" or is empty/undefined.
+	 * 
+	 * @returns {boolean} True if NODE_ENV is "production" or not set, false if "development"
+	 * @example
+	 * if (DebugAndLog.nodeEnvIsProduction()) {
+	 *   // Production-specific logic
+	 * }
 	 */
 	static nodeEnvIsProduction() {
 		return !this.nodeEnvIsDevelopment();
 	}
 
 	/**
-	 * Get the current NODE_ENV (returns "production" if not set or if NODE_ENV is set to anything other than "development")
-	 * Calls DebugAndLog.nodeEnvHasChanged() to log a warning if the value has changed since initialization. Should only change during testing.
-	 * @returns {string} development|production
+	 * Gets the current NODE_ENV value.
+	 * Returns "development" if NODE_ENV is set to "development", otherwise returns "production".
+	 * Calls nodeEnvHasChanged() to log a warning if the value has changed since initialization.
+	 * NODE_ENV should only change during testing.
+	 * 
+	 * @returns {string} "development" or "production"
+	 * @example
+	 * const nodeEnv = DebugAndLog.getNodeEnv();
+	 * console.log(`NODE_ENV: ${nodeEnv}`);
 	 */
 	static getNodeEnv() {
 		DebugAndLog.nodeEnvHasChanged();
@@ -156,10 +231,15 @@ class DebugAndLog {
 	}
 
 	/**
-	 * Checks to see if the current NODE_ENV environment variable has changed since DebugAndLog was initialized.
-	 * The only time this should happen is while running tests. This should never happen in a production application.
-	 * If these warnings are triggered as you application is running, something is modifying process.env.NODE_ENV during execution.
-	 * @returns {boolean}
+	 * Checks if the NODE_ENV environment variable has changed since DebugAndLog was initialized.
+	 * This should only happen during testing. In production applications, NODE_ENV should never change during execution.
+	 * Logs a warning if NODE_ENV has changed (first occurrence and every 100th occurrence).
+	 * 
+	 * @returns {boolean} True if NODE_ENV has changed, false otherwise
+	 * @example
+	 * if (DebugAndLog.nodeEnvHasChanged()) {
+	 *   console.warn('NODE_ENV changed during execution');
+	 * }
 	 */
 	static nodeEnvHasChanged() {
 		const hasChanged = _getNodeEnv() !== this.#initialNodeEnv;
@@ -177,8 +257,14 @@ class DebugAndLog {
 	}
 
 	/**
+	 * Gets the default log level based on environment variables.
+	 * Checks ALLOWED_LOG_VAR_NAMES in priority order for log level configuration.
+	 * In production, log level is capped at PROD_DEFAULT_LEVEL_NUM (2).
 	 * 
-	 * @returns {number} log level
+	 * @returns {number} Default log level (0-5)
+	 * @example
+	 * // Set via CACHE_DATA_LOG_LEVEL=5 or LOG_LEVEL=DEBUG
+	 * const defaultLevel = DebugAndLog.getDefaultLogLevel();
 	 */
 	static getDefaultLogLevel() {
 		let possibleVars = DebugAndLog.ALLOWED_LOG_VAR_NAMES; // in priority order and we want to evaluate AWS_LAMBDA_LOG_LEVEL as upper
@@ -242,43 +328,73 @@ class DebugAndLog {
 	};
 
 	/**
+	 * Checks if the application is NOT running in production environment.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if not in production, false if in production
+	 * @example
+	 * if (DebugAndLog.isNotProduction()) {
+	 *   await DebugAndLog.debug('Debug info only in non-prod');
+	 * }
 	 */
 	static isNotProduction() {
 		return ( !DebugAndLog.isProduction() );
 	};
 
 	/**
+	 * Checks if the application is running in production environment.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if in production, false otherwise
+	 * @example
+	 * if (DebugAndLog.isProduction()) {
+	 *   // Restrict logging in production
+	 * }
 	 */
 	static isProduction() {
 		return ( DebugAndLog.getEnv() === DebugAndLog.PROD );
 	};
 
 	/**
+	 * Checks if the application is running in development environment.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if in development, false otherwise
+	 * @example
+	 * if (DebugAndLog.isDevelopment()) {
+	 *   await DebugAndLog.debug('Development debug info', { data });
+	 * }
 	 */
 	static isDevelopment() {
 		return ( DebugAndLog.getEnv() === DebugAndLog.DEV );
 	};
 
 	/**
+	 * Checks if the application is running in test environment.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if in test environment, false otherwise
+	 * @example
+	 * if (DebugAndLog.isTest()) {
+	 *   // Test-specific logic
+	 * }
 	 */
 	static isTest() {
 		return ( DebugAndLog.getEnv() === DebugAndLog.TEST );
 	};
 
 	/**
-	 * Write a log entry.
-	 * The format used will be "[TAG] message"
-	 * @param {string} tag This will appear first in the log in all caps between square brackets ex: [TAG]
-	 * @param {string} message The message to be displayed. May also be a delimited log string
-	 * @param {object|null} obj An object to include in the log entry
+	 * Writes a log entry with the specified tag, message, and optional object.
+	 * The format used will be "[TAG] message" or "[TAG] message | object".
+	 * Log level determines whether the entry is actually written to console.
+	 * 
+	 * @param {string} tag - Tag that appears first in the log in all caps between square brackets (e.g., [ERROR])
+	 * @param {string} message - The message to be displayed
+	 * @param {Object|null} [obj=null] - Optional object to include in the log entry
+	 * @returns {Promise<boolean>} True when log is written
+	 * @example
+	 * await DebugAndLog.writeLog('INFO', 'User logged in', { userId: 123 });
+	 * // Output: [INFO] User logged in | { userId: 123 }
+	 * 
+	 * @example
+	 * await DebugAndLog.writeLog('ERROR', 'Database connection failed');
+	 * // Output: [ERROR] Database connection failed
 	 */
 	static async writeLog(tag, message, obj = null) {
 
@@ -372,96 +488,149 @@ class DebugAndLog {
 	};
 
 	/**
-	 * Level 5 - Verbose Values and Calculations and Stack Traces
-	 * @param {string} message 
-	 * @param {object} obj 
+	 * Logs a debug message at level 5 (DEBUG).
+	 * Used for verbose values, calculations, and stack traces.
+	 * Only logged when log level is 5 or higher.
+	 * 
+	 * @param {string} message - The debug message
+	 * @param {Object} [obj=null] - Optional object with additional debug information
+	 * @returns {Promise<boolean>} True when log is written
+	 * @example
+	 * await DebugAndLog.debug('Variable state', { x: 10, y: 20, result: 30 });
+	 * 
+	 * @example
+	 * await DebugAndLog.debug('Stack trace', { stack: new Error().stack });
 	 */
 	static async debug(message, obj = null) {
 		return DebugAndLog.writeLog(DebugAndLog.DEBUG, message, obj);
 	};
 
 	/**
-	 * Level 3 - Verbose timing and counts
-	 * @param {string} message 
-	 * @param {object} obj 
+	 * Logs a diagnostic message at level 4 (DIAG).
+	 * Used for verbose timing and counts.
+	 * Only logged when log level is 4 or higher.
+	 * 
+	 * @param {string} message - The diagnostic message
+	 * @param {Object} [obj=null] - Optional object with diagnostic data
+	 * @returns {Promise<boolean>} True when log is written
+	 * @example
+	 * await DebugAndLog.diag('Query execution time: 45ms', { queryTime: 45, rowCount: 100 });
 	 */
 	static async diag(message, obj = null) {
 		return DebugAndLog.writeLog(DebugAndLog.DIAG, message, obj);      
 	};
 
 	/**
-	 * Level 2 - Short messages and status
-	 * @param {string} message 
-	 * @param {object} obj 
+	 * Logs a message at level 3 (MSG).
+	 * Used for short messages and status updates.
+	 * Only logged when log level is 3 or higher.
+	 * 
+	 * @param {string} message - The message
+	 * @param {Object} [obj=null] - Optional object with additional information
+	 * @returns {Promise<boolean>} True when log is written
+	 * @example
+	 * await DebugAndLog.msg('Processing batch 5 of 10');
 	 */
 	static async msg(message, obj = null) {
 		return DebugAndLog.writeLog(DebugAndLog.MSG, message, obj);
 	};
 
 	/**
-	 * Level 2 - Short messages and status
-	 * (same as DebugAndLog.msg() )
-	 * @param {string} message 
-	 * @param {object} obj 
+	 * Logs a message at level 3 (MSG).
+	 * Alias for msg(). Used for short messages and status updates.
+	 * 
+	 * @param {string} message - The message
+	 * @param {Object} [obj=null] - Optional object with additional information
+	 * @returns {Promise<boolean>} True when log is written
+	 * @example
+	 * await DebugAndLog.message('Request processed successfully');
 	 */
 	static async message(message, obj = null) {
 		return DebugAndLog.msg(message, obj);
 	};
 
 	/**
-	 * Level 1 - Short messages and status
-	 * @param {string} message 
-	 * @param {object} obj 
+	 * Logs an informational message at level 2 (INFO).
+	 * Used for short messages and status updates.
+	 * Only logged when log level is 2 or higher.
+	 * 
+	 * @param {string} message - The informational message
+	 * @param {Object} [obj=null] - Optional object with additional information
+	 * @returns {Promise<boolean>} True when log is written
+	 * @example
+	 * await DebugAndLog.info('User authentication successful', { userId: 'user123' });
 	 */
 	static async info(message, obj = null) {
 		return DebugAndLog.writeLog(DebugAndLog.INFO, message, obj);
 	};
 
 	/**
-	 * Level 0 - Production worthy log entries that are not errors or warnings
-	 * These should be formatted in a consistent manner and typically only
-	 * one entry produced per invocation. (Usually produced at the end of a 
-	 * script's execution)
-	 * @param {string} message The message, either a text string or fields separated by | or another character you can use to parse your logs
-	 * @param {string} tag Optional. The tag that appears at the start of the log. Default is LOG. In logs it will appear at the start within square brackets '[LOG] message' You can use this to filter when parsing log reports
-	 * @param {object} obj 
+	 * Logs a production-worthy log entry at level 0 (LOG).
+	 * These should be formatted consistently and typically only one entry per invocation.
+	 * Usually produced at the end of a script's execution.
+	 * Always logged regardless of log level.
+	 * 
+	 * @param {string} message - The message, either text or fields separated by | or another delimiter for log parsing
+	 * @param {string} [tag='LOG'] - Optional tag that appears at the start within square brackets (e.g., [LOG])
+	 * @param {Object} [obj=null] - Optional object with additional data
+	 * @returns {Promise<boolean>} True when log is written
+	 * @example
+	 * await DebugAndLog.log('Request completed | duration: 150ms | status: 200');
+	 * 
+	 * @example
+	 * await DebugAndLog.log('Batch processed', 'BATCH', { count: 100, errors: 0 });
 	 */
 	static async log(message, tag = DebugAndLog.LOG, obj = null) {
 		return DebugAndLog.writeLog(tag, message, obj);
 	};
 
 	/**
-	 * Level 0 - Warnings
-	 * Errors are handled and execution continues.
-	 * ClientRequest validation should be done first, and if we received an invalid
-	 * request, then a warning, not an error, should be logged even though an 
-	 * error is returned to the client (error is on client side, not here, 
-	 * but we want to keep track of client errors). 
-	 * Requests should be validated first before all other processing.
-	 * @param {string} message 
-	 * @param {object} obj 
+	 * Logs a warning message at level 1 (WARN).
+	 * Used when errors are handled and execution continues.
+	 * For client validation errors, use warn() rather than error() since the error is on the client side.
+	 * Always logged regardless of log level (level 0).
+	 * 
+	 * @param {string} message - The warning message
+	 * @param {Object} [obj=null] - Optional object with warning details
+	 * @returns {Promise<void>}
+	 * @example
+	 * await DebugAndLog.warn('Invalid request parameter', { param: 'userId', value: null });
+	 * 
+	 * @example
+	 * await DebugAndLog.warn('Deprecated API usage detected');
 	 */
 	static async warn(message, obj = null) {
 		DebugAndLog.writeLog(DebugAndLog.WARN, message, obj);
 	};
 
 	/**
-	 * Level 0 - Warnings
-	 * (same as DebugAndLog.warn() )
-	 * @param {string} message 
-	 * @param {object} obj 
+	 * Logs a warning message at level 1 (WARN).
+	 * Alias for warn(). Used when errors are handled and execution continues.
+	 * 
+	 * @param {string} message - The warning message
+	 * @param {Object} [obj=null] - Optional object with warning details
+	 * @returns {Promise<void>}
+	 * @example
+	 * await DebugAndLog.warning('Cache miss, fetching from database');
 	 */
 	static async warning(message, obj = null) {
 		DebugAndLog.warn(message, obj);
 	};
 
 	/**
-	 * Level 0 - Errors
-	 * Errors cannot be handled in a way that will allow continued execution.
-	 * An error will be passed back to the client. If a client sent a bad
-	 * request, send a warning instead.
-	 * @param {string} message 
-	 * @param {object} obj 
+	 * Logs an error message at level 0 (ERROR).
+	 * Used when errors cannot be handled and execution cannot continue normally.
+	 * An error will be passed back to the client. For client-side errors (bad requests), use warn() instead.
+	 * Always logged regardless of log level.
+	 * 
+	 * @param {string} message - The error message
+	 * @param {Object} [obj=null] - Optional object with error details
+	 * @returns {Promise<void>}
+	 * @example
+	 * await DebugAndLog.error('Database connection failed', { error: err.message, code: err.code });
+	 * 
+	 * @example
+	 * await DebugAndLog.error('Critical system failure');
 	 */
 	static async error(message, obj = null) {
 		DebugAndLog.writeLog(DebugAndLog.ERROR, message, obj);

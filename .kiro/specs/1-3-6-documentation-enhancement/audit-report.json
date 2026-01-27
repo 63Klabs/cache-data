@@ -1,0 +1,1062 @@
+{
+  "auditDate": "2026-01-27T03:13:35.153Z",
+  "summary": {
+    "totalFiles": 23,
+    "totalPublicFunctions": 48,
+    "documentedFunctions": 15,
+    "completeFunctions": 5,
+    "missingJSDocCount": 33,
+    "incompleteJSDocCount": 10,
+    "coveragePercentage": "31.25",
+    "completenessPercentage": "10.42"
+  },
+  "missingJSDoc": [
+    {
+      "file": "lib/dao-cache.js",
+      "name": "Cache",
+      "type": "class"
+    },
+    {
+      "file": "lib/dao-cache.js",
+      "name": "CacheableDataAccess",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/APIRequest.class.js",
+      "name": "object",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/APIRequest.class.js",
+      "name": "and",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/APIRequest.class.js",
+      "name": "as",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/APIRequest.class.js",
+      "name": "can",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/APIRequest.class.js",
+      "name": "can.call",
+      "type": "method"
+    },
+    {
+      "file": "lib/tools/APIRequest.class.js",
+      "name": "object",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/APIRequest.class.js",
+      "name": "object.call",
+      "type": "method"
+    },
+    {
+      "file": "lib/tools/AWS.classes.js",
+      "name": "AWS",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/AWS.classes.js",
+      "name": "AWS.XRayOn",
+      "type": "method"
+    },
+    {
+      "file": "lib/tools/CachedParametersSecrets.classes.js",
+      "name": "CachedParameterSecrets",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/CachedParametersSecrets.classes.js",
+      "name": "CachedSSMParameter",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/CachedParametersSecrets.classes.js",
+      "name": "CachedSSMParameter.getPath",
+      "type": "method"
+    },
+    {
+      "file": "lib/tools/CachedParametersSecrets.classes.js",
+      "name": "CachedSecret",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/CachedParametersSecrets.classes.js",
+      "name": "CachedSecret.getPath",
+      "type": "method"
+    },
+    {
+      "file": "lib/tools/ClientRequest.class.js",
+      "name": "for",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/Connections.classes.js",
+      "name": "Connections",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/Connections.classes.js",
+      "name": "ConnectionAuthentication.if",
+      "type": "method"
+    },
+    {
+      "file": "lib/tools/Connections.classes.js",
+      "name": "ConnectionAuthentication.if",
+      "type": "method"
+    },
+    {
+      "file": "lib/tools/DebugAndLog.class.js",
+      "name": "error",
+      "type": "function"
+    },
+    {
+      "file": "lib/tools/DebugAndLog.class.js",
+      "name": "warn",
+      "type": "function"
+    },
+    {
+      "file": "lib/tools/DebugAndLog.class.js",
+      "name": "log",
+      "type": "function"
+    },
+    {
+      "file": "lib/tools/DebugAndLog.class.js",
+      "name": "info",
+      "type": "function"
+    },
+    {
+      "file": "lib/tools/DebugAndLog.class.js",
+      "name": "debug",
+      "type": "function"
+    },
+    {
+      "file": "lib/tools/RequestInfo.class.js",
+      "name": "that",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/RequestInfo.class.js",
+      "name": "construction",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/Response.class.js",
+      "name": "for",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/Response.class.js",
+      "name": "in",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/ResponseDataModel.class.js",
+      "name": "that",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/Timer.class.js",
+      "name": "Timer",
+      "type": "class"
+    },
+    {
+      "file": "lib/tools/Timer.class.js",
+      "name": "Timer.if",
+      "type": "method"
+    },
+    {
+      "file": "lib/tools/index.js",
+      "name": "_ConfigSuperClass.settings",
+      "type": "method"
+    }
+  ],
+  "incompleteJSDoc": [
+    {
+      "file": "lib/dao-cache.js",
+      "name": "Cache",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/tools/ClientRequest.class.js",
+      "name": "ClientRequest",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/tools/Connections.classes.js",
+      "name": "Connection",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/tools/Connections.classes.js",
+      "name": "ConnectionAuthentication",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/tools/Connections.classes.js",
+      "name": "ConnectionRequest",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/tools/DebugAndLog.class.js",
+      "name": "DebugAndLog",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/tools/ImmutableObject.class.js",
+      "name": "ImmutableObject",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/tools/RequestInfo.class.js",
+      "name": "RequestInfo",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/tools/Response.class.js",
+      "name": "Response",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    },
+    {
+      "file": "lib/utils/InMemoryCache.js",
+      "name": "InMemoryCache",
+      "type": "class",
+      "issues": [
+        "Missing @example tag"
+      ]
+    }
+  ],
+  "fileAnalyses": [
+    {
+      "filePath": "index.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/dao-cache.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "Cache",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 8168
+        },
+        {
+          "type": "class",
+          "name": "Cache",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "The Cache object handles reads and writes from the cache. It also acts as a proxy between the app and CacheData which is a private class. This is the actual data object our application can work with and is returned from CachableDataAccess. Before using it must be initialized Cache.init({parameters}); Then you can then make a request, sending it through CacheableDataAccess:  const { cache } = require(\"@63klabs/cache-data\"); const cacheObj = await cache.CacheableDataAccess.getData( \tcacheCfg, \tyourFetchFunction, \tconn, \tdaoQuery ); /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 33693
+        },
+        {
+          "type": "class",
+          "name": "CacheableDataAccess",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 74230
+        }
+      ]
+    },
+    {
+      "filePath": "lib/dao-endpoint.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/tools/APIRequest.class.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "object",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 1180
+        },
+        {
+          "type": "class",
+          "name": "and",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 1263
+        },
+        {
+          "type": "class",
+          "name": "as",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 1282
+        },
+        {
+          "type": "class",
+          "name": "can",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 10019
+        },
+        {
+          "type": "method",
+          "name": "can.call",
+          "className": "can",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [],
+          "position": 10108
+        },
+        {
+          "type": "class",
+          "name": "object",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 10046
+        },
+        {
+          "type": "method",
+          "name": "object.call",
+          "className": "object",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [],
+          "position": 10108
+        },
+        {
+          "type": "class",
+          "name": "APIRequest",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "Submit GET and POST requests and handle responses. This class can be used in a DAO class object within its call() method.",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "async call() {\n     var response = null;\n        try {\n            var apiRequest = new tools.APIRequest(this.request);\n            response = await apiRequest.send();\n        } catch (error) {\n            DebugAndLog.error(`Error in call: ${error.message}`, error.stack);\n            response = tools.APIRequest.responseFormat(false, 500, \"Error in call()\");\n        }\n       return response;\n    };\n/"
+            ],
+            "throws": []
+          },
+          "position": 10563
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/AWS.classes.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "AWS",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 2017
+        },
+        {
+          "type": "class",
+          "name": "AWS",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "AWS Helper Functions - Functions to perform common get and put operations for DynamoDB, S3, and SSM parameter store. Uses AWS SDK v2 or v3 depending on the Node.js version. It will perform this check for you and utilize the proper SDK.",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "ssmParams1 = await AWS.ssm.getByName(query);\nssmParams2 = await AWS.ssm.getByPath(query);\nAWS.ssm.client; // access the SSM Client\nAWS.ssm.sdk; // access the SSM SDK (V3 contains { SSM, SSMClient, GetParameterCommand, PutParameterCommand })\n@class AWS\n@property {string} NODE_VER\n@property {number} NODE_VER_MAJOR\n@property {number} NODE_VER_MINOR\n@property {number} NODE_VER_PATCH\n@property {string} NODE_VER_MAJOR_MINOR\n@property {string} SDK_VER 'V2' or 'V3'\n@property {boolean} SDK_V2 true if using AWS SDK v2\n@property {boolean} SDK_V3 true if using AWS SDK v3\n@property {string} REGION AWS region grabbed from Node process.env.AWS_REGION. If not set uses 'us-east-1'\n@property {object} dynamo\n@property {object} dynamo.client DynamoDb Document client (either V2 or V3)\n@property {object} dynamo.sdk V2: { DynamoDb }, V3: { DynamoDB, DynamoDBClient, DynamoDBDocumentClient, GetCommand, PutCommand }\n@property {object} dynamo.put function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb put command\n@property {object} dynamo.get function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb get command\n@property {object} dynamo.scan function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb scan command\n@property {object} dynamo.delete function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb delete command\n@property {object} dynamo.update function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb update command\n@property {object} s3\n@property {object} s3.client S3 client (either V2 or V3)\n@property {object} s3.sdk V2: { S3 }, V3: { S3Client, GetObjectCommand, PutObjectCommand }\n@property {object} s3.put function(params) Given an S3 param object, uses the correct SDK version to perform a S3 put command\n@property {object} s3.get function(params) Given an S3 param object, uses the correct SDK version to perform a S3 get command\n@property {object} ssm\n@property {object} ssm.client SSM client (either V2 or V3)\n@property {object} ssm.sdk V2: { SSM }, V3: { SSMClient, GetParameterCommand, GetParametersByPathCommand }\n@property {object} ssm.getByName function(query) Given SSM Parameter Store query, uses the correct SDK version to perform the getParameters command\n@property {object} ssm.getByPath function(query) Given SSM Parameter Store query, uses the correct SDK version to perform the getParametersByPath command\n@property {object} AWSXRay\n/"
+            ],
+            "throws": []
+          },
+          "position": 4426
+        },
+        {
+          "type": "method",
+          "name": "AWS.XRayOn",
+          "className": "AWS",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [],
+          "position": 4504
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/CachedParametersSecrets.classes.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "CachedParameterSecrets",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 1055
+        },
+        {
+          "type": "class",
+          "name": "CachedParameterSecret",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "Parent class to extend CachedSSMParameter and CachedSecret classes. Accesses data through Systems Manager Parameter Store and Secrets Manager Lambda Extension Since the Lambda Extension runs a localhost via http, it handles it's own http request. Also, since the lambda extension needs time to boot during a cold start, it is not available during the regular init phase outside of the handler. Therefore, we can pass the Object to be used as the secret and then perform an async .get() or .getValue() at runtime. If we need to use a synchronous function, then we must perform a .prime() and make sure it is complete before calling the sync function.",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "const write(data) {\n \tconst edata = encrypt(data, myParam.sync_getValue()); // some encrypt function\n \treturn edata;\n }\nasync main () => {\n \tconst myParam = new CachedSSMParameter('myParam');\n \tmyParam.prime(); // gets things started in the background\n \t// ... some code that may take a few ms to run ...\n \t// We are going to call a sync function that MUST\n \t// have the myParam value resolved so we\n \t// make sure we are good to go before proceeding\n \tawait myParam.prime();\n \tconsole.log(write(data));\n}\n/"
+            ],
+            "throws": []
+          },
+          "position": 4790
+        },
+        {
+          "type": "class",
+          "name": "CachedSSMParameter",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 13942
+        },
+        {
+          "type": "method",
+          "name": "CachedSSMParameter.getPath",
+          "className": "CachedSSMParameter",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [],
+          "position": 14000
+        },
+        {
+          "type": "class",
+          "name": "CachedSecret",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 14249
+        },
+        {
+          "type": "method",
+          "name": "CachedSecret.getPath",
+          "className": "CachedSecret",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [],
+          "position": 14302
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/ClientRequest.class.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "ClientRequest",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "Extends RequestInfo Can be used to create a custom ClientRequest object /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 274
+        },
+        {
+          "type": "class",
+          "name": "for",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 2161
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/Connections.classes.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "Connections",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 440
+        },
+        {
+          "type": "class",
+          "name": "Connection",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "The Connection object provides the base for requests but does not carry the request. myConnection.get() will return an object (associative array) that can then be used to generate and submit a request to a DAO class or APIRequest object. You can store and manage multiple connections using the Connections object. /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 2498
+        },
+        {
+          "type": "class",
+          "name": "ConnectionAuthentication",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "ConnectionAuthentication allows auth tokens, parameters, etc to be stored separately from regular connection request parameters so that they can be protected from modification or accidental access. Header, parameter, and/or Basic auth key/value pairs can be passed in. Additional methods could be added in the future. new ConnectionAuthentication( {  headers: { x-key: \"bsomeKeyForAHeaderField\", x-user: \"myUserID\" },  parameters: { apikey: \"myExampleApiKeyForResource1234\" },  body: { key: \"myExampleApiKeyForResource1283\" },  basic: { username: \"myUsername\", password: \"myPassword\" } } ); /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 9618
+        },
+        {
+          "type": "method",
+          "name": "ConnectionAuthentication.if",
+          "className": "ConnectionAuthentication",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "obj !"
+          ],
+          "position": 9856
+        },
+        {
+          "type": "method",
+          "name": "ConnectionAuthentication.if",
+          "className": "ConnectionAuthentication",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "\"parameters\" in obj && obj.parameters !"
+          ],
+          "position": 9943
+        },
+        {
+          "type": "class",
+          "name": "ConnectionRequest",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "A Connection provides the base for a ClientRequest. A ClientRequest extends the Connection by adding request specific parameters. While a Connection cannot be modified after creation (it is a config), a ClientRequest can be modified as the application or DAO assembles the request. /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 13302
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/DebugAndLog.class.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "DebugAndLog",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "A simple Debug and Logging class. /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 248
+        },
+        {
+          "type": "function",
+          "name": "error",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "tag",
+            "message",
+            "obj"
+          ],
+          "position": 10099
+        },
+        {
+          "type": "function",
+          "name": "warn",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "tag",
+            "message",
+            "obj"
+          ],
+          "position": 10175
+        },
+        {
+          "type": "function",
+          "name": "log",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "tag",
+            "message",
+            "obj"
+          ],
+          "position": 10249
+        },
+        {
+          "type": "function",
+          "name": "info",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "tag",
+            "message",
+            "obj"
+          ],
+          "position": 10321
+        },
+        {
+          "type": "function",
+          "name": "debug",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "tag",
+            "message",
+            "obj"
+          ],
+          "position": 10395
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/ImmutableObject.class.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "ImmutableObject",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "Create an object that is able to return a copy and not a reference to its properties. /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 143
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/RequestInfo.class.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "that",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 268
+        },
+        {
+          "type": "class",
+          "name": "RequestInfo",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "Processes the request from the event data. Parses out client details such as ip and user agent. May be extended to provide custom processing for the application. /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 580
+        },
+        {
+          "type": "class",
+          "name": "construction",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 911
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/Response.class.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "Response",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "Can be used to create a custom Response interface /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 655
+        },
+        {
+          "type": "class",
+          "name": "for",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 1948
+        },
+        {
+          "type": "class",
+          "name": "in",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 12941
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/ResponseDataModel.class.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "that",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 244
+        },
+        {
+          "type": "class",
+          "name": "ResponseDataModel",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "A response object that can be used to collect data to be sent back as a response. A structured skeleton may be created during construction to create an order of presenting various keys. As the program executes, additional data may be added. Other response objects may be added with keys to fill out the object. If there are key collisions then new items matching that key are added as an element in an array. Extends ResponseDataModel, can be used to extend as an interface.",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "let obj = new Response(); // you can pass a skeleton that you will add to, or the full object to the constructor\nobj.addItem(newItem); // where newItem is another response object or regular structured object which will be added as a node\nobj.addItemByKey(newItem2,\"employees\");// where newItem2 is another response object or regular structured object which will be added as a node. Note that you can override a label by passing a new one. For example pluralizing a label\nobj.removeEmpty(); // optional, it will remove empty keys\n\tresponse = {\n\t\tstatusCode: 200,\n\t\tbody: dataResponse.toString(),\n\t\theaders: {'content-type': 'application/json'}\n\t};\n/"
+            ],
+            "throws": []
+          },
+          "position": 1607
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/Timer.class.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "Timer",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 59
+        },
+        {
+          "type": "method",
+          "name": "Timer.if",
+          "className": "Timer",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "start"
+          ],
+          "position": 206
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/generic.response.html.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/tools/generic.response.json.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/tools/generic.response.rss.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/tools/generic.response.text.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/tools/generic.response.xml.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/tools/index.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "_ConfigSuperClass",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "_ConfigSuperClass needs to be extended by your own Config class definition. This super class holds common variables and methods that can be used by any application. However, each application requires it's own methods and logic to init. Usage: The child class Config should be placed near the top of the script file outside of the event handler. It should be global and must be initialized.",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "class Config extends tools._ConfigSuperClass {\n\t\t// your custom class definition including your implementation of .init()\n}\nConfig.init();\n/"
+            ],
+            "throws": []
+          },
+          "position": 4027
+        },
+        {
+          "type": "method",
+          "name": "_ConfigSuperClass.settings",
+          "className": "_ConfigSuperClass",
+          "isStatic": true,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [],
+          "position": 4136
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/utils.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/tools/vars.js",
+      "exports": []
+    },
+    {
+      "filePath": "lib/utils/InMemoryCache.js",
+      "exports": [
+        {
+          "type": "class",
+          "name": "InMemoryCache",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "InMemoryCache - Ultra-fast in-memory L0 cache for AWS Lambda Provides microsecond-level cache access using JavaScript Map with LRU eviction. Designed for Lambda execution model with synchronous operations and no background processes. /",
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 256
+        }
+      ]
+    }
+  ]
+}

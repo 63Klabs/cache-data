@@ -7,19 +7,28 @@ const textGenericResponse = require('./generic.response.text');
 const ClientRequest = require('./ClientRequest.class');
 const DebugAndLog = require('./DebugAndLog.class');
 
-/* 
-Example Response
-	statusCode: 404,
-	headers: {
-		"Access-Control-Allow-Origin": "*",
-		"Content-Type": "application/json"
-	},
-	body: {
-		message: "Not Found"
-	}
-*/
 /**
- * Can be used to create a custom Response interface
+ * Response class for creating and managing HTTP responses with support for multiple content types.
+ * Provides methods to build, customize, and finalize responses for Lambda functions or web services.
+ * Supports JSON, HTML, XML, RSS, and TEXT content types with automatic content type detection.
+ * 
+ * @class Response
+ * @example
+ * // Create a JSON response
+ * const response = new Response(clientRequest);
+ * response.setStatusCode(200);
+ * response.setBody({ message: 'Success', data: results });
+ * return response.finalize();
+ * 
+ * @example
+ * // Initialize Response class with custom settings
+ * Response.init({
+ *   settings: {
+ *     errorExpirationInSeconds: 180,
+ *     routeExpirationInSeconds: 3600,
+ *     contentType: Response.CONTENT_TYPE.JSON
+ *   }
+ * });
  */
 class Response {
 
@@ -54,8 +63,16 @@ class Response {
 	_body = null;
 
 	/**
-	 * @param {ClientRequest} clientRequest
-	 * @param {{statusCode: number, headers: object, body: string|number|object|array }} obj Default structure.
+	 * Creates a new Response instance.
+	 * 
+	 * @param {ClientRequest} clientRequest - The client request object associated with this response
+	 * @param {{statusCode: number, headers: Object, body: string|number|Object|Array}} [obj={}] - Initial response structure
+	 * @param {string} [contentType=null] - Content type for the response (e.g., Response.CONTENT_TYPE.JSON)
+	 * @example
+	 * const response = new Response(clientRequest, { statusCode: 200, body: { success: true } });
+	 * 
+	 * @example
+	 * const response = new Response(clientRequest, {}, Response.CONTENT_TYPE.HTML);
 	 */
 	constructor(clientRequest, obj = {}, contentType = null) {
 		this._clientRequest = clientRequest;
@@ -70,13 +87,38 @@ class Response {
 	 */
 
 	/**
-	 * Initialize the Response class for all responses.
-	 * Add Response.init(options) to the Config.init process or at the
-	 * top of the main index.js file outside of the handler.
-	 * @param {number} options.settings.errorExpirationInSeconds
-	 * @param {number} options.settings.routeExpirationInSeconds
-	 * @param {string} options.settings.contentType Any one of available Response.CONTENT_TYPE values
-	 * @param {{response200: statusResponseObject, response404: statusResponseObject, response500: statusResponseObject}} options.jsonResponses
+	 * Initializes the Response class with custom settings and response templates.
+	 * Should be called once during application initialization, typically in Config.init() or at the top of index.js.
+	 * 
+	 * @param {Object} options - Configuration options
+	 * @param {Object} [options.settings] - General settings
+	 * @param {number} [options.settings.errorExpirationInSeconds] - Cache expiration time for error responses (default: 180)
+	 * @param {number} [options.settings.routeExpirationInSeconds] - Cache expiration time for successful responses (default: 0)
+	 * @param {string} [options.settings.contentType] - Default content type (use Response.CONTENT_TYPE values)
+	 * @param {Object} [options.jsonResponses] - Custom JSON response templates
+	 * @param {statusResponseObject} [options.jsonResponses.response200] - Template for 200 responses
+	 * @param {statusResponseObject} [options.jsonResponses.response404] - Template for 404 responses
+	 * @param {statusResponseObject} [options.jsonResponses.response500] - Template for 500 responses
+	 * @param {Object} [options.htmlResponses] - Custom HTML response templates
+	 * @param {Object} [options.xmlResponses] - Custom XML response templates
+	 * @param {Object} [options.rssResponses] - Custom RSS response templates
+	 * @param {Object} [options.textResponses] - Custom TEXT response templates
+	 * @returns {void}
+	 * @example
+	 * Response.init({
+	 *   settings: {
+	 *     errorExpirationInSeconds: 300,
+	 *     routeExpirationInSeconds: 3600,
+	 *     contentType: Response.CONTENT_TYPE.JSON
+	 *   },
+	 *   jsonResponses: {
+	 *     response404: {
+	 *       statusCode: 404,
+	 *       headers: { 'Content-Type': 'application/json' },
+	 *       body: { error: 'Resource not found' }
+	 *     }
+	 *   }
+	 * });
 	 */
 	static init = (options) => {
 		if (!Response.#isInitialized) {
@@ -122,11 +164,17 @@ class Response {
 	};
 
 	/**
-	 * Reset all properties of the response back to default values except for 
-	 * those properties specified in the object. Note that ClientRequest 
-	 * cannot be reset.
-	 * @param {{statusCode: number|string, headers: object, body: string|number|object|array}} obj
-	 * @param {string} contentType Accepted values may be obtained from Response.CONTENT_TYPES[JSON|HTML|XML|RSS|TEXT]
+	 * Resets all properties of the response to default values except those specified in the object.
+	 * ClientRequest cannot be reset. Uses generic response templates based on status code.
+	 * 
+	 * @param {{statusCode: number|string, headers: Object, body: string|number|Object|Array}} obj - Properties to set after reset
+	 * @param {string} [contentType=null] - Content type (use Response.CONTENT_TYPE values)
+	 * @returns {void}
+	 * @example
+	 * response.reset({ statusCode: 404 });
+	 * 
+	 * @example
+	 * response.reset({ statusCode: 200, body: { data: results } }, Response.CONTENT_TYPE.JSON);
 	 */
 	reset = (obj, contentType = null) => {
 
@@ -148,10 +196,17 @@ class Response {
 	};
 
 	/**
-	 * Set the properties of the response. This will overwrite only properties
-	 * supplied in the new object. Use .reset if you wish to clear out all properties even
-	 * if not explicitly set in the object. ClientRequest cannot be set.
-	 * @param {{statusCode: number|string, headers: object, body: string|number|object|array}} obj 
+	 * Sets properties of the response, overwriting only the supplied properties.
+	 * Use reset() to clear all properties. ClientRequest cannot be set.
+	 * 
+	 * @param {{statusCode: number|string, headers: Object, body: string|number|Object|Array}} obj - Properties to set
+	 * @param {string} [contentType=null] - Content type (use Response.CONTENT_TYPE values)
+	 * @returns {void}
+	 * @example
+	 * response.set({ statusCode: 201, body: { id: newId } });
+	 * 
+	 * @example
+	 * response.set({ headers: { 'X-Custom-Header': 'value' } });
 	 */
 	set = (obj, contentType = null) => {
 
@@ -169,57 +224,88 @@ class Response {
 	}
 
 	/**
+	 * Gets the current status code of the response.
 	 * 
-	 * @returns {number} Current statusCode of the Response
+	 * @returns {number} Current status code
+	 * @example
+	 * const statusCode = response.getStatusCode();
+	 * console.log(`Response status: ${statusCode}`);
 	 */
 	getStatusCode = () => {
 		return this._statusCode;
 	};
 
 	/**
+	 * Gets the current headers of the response.
 	 * 
-	 * @returns {object} Current headers of the Response
+	 * @returns {Object} Current headers object
+	 * @example
+	 * const headers = response.getHeaders();
+	 * console.log(headers['Content-Type']);
 	 */
 	getHeaders = () => {
 		return this._headers;
 	};
 
 	/**
+	 * Gets the current body of the response.
 	 * 
-	 * @returns {object|array|string|number|null} Current body of the Response
+	 * @returns {Object|Array|string|number|null} Current body content
+	 * @example
+	 * const body = response.getBody();
+	 * console.log(body);
 	 */
 	getBody = () => {
 		return this._body;
 	};
 
 	/**
+	 * Gets the default content type from settings.
 	 * 
-	 * @returns {string} Current ContentType of the Response
+	 * @returns {string} Default content type string
+	 * @example
+	 * const contentType = Response.getContentType();
+	 * console.log(`Default content type: ${contentType}`);
 	 */
 	static getContentType() {
 		return Response.#settings.contentType;
 	};
 
 	/**
-	 *
-	 * @returns {number} Current errorExpirationInSeconds of the Response
+	 * Gets the error expiration time in seconds from settings.
+	 * 
+	 * @returns {number} Error expiration time in seconds
+	 * @example
+	 * const expiration = Response.getErrorExpirationInSeconds();
+	 * console.log(`Error cache expires in ${expiration} seconds`);
 	 */
 	static getErrorExpirationInSeconds() {
 		return Response.#settings.errorExpirationInSeconds;
 	};
 	
 	/**
-	 *
-	 * @returns {number} Current routeExpirationInSeconds of the Response
+	 * Gets the route expiration time in seconds from settings.
+	 * 
+	 * @returns {number} Route expiration time in seconds
+	 * @example
+	 * const expiration = Response.getRouteExpirationInSeconds();
+	 * console.log(`Route cache expires in ${expiration} seconds`);
 	 */
 	static getRouteExpirationInSeconds() {
 		return Response.#settings.routeExpirationInSeconds;
 	};
 
 	/**
-	 * Static method to inspect the body and headers to determine the ContentType. Used by the internal methods.
-	 * @param {{headers: object, body: object|array|string|number|null}} obj Object to inspect
-	 * @returns {string|null} The ContentType as determined after inspecting the headers and body
+	 * Inspects the body and headers to determine the content type.
+	 * Checks headers first, then body content.
+	 * 
+	 * @param {{headers: Object, body: Object|Array|string|number|null}} obj - Object to inspect
+	 * @returns {string|null} The determined content type, or null if cannot be determined
+	 * @example
+	 * const contentType = Response.inspectContentType({ 
+	 *   headers: { 'Content-Type': 'application/json' }, 
+	 *   body: { data: 'test' } 
+	 * });
 	 */
 	static inspectContentType = (obj) => {
 		const headerResult = Response.inspectHeaderContentType(obj.headers);
@@ -228,9 +314,14 @@ class Response {
 	}
 
 	/**
-	 * Static method to inspect the body to determine the ContentType. Used by the internal methods.
-	 * @param {object|array|string|number|null} body 
-	 * @returns {string|null} The ContentType as determined after inspecting just the body
+	 * Inspects the body to determine the content type based on content.
+	 * Detects HTML, RSS, XML, TEXT, or JSON based on body structure.
+	 * 
+	 * @param {Object|Array|string|number|null} body - Body content to inspect
+	 * @returns {string|null} The determined content type, or null if body is null
+	 * @example
+	 * const contentType = Response.inspectBodyContentType('<html></html>');
+	 * // Returns Response.CONTENT_TYPE.HTML
 	 */
 	static inspectBodyContentType = (body) => {
 		if (body !== null) {
@@ -252,41 +343,60 @@ class Response {
 	}
 
 	/**
-	 * Static method to inspect the headers to determine the ContentType. Used by the internal methods.
-	 * @param {object} headers
-	 * @returns {string|null} The ContentType as determined after inspecting just the headers
+	 * Inspects the headers to determine the content type.
+	 * 
+	 * @param {Object} headers - Headers object to inspect
+	 * @returns {string|null} The content type from headers, or null if not found
+	 * @example
+	 * const contentType = Response.inspectHeaderContentType({ 'Content-Type': 'application/json' });
 	 */
 	static inspectHeaderContentType = (headers) => {
 		return (headers && 'Content-Type' in headers ? headers['Content-Type'] : null);
 	}
 
 	/**
-	 * Inspect the content type of this Response. Passes this headers and this body to the static method
-	 * @returns {string|null} The ContentType as determined after inspecting the headers and body
+	 * Inspects this response's content type by checking headers and body.
+	 * 
+	 * @returns {string|null} The determined content type, or null if cannot be determined
+	 * @example
+	 * const contentType = response.inspectContentType();
 	 */
 	inspectContentType = () => {
 		return Response.inspectContentType({headers: this._headers, body: this._body});
 	}
 
 	/**
-	 * Inspect the body to determine the ContentType. Passes this body to the static method
-	 * @returns {string} ContentType string value determined from the current body
+	 * Inspects this response's body to determine content type.
+	 * 
+	 * @returns {string|null} Content type determined from the current body
+	 * @example
+	 * response.setBody({ data: 'test' });
+	 * const contentType = response.inspectBodyContentType();
+	 * // Returns Response.CONTENT_TYPE.JSON
 	 */
 	inspectBodyContentType = () => {
 		return Response.inspectBodyContentType(this._body);
 	}
 
 	/**
-	 * Inspect the headers to determine the ContentType. Passes this headers to the static method
-	 * @returns {string} ContentType string value determined from the current headers
+	 * Inspects this response's headers to determine content type.
+	 * 
+	 * @returns {string|null} Content type determined from the current headers
+	 * @example
+	 * const contentType = response.inspectHeaderContentType();
 	 */
 	inspectHeaderContentType = () => {
 		return Response.inspectHeaderContentType(this._headers);
 	}
 
 	/**
-	 * Get the current ContentType of the response. Inspects headers and body to determine ContentType. Returns the default from init if none is determined.
-	 * @returns {string} ContentType string value determined from the header or current body
+	 * Gets the current content type of the response by inspecting headers and body.
+	 * Returns the default content type from settings if none is determined.
+	 * 
+	 * @returns {string} Content type string value
+	 * @example
+	 * const contentType = response.getContentType();
+	 * console.log(`Response content type: ${contentType}`);
 	 */
 	getContentType = () => {
 		// Default content type is JSON
@@ -299,8 +409,13 @@ class Response {
 	};
 	
 	/**
-	 * Get the content type code for the response. This is the key for the CONTENT_TYPE object.
-	 * @returns {string}
+	 * Gets the content type code (key) for the response.
+	 * Returns the key from CONTENT_TYPE object that matches the current content type.
+	 * 
+	 * @returns {string} Content type code (e.g., 'JSON', 'HTML', 'XML')
+	 * @example
+	 * const code = response.getContentTypeCode();
+	 * // Returns 'JSON' if content type is 'application/json'
 	 */
 	getContentTypeCode = () => {
 		const contentTypeStr = this.getContentType();
@@ -314,33 +429,54 @@ class Response {
 	}
 
 	/**
-	 * Set the status code of the response. This will overwrite the status code of the response.
-	 * @param {number} statusCode
+	 * Sets the status code of the response, overwriting the current value.
+	 * 
+	 * @param {number} statusCode - HTTP status code (e.g., 200, 404, 500)
+	 * @returns {void}
+	 * @example
+	 * response.setStatusCode(201);
 	 */
 	setStatusCode = (statusCode) => {
 		this.set({statusCode: statusCode});
 	};
 
 	/**
-	 * Set the headers of the response. This will overwrite the headers of the response.
-	 * @param {object} headers
+	 * Sets the headers of the response, overwriting the current headers.
+	 * 
+	 * @param {Object} headers - Headers object with key-value pairs
+	 * @returns {void}
+	 * @example
+	 * response.setHeaders({ 'Content-Type': 'application/json', 'X-Custom': 'value' });
 	 */
 	setHeaders = (headers) => {
 		this.set({headers: headers});
 	};
 
 	/**
-	 * Set the body of the response. This will overwrite the body of the response.
-	 * @param {string|number|object|array} body
+	 * Sets the body of the response, overwriting the current body.
+	 * 
+	 * @param {string|number|Object|Array} body - Response body content
+	 * @returns {void}
+	 * @example
+	 * response.setBody({ message: 'Success', data: results });
+	 * 
+	 * @example
+	 * response.setBody('<html><body>Hello</body></html>');
 	 */
 	setBody = (body) => {
 		this.set({body: body});
 	};
 
 	/**
-	 * Get the generic response for the content type. Generic responses are either provided by default from Cache-Data or loaded in during Response.init()
-	 * @param {string} contentType
-	 * @returns {statusResponseObject}
+	 * Gets the generic response templates for the specified content type.
+	 * Generic responses are either provided by default or loaded during Response.init().
+	 * 
+	 * @param {string} contentType - Content type (use Response.CONTENT_TYPE values or codes like 'JSON', 'HTML')
+	 * @returns {Object} Generic response object with response templates
+	 * @throws {Error} If content type is not implemented
+	 * @example
+	 * const jsonResponses = Response.getGenericResponses(Response.CONTENT_TYPE.JSON);
+	 * const response404 = jsonResponses.response(404);
 	 */
 	static getGenericResponses = (contentType) => {
 		if (contentType === Response.CONTENT_TYPE.JSON || contentType === 'JSON') {
@@ -359,17 +495,30 @@ class Response {
 	}
 
 	/**
-	 * Add a header if it does not exist, if it exists then update the value
-	 * @param {string} key 
-	 * @param {string} value 
+	 * Adds or updates a header in the response.
+	 * If the header exists, its value is updated; otherwise, it's added.
+	 * 
+	 * @param {string} key - Header name
+	 * @param {string} value - Header value
+	 * @returns {void}
+	 * @example
+	 * response.addHeader('X-Request-ID', '12345');
+	 * response.addHeader('Cache-Control', 'no-cache');
 	 */
 	addHeader = (key, value) => {
 		this._headers[key] = value;
 	};
 
 	/**
+	 * Adds properties to the JSON body by merging with existing body.
+	 * Only works if the current body is an object.
 	 * 
-	 * @param {object} obj 
+	 * @param {Object} obj - Object with properties to add to the body
+	 * @returns {void}
+	 * @example
+	 * response.setBody({ message: 'Success' });
+	 * response.addToJsonBody({ timestamp: Date.now(), version: '1.0' });
+	 * // Body is now: { message: 'Success', timestamp: ..., version: '1.0' }
 	 */
 	addToJsonBody = (obj) => {
 		if (typeof this._body === 'object') {
@@ -378,8 +527,12 @@ class Response {
 	};
 
 	/**
+	 * Converts the response to a plain object.
 	 * 
-	 * @returns {{statusCode: number, headers: object, body: null|string|Array|object}}
+	 * @returns {{statusCode: number, headers: Object, body: null|string|Array|Object}} Response as object
+	 * @example
+	 * const obj = response.toObject();
+	 * console.log(obj.statusCode, obj.headers, obj.body);
 	 */
 	toObject = () => {
 		return {
@@ -390,27 +543,45 @@ class Response {
 	};
 
 	/**
+	 * Converts the response to a JSON string.
 	 * 
-	 * @returns {string} A string representation of the Response object
+	 * @returns {string} JSON string representation of the response
+	 * @example
+	 * const jsonString = response.toString();
+	 * console.log(jsonString);
 	 */
 	toString = () => {
 		return JSON.stringify(this.toObject());
 	};
 
 	/**
-	 * Used by JSON.stringify to convert the response to a stringified object
-	 * @returns {{statusCode: number, headers: object, body: null|string|Array|object}} this class in object form ready for use by JSON.stringify
+	 * Converts the response to an object for JSON.stringify().
+	 * Used automatically by JSON.stringify when serializing the response.
+	 * 
+	 * @returns {{statusCode: number, headers: Object, body: null|string|Array|Object}} Response as object
+	 * @example
+	 * const json = JSON.stringify(response);
 	 */
 	toJSON = () => {
 		return this.toObject();
 	};
 
 	/**
-	 * Send the response back to the client. If the body is an object or array, it will be stringified.
-	 * If the body is a string or number and the Content-Type header is json, it will be placed as a single element in an array then stringified.
-	 * If the body of the response is null it returns null
-	 * A response log entry is also created and sent to CloudWatch.
-	 * @returns {{statusCode: number, headers: object, body: string}} An object containing response data formatted to return from Lambda
+	 * Finalizes and prepares the response for sending to the client.
+	 * Handles body stringification, sets appropriate headers (CORS, caching, execution time),
+	 * and logs the response to CloudWatch. If body is an object/array, it's stringified.
+	 * For JSON responses, string/number bodies are wrapped in an array.
+	 * 
+	 * @returns {{statusCode: number, headers: Object, body: string}} Finalized response ready for Lambda return
+	 * @example
+	 * response.setStatusCode(200);
+	 * response.setBody({ data: results });
+	 * return response.finalize();
+	 * 
+	 * @example
+	 * // Finalize handles errors automatically
+	 * response.setBody(new Error('Something failed'));
+	 * return response.finalize(); // Returns 500 error response
 	 */
 	finalize = () => {
 
@@ -491,8 +662,13 @@ class Response {
 	};
 	
 	/** 
-	 * Log the ClientRequest and Response to CloudWatch
-	 * Formats a log entry parsing in CloudWatch Dashboard. 
+	 * Logs the ClientRequest and Response to CloudWatch.
+	 * Formats a log entry for parsing in CloudWatch Dashboard with fields:
+	 * statusCode, bytes, contentType, execms, clientIp, userAgent, origin, referrer, resource, queryKeys, routeLog, queryLog, apiKey.
+	 * 
+	 * @param {string} bodyAsString - The stringified response body
+	 * @returns {void}
+	 * @private
 	 */
 	_log(bodyAsString) {
 

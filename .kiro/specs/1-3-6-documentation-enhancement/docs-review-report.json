@@ -1,0 +1,281 @@
+{
+  "reviewDate": "2026-01-27T03:15:48.269Z",
+  "summary": {
+    "totalFiles": 10,
+    "filesNeedingReview": 0,
+    "totalBrokenLinks": 0,
+    "totalOutdatedIssues": 0,
+    "missingDocumentation": 1
+  },
+  "missingDocumentation": [
+    {
+      "path": "docs/features/endpoint/README.md",
+      "feature": "Endpoint Module",
+      "status": "stub",
+      "size": 46
+    }
+  ],
+  "fileAnalyses": [
+    {
+      "filePath": "docs/00-example-implementation/README.md",
+      "stats": {
+        "size": 3490,
+        "lastModified": "2026-01-06T02:42:49.397Z",
+        "lineCount": 56,
+        "wordCount": 429
+      },
+      "links": {
+        "total": 11,
+        "external": 2,
+        "internal": 8,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "Atlantis Tutorials repository",
+          "url": "https://github.com/63klabs/atlantis-tutorials"
+        },
+        {
+          "text": "Tutorial #2",
+          "url": "https://github.com/63Klabs/atlantis-tutorials/blob/main/tutorials/02-s3-dynamo-api-gateway-lambda-cache-data-node/README.md"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/00-quick-start-implementation/README.md",
+      "stats": {
+        "size": 24776,
+        "lastModified": "2026-01-25T22:36:37.824Z",
+        "lineCount": 657,
+        "wordCount": 3370
+      },
+      "links": {
+        "total": 6,
+        "external": 0,
+        "internal": 3,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/README.md",
+      "stats": {
+        "size": 936,
+        "lastModified": "2026-01-06T02:42:49.398Z",
+        "lineCount": 14,
+        "wordCount": 124
+      },
+      "links": {
+        "total": 2,
+        "external": 1,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "Atlantis Tutorials repository",
+          "url": "https://github.com/63klabs/atlantis-tutorials"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/README.md",
+      "stats": {
+        "size": 728,
+        "lastModified": "2026-01-06T02:42:49.398Z",
+        "lineCount": 10,
+        "wordCount": 64
+      },
+      "links": {
+        "total": 6,
+        "external": 1,
+        "internal": 5,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "Atlantis Tutorials repository",
+          "url": "https://github.com/63klabs/atlantis-tutorials"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/README.md",
+      "stats": {
+        "size": 116,
+        "lastModified": "2026-01-06T02:42:49.398Z",
+        "lineCount": 6,
+        "wordCount": 10
+      },
+      "links": {
+        "total": 3,
+        "external": 0,
+        "internal": 3,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/cache/README.md",
+      "stats": {
+        "size": 13720,
+        "lastModified": "2026-01-26T15:21:40.669Z",
+        "lineCount": 472,
+        "wordCount": 1669
+      },
+      "links": {
+        "total": 3,
+        "external": 2,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "AWS Lambda Execution Context",
+          "url": "https://docs.aws.amazon.com/lambda/latest/dg/runtimes-context.html"
+        },
+        {
+          "text": "Cache Replacement Policies",
+          "url": "https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_recently_used_(LRU"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/endpoint/README.md",
+      "stats": {
+        "size": 46,
+        "lastModified": "2026-01-06T02:42:49.398Z",
+        "lineCount": 4,
+        "wordCount": 8
+      },
+      "links": {
+        "total": 0,
+        "external": 0,
+        "internal": 0,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/tools/README.md",
+      "stats": {
+        "size": 14672,
+        "lastModified": "2026-01-06T02:42:49.398Z",
+        "lineCount": 359,
+        "wordCount": 1997
+      },
+      "links": {
+        "total": 3,
+        "external": 3,
+        "internal": 0,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "regular expression used for performing search",
+          "url": "https://regex101.com/r/IJp35p/3"
+        },
+        {
+          "text": "Amazon S3 examples using SDK for JavaScript (v3)",
+          "url": "https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html"
+        },
+        {
+          "text": "Using the DynamoDB Document Client",
+          "url": "https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/dynamodb-example-dynamodb-utilities.html"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/lambda-optimization/README.md",
+      "stats": {
+        "size": 9841,
+        "lastModified": "2026-01-06T02:42:49.398Z",
+        "lineCount": 178,
+        "wordCount": 1393
+      },
+      "links": {
+        "total": 8,
+        "external": 4,
+        "internal": 4,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "AWS's own documentation",
+          "url": "https://docs.aws.amazon.com/lambda/latest/operatorguide/computing-power.html"
+        },
+        {
+          "text": "Lower AWS Lambda bill by increasing memory by Taavi Rehemägi",
+          "url": "https://dashbird.io/blog/lower-aws-lambda-bill-increasing-memory/"
+        },
+        {
+          "text": "Metrics before and after upgrade to 512MB with 1M invocations over a 7 day period",
+          "url": "https://github.com/63klabs/cache-data/assets/17443749/0ec98af5-edcf-4e2a-8017-dd17b9c7a11c"
+        },
+        {
+          "text": "63Klabs GitHub repositories",
+          "url": "https://github.com/63Klabs"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/technical/in-memory-cache.md",
+      "stats": {
+        "size": 14898,
+        "lastModified": "2026-01-26T15:19:55.995Z",
+        "lineCount": 467,
+        "wordCount": 1922
+      },
+      "links": {
+        "total": 3,
+        "external": 3,
+        "internal": 0,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "JavaScript Map documentation",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map"
+        },
+        {
+          "text": "AWS Lambda execution context",
+          "url": "https://docs.aws.amazon.com/lambda/latest/dg/runtimes-context.html"
+        },
+        {
+          "text": "LRU cache algorithms",
+          "url": "https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_recently_used_(LRU"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    }
+  ]
+}

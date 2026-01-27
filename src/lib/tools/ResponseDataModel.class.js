@@ -1,34 +1,27 @@
 const { safeClone } = require('./utils');
 
-/* ****************************************************************************
- * Response Data Model
- * ----------------------------------------------------------------------------
- * 
- * Provides a class that can be used to store and complie data to send back
- * as a response.
- * 
- *************************************************************************** */
-
 /**
- * A response object that can be used to collect data to be sent back as a response.
- * A structured skeleton may be created during construction to create an order of
- * presenting various keys. As the program executes, additional data may be added.
- * Other response objects may be added with keys to fill out the object. If there are
- * key collisions then new items matching that key are added as an element in an array.
+ * ResponseDataModel class for collecting and structuring response data.
+ * Provides methods to build complex response objects by adding items with keys or as array elements.
+ * Supports creating structured skeletons during construction and filling them during execution.
+ * Handles key collisions by converting single values to arrays when duplicate keys are added.
  * 
- * Extends ResponseDataModel, can be used to extend as an interface.
+ * @class ResponseDataModel
+ * @example
+ * // Create response with skeleton
+ * const response = new ResponseDataModel({ users: [], metadata: {} }, 'data');
+ * response.addItemByKey({ id: 1, name: 'John' }, 'users');
+ * response.addItemByKey({ id: 2, name: 'Jane' }, 'users');
+ * console.log(response.toString());
+ * // Output: {"data":{"users":[{"id":1,"name":"John"},{"id":2,"name":"Jane"}],"metadata":{}}}
  * 
  * @example
- * let obj = new Response(); // you can pass a skeleton that you will add to, or the full object to the constructor
- * obj.addItem(newItem); // where newItem is another response object or regular structured object which will be added as a node
- * obj.addItemByKey(newItem2,"employees");// where newItem2 is another response object or regular structured object which will be added as a node. Note that you can override a label by passing a new one. For example pluralizing a label
- * obj.removeEmpty(); // optional, it will remove empty keys
- * 	response = {
- * 		statusCode: 200,
- * 		body: dataResponse.toString(),
- * 		headers: {'content-type': 'application/json'}
- * 	};
- *
+ * // Add items to array
+ * const list = new ResponseDataModel(null, 'items');
+ * list.addItem({ id: 1 });
+ * list.addItem({ id: 2 });
+ * console.log(list.toString());
+ * // Output: {"items":[{"id":1},{"id":2}]}
  */
 class ResponseDataModel {
 
@@ -36,10 +29,18 @@ class ResponseDataModel {
 	_label = "";
 
 	/**
-	 * Used for collecting parts of a response. A data skeleton may be passed in as an object.
+	 * Creates a new ResponseDataModel instance for collecting response data.
+	 * A data skeleton may be passed in with various fields set to {}, [], "", null, or default values.
 	 * 
-	 * @param {*} data Can be a skeleton with various fields set to {}, [], "", null or defaults.
-	 * @param {*} label 
+	 * @param {*} [data=null] - Initial data structure (can be a skeleton or complete object)
+	 * @param {string} [label=""] - Label to use as a key when this object is added to another ResponseDataModel
+	 * @example
+	 * // Create with skeleton
+	 * const response = new ResponseDataModel({ users: [], count: 0 }, 'data');
+	 * 
+	 * @example
+	 * // Create empty
+	 * const response = new ResponseDataModel();
 	 */
 	constructor(data = null, label = "") {
 		if (data !== null) {
@@ -52,28 +53,48 @@ class ResponseDataModel {
 	};
 	
 	/**
-	 * Get the label that will be used when this object is added to another 
-	 * ResponseDataModel or returned as a response
-	 * @returns {string} a label to use as a key for the object
+	 * Gets the label that will be used when this object is added to another ResponseDataModel.
+	 * 
+	 * @returns {string} The label to use as a key for the object
+	 * @example
+	 * const response = new ResponseDataModel({ id: 1 }, 'user');
+	 * console.log(response.getLabel()); // 'user'
 	 */
 	getLabel() {
 		return this._label;
 	};
 
 	/**
-	 * Get the data object
-	 * @returns {*} A copy of the data object
+	 * Gets a copy of the response data object.
+	 * 
+	 * @returns {*} A cloned copy of the data object
+	 * @example
+	 * const data = response.getResponseData();
+	 * console.log(data);
 	 */
 	getResponseData() {
 		return safeClone(this._responseData);
 	};
 
 	/**
-	 * Add an item as part of an array.
-	 * If the responseObject is null, it will be transformed into an array and the item will be added at index 0
-	 * If the responseObject is an array, the item will be added as the next index
-	 * If the responseObject is an object, the item will be added as an array element under the label (or 'items' if label is "")
-	 * @param {ResponseDataModel|*} item 
+	 * Adds an item as part of an array or under a labeled key.
+	 * - If responseData is null, transforms it into an array and adds item at index 0
+	 * - If responseData is an array, adds item as the next element
+	 * - If responseData is an object, adds item as an array element under the label (or 'items' if no label)
+	 * 
+	 * @param {ResponseDataModel|*} item - Item to add (can be ResponseDataModel or any value)
+	 * @returns {void}
+	 * @example
+	 * const response = new ResponseDataModel();
+	 * response.addItem({ id: 1, name: 'John' });
+	 * response.addItem({ id: 2, name: 'Jane' });
+	 * // Result: [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]
+	 * 
+	 * @example
+	 * // Add with label
+	 * const item = new ResponseDataModel({ id: 1 }, 'user');
+	 * response.addItem(item);
+	 * // Result: { user: [{ id: 1 }] }
 	 */
 	addItem(item) {
 
@@ -126,9 +147,23 @@ class ResponseDataModel {
 	};
 	
 	/**
-	 * Add an item by key
-	 * @param {ResponseDataModel|*} item 
-	 * @param {string} key 
+	 * Adds an item by a specific key.
+	 * If the key exists and contains non-empty data, converts to array and appends new item.
+	 * If the key doesn't exist or contains placeholder data, replaces with new item.
+	 * 
+	 * @param {ResponseDataModel|*} item - Item to add (can be ResponseDataModel or any value)
+	 * @param {string} [key=""] - Key to use for the item (overrides item's label if provided)
+	 * @returns {void}
+	 * @example
+	 * const response = new ResponseDataModel({});
+	 * response.addItemByKey({ id: 1, name: 'John' }, 'user');
+	 * response.addItemByKey({ id: 2, name: 'Jane' }, 'user');
+	 * // Result: { user: [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }] }
+	 * 
+	 * @example
+	 * // Override label
+	 * const item = new ResponseDataModel({ id: 1 }, 'employee');
+	 * response.addItemByKey(item, 'employees'); // Pluralize the label
 	 */
 	addItemByKey(item, key = "") {
 
@@ -179,8 +214,20 @@ class ResponseDataModel {
 	};
 	
 	/**
+	 * Converts the response data to an object.
+	 * If there's a label, returns the data as a key-value pair with the label as the key.
+	 * If no label, returns the data directly.
 	 * 
-	 * @returns {*} The data object. If there is a label then it is returned as a key value pair where the label is the key
+	 * @returns {*} The data object, optionally wrapped with label as key
+	 * @example
+	 * const response = new ResponseDataModel({ id: 1 }, 'user');
+	 * console.log(response.toObject());
+	 * // Output: { user: { id: 1 } }
+	 * 
+	 * @example
+	 * const response = new ResponseDataModel({ id: 1 });
+	 * console.log(response.toObject());
+	 * // Output: { id: 1 }
 	 */
 	toObject() {
 		let obj = {};
@@ -194,8 +241,14 @@ class ResponseDataModel {
 	};
 
 	/**
+	 * Converts the response data to a JSON string.
+	 * Uses toObject() to get the object representation, then stringifies it.
 	 * 
-	 * @returns {string} A stringified JSON object (using .toObject() ) for use as a response
+	 * @returns {string} JSON string representation of the response data
+	 * @example
+	 * const response = new ResponseDataModel({ users: [{ id: 1 }] }, 'data');
+	 * console.log(response.toString());
+	 * // Output: '{"data":{"users":[{"id":1}]}}'
 	 */
 	toString() {
 		return JSON.stringify(this.toObject());
