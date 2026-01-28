@@ -1309,12 +1309,12 @@ class CacheData {
 };
 
 /**
- * The Cache object handles reads and writes from the cache. 
- * It also acts as a proxy between the app and CacheData which is a private class.
- * This is the actual data object our application can work with and is returned
- * from CachableDataAccess.
+ * The Cache object handles the settings for the cache system
  * 
- * Before using it must be initialized
+ * Before using it must be initialized. 
+ * 
+ * Many settings can be set through Environment variables or by
+ * passing parameters to Cache.init():
  * 
  * Cache.init({parameters});
  * 
@@ -2353,6 +2353,27 @@ class Cache {
 	};
 };
 
+/**
+ * The CacheableDataAccess object provides an interface to 
+ * the cache. It is responsible for reading from and writing to cache.
+ * All requests to data go through the cache
+ * 
+ * Before using CacheableDataAccess, the Cache must be initialized. 
+ * 
+ * @example
+ * // Init should be done outside the handler
+ * Cache.init({parameters});
+ * 
+ * // Then you can then make a request in the handler
+ * // sending it through CacheableDataAccess:
+ * const { cache } = require("@63klabs/cache-data");
+ * const cacheObj = await cache.CacheableDataAccess.getData(
+ *		cacheCfg, 
+ *		yourFetchFunction,
+ *		conn, 
+ *		daoQuery
+ *	);
+ */
 class CacheableDataAccess {
 	constructor() { };
 
