@@ -181,6 +181,14 @@ The implementation is specifically designed for AWS Lambda's execution model:
 - All operations are synchronous
 - Safe for Lambda's freeze/thaw lifecycle
 
+#### Concurrency Considerations
+
+- Each Lambda invocation within the same container shares the same cache instance
+- Concurrent invocations in the same container access the same Map
+- JavaScript's single-threaded event loop ensures atomic Map operations
+- No race conditions for get/set operations within a single container
+- Different Lambda containers maintain separate, isolated cache instances
+
 ## Cache.read() Integration
 
 The `Cache.read()` method integrates the L0_Cache into the existing cache flow:
@@ -202,11 +210,14 @@ async read() {
       // Hit - return immediately
       this.#store = memResult.data;
       this.#status = Cache.STATUS_CACHE_IN_MEM;
+      tools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);
       return this.#store;
     } else if (memResult.cache === -1) {
       // Expired - retain for fallback
       staleData = memResult.data;
+      tools.DebugAndLog.debug(`In-memory cache expired, retaining stale data: ${this.#idHash}`);
     }
+    // cache === 0 means miss, continue to DynamoDB
   }
   
   // 3. Fetch from DynamoDB
@@ -218,26 +229,31 @@ async read() {
     // 4. Store in L0_Cache if successful
     if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null && 
         this.#store.cache.statusCode !== null) {
-      const expiresAt = this.#store.cache.expires * 1000;
+      const expiresAt = this.#store.cache.expires * 1000; // Convert to milliseconds
       Cache.#inMemoryCache.set(this.#idHash, this.#store, expiresAt);
+      tools.DebugAndLog.debug(`Stored in L0_Cache: ${this.#idHash}`);
     }
     
     return this.#store;
   } catch (error) {
     // 5. Error handling with stale data fallback
     if (staleData !== null) {
+      // Calculate new expiration using error extension
       const newExpires = this.#syncedNowTimestampInSeconds + 
         this.#defaultExpirationExtensionOnErrorInSeconds;
       const newExpiresAt = newExpires * 1000;
       
+      // Update stale data expiration
       staleData.cache.expires = newExpires;
       
+      // Store updated stale data back in L0_Cache
       if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null) {
         Cache.#inMemoryCache.set(this.#idHash, staleData, newExpiresAt);
       }
       
       this.#store = staleData;
       this.#status = Cache.STATUS_CACHE_ERROR;
+      tools.DebugAndLog.warn(`Returning stale data due to error: ${this.#idHash}`);
       return this.#store;
     }
     
@@ -286,6 +302,26 @@ Cache.init({
   inMemoryCacheEntriesPerGB: 5000,  // Optional: override heuristic
   inMemoryCacheDefaultMaxEntries: 1000  // Optional: override fallback
 });
+```
+
+The initialization logic in `Cache.init()`:
+
+```javascript
+// Initialize in-memory cache feature flag
+this.#useInMemoryCache = parameters.useInMemoryCache || 
+  (process.env.CACHE_USE_IN_MEMORY === 'true') || 
+  false;
+
+// Initialize InMemoryCache if enabled
+if (this.#useInMemoryCache) {
+  const InMemoryCache = require('./utils/InMemoryCache.js');
+  this.#inMemoryCache = new InMemoryCache({
+    maxEntries: parameters.inMemoryCacheMaxEntries,
+    entriesPerGB: parameters.inMemoryCacheEntriesPerGB,
+    defaultMaxEntries: parameters.inMemoryCacheDefaultMaxEntries
+  });
+  tools.DebugAndLog.debug('In-memory cache initialized');
+}
 ```
 
 ### Environment Variable
@@ -346,18 +382,20 @@ Approximate memory per entry:
 
 Located in `test/cache/in-memory-cache/unit/`:
 
-- Basic operations (get, set, clear)
-- Constructor and memory configuration
+- **InMemoryCache-basic-tests.mjs**: Basic operations (get, set, clear)
+- **InMemoryCache-constructor-tests.mjs**: Constructor and memory configuration
 - Edge cases (empty cache, single entry, at capacity)
 
 ### Property-Based Tests
 
 Located in `test/cache/in-memory-cache/property/`:
 
-- Round-trip preservation
-- LRU eviction correctness
-- Expiration handling
-- Capacity management
+- **InMemoryCache-property-tests.mjs**: Core InMemoryCache properties
+  - Round-trip preservation
+  - LRU eviction correctness
+  - Expiration handling
+  - Capacity management
+- **Cache-integration-property-tests.mjs**: Integration with Cache class
 
 Uses `fast-check` library with minimum 100 iterations per property.
 
@@ -365,12 +403,55 @@ Uses `fast-check` library with minimum 100 iterations per property.
 
 Located in `test/cache/in-memory-cache/integration/`:
 
-- Cache.read() with L0_Cache enabled
-- Feature flag behavior
-- Error handling with stale data
-- DynamoDB integration
+- **Cache-integration-tests.mjs**: Full integration tests
+  - Cache.read() with L0_Cache enabled
+  - Feature flag behavior
+  - Error handling with stale data
+  - DynamoDB integration
+
+### Running Tests
+
+```bash
+# Run all in-memory cache tests
+npm test -- test/cache/in-memory-cache/
+
+# Run unit tests only
+npm test -- test/cache/in-memory-cache/unit/
+
+# Run property tests only
+npm test -- test/cache/in-memory-cache/property/
+
+# Run integration tests only
+npm test -- test/cache/in-memory-cache/integration/
+```
 
 ## Maintenance Guidelines
+
+### Monitoring and Observability
+
+To monitor in-memory cache performance in production:
+
+**Cache Hit Rate Tracking**:
+- Monitor the `STATUS_CACHE_IN_MEM` status in application logs
+- Compare frequency of `STATUS_CACHE_IN_MEM` vs `STATUS_CACHE` to calculate hit rate
+- Use CloudWatch Logs Insights to query and aggregate cache status metrics
+
+**Memory Usage Monitoring**:
+- Use CloudWatch Lambda metrics to track memory utilization
+- Monitor `MemoryUtilization` metric to ensure cache isn't causing memory pressure
+- Use `Cache.info()` to inspect current cache size and capacity
+
+**Performance Metrics**:
+- Track Lambda execution duration before and after enabling in-memory cache
+- Monitor cold start times (cache initialization overhead)
+- Compare DynamoDB request counts before/after to measure cache effectiveness
+
+**Example CloudWatch Logs Insights Query**:
+```
+fields @timestamp, @message
+| filter @message like /cache hit|cache miss|Stored in L0_Cache/
+| stats count() by @message
+```
 
 ### Adding New Features
 
@@ -421,6 +502,26 @@ Adjust the entries-per-GB heuristic based on your data:
 **Issue**: Low cache hit rate
 - **Cause**: Lambda containers are being recycled frequently (cold starts)
 - **Solution**: Use Lambda provisioned concurrency or reserved concurrency
+
+### Upgrade and Migration Considerations
+
+**Enabling in-memory cache on existing deployments**:
+
+1. **Test in non-production first**: Enable the feature flag in development/staging environments
+2. **Monitor memory usage**: Watch CloudWatch metrics for memory pressure
+3. **Gradual rollout**: Use Lambda aliases and weighted routing for gradual deployment
+4. **Rollback plan**: Feature flag can be disabled without code changes
+
+**Backward compatibility**:
+- In-memory cache is fully backward compatible
+- Default behavior (disabled) matches previous versions
+- No breaking changes to existing Cache API
+- Can be enabled/disabled per Lambda function independently
+
+**Version compatibility**:
+- Available starting in v1.3.6
+- Requires Node.js runtime that supports ES6 Map (Node.js 4.0+)
+- No additional dependencies required
 
 ## Security Considerations
 

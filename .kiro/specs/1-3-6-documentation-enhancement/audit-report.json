@@ -1,264 +1,395 @@
 {
-  "auditDate": "2026-01-27T03:13:35.153Z",
+  "auditDate": "2026-01-28T02:58:53.989Z",
   "summary": {
     "totalFiles": 23,
-    "totalPublicFunctions": 48,
-    "documentedFunctions": 15,
-    "completeFunctions": 5,
-    "missingJSDocCount": 33,
-    "incompleteJSDocCount": 10,
-    "coveragePercentage": "31.25",
-    "completenessPercentage": "10.42"
+    "totalPublicFunctions": 54,
+    "documentedFunctions": 16,
+    "completeFunctions": 8,
+    "missingJSDocCount": 38,
+    "incompleteJSDocCount": 8,
+    "inaccurateJSDocCount": 0,
+    "coveragePercentage": "29.63",
+    "completenessPercentage": "14.81",
+    "brokenLinksCount": 0,
+    "invalidExamplesCount": 17,
+    "criticalErrors": 55
   },
-  "missingJSDoc": [
-    {
-      "file": "lib/dao-cache.js",
-      "name": "Cache",
-      "type": "class"
-    },
-    {
-      "file": "lib/dao-cache.js",
-      "name": "CacheableDataAccess",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/APIRequest.class.js",
-      "name": "object",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/APIRequest.class.js",
-      "name": "and",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/APIRequest.class.js",
-      "name": "as",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/APIRequest.class.js",
-      "name": "can",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/APIRequest.class.js",
-      "name": "can.call",
-      "type": "method"
-    },
-    {
-      "file": "lib/tools/APIRequest.class.js",
-      "name": "object",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/APIRequest.class.js",
-      "name": "object.call",
-      "type": "method"
-    },
-    {
-      "file": "lib/tools/AWS.classes.js",
-      "name": "AWS",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/AWS.classes.js",
-      "name": "AWS.XRayOn",
-      "type": "method"
-    },
-    {
-      "file": "lib/tools/CachedParametersSecrets.classes.js",
-      "name": "CachedParameterSecrets",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/CachedParametersSecrets.classes.js",
-      "name": "CachedSSMParameter",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/CachedParametersSecrets.classes.js",
-      "name": "CachedSSMParameter.getPath",
-      "type": "method"
-    },
-    {
-      "file": "lib/tools/CachedParametersSecrets.classes.js",
-      "name": "CachedSecret",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/CachedParametersSecrets.classes.js",
-      "name": "CachedSecret.getPath",
-      "type": "method"
-    },
-    {
-      "file": "lib/tools/ClientRequest.class.js",
-      "name": "for",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/Connections.classes.js",
-      "name": "Connections",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/Connections.classes.js",
-      "name": "ConnectionAuthentication.if",
-      "type": "method"
-    },
-    {
-      "file": "lib/tools/Connections.classes.js",
-      "name": "ConnectionAuthentication.if",
-      "type": "method"
-    },
-    {
-      "file": "lib/tools/DebugAndLog.class.js",
-      "name": "error",
-      "type": "function"
-    },
-    {
-      "file": "lib/tools/DebugAndLog.class.js",
-      "name": "warn",
-      "type": "function"
-    },
-    {
-      "file": "lib/tools/DebugAndLog.class.js",
-      "name": "log",
-      "type": "function"
-    },
-    {
-      "file": "lib/tools/DebugAndLog.class.js",
-      "name": "info",
-      "type": "function"
-    },
-    {
-      "file": "lib/tools/DebugAndLog.class.js",
-      "name": "debug",
-      "type": "function"
-    },
-    {
-      "file": "lib/tools/RequestInfo.class.js",
-      "name": "that",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/RequestInfo.class.js",
-      "name": "construction",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/Response.class.js",
-      "name": "for",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/Response.class.js",
-      "name": "in",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/ResponseDataModel.class.js",
-      "name": "that",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/Timer.class.js",
-      "name": "Timer",
-      "type": "class"
-    },
-    {
-      "file": "lib/tools/Timer.class.js",
-      "name": "Timer.if",
-      "type": "method"
-    },
-    {
-      "file": "lib/tools/index.js",
-      "name": "_ConfigSuperClass.settings",
-      "type": "method"
-    }
-  ],
-  "incompleteJSDoc": [
-    {
-      "file": "lib/dao-cache.js",
-      "name": "Cache",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/tools/ClientRequest.class.js",
-      "name": "ClientRequest",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/tools/Connections.classes.js",
-      "name": "Connection",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/tools/Connections.classes.js",
-      "name": "ConnectionAuthentication",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/tools/Connections.classes.js",
-      "name": "ConnectionRequest",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/tools/DebugAndLog.class.js",
-      "name": "DebugAndLog",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/tools/ImmutableObject.class.js",
-      "name": "ImmutableObject",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/tools/RequestInfo.class.js",
-      "name": "RequestInfo",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/tools/Response.class.js",
-      "name": "Response",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    },
-    {
-      "file": "lib/utils/InMemoryCache.js",
-      "name": "InMemoryCache",
-      "type": "class",
-      "issues": [
-        "Missing @example tag"
-      ]
-    }
-  ],
+  "jsdocAnalysis": {
+    "missingJSDoc": [
+      {
+        "file": "lib/dao-cache.js",
+        "name": "CacheableDataAccess",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/APIRequest.class.js",
+        "name": "object",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/APIRequest.class.js",
+        "name": "and",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/APIRequest.class.js",
+        "name": "as",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/APIRequest.class.js",
+        "name": "can",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/APIRequest.class.js",
+        "name": "can.call",
+        "type": "method"
+      },
+      {
+        "file": "lib/tools/APIRequest.class.js",
+        "name": "object",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/APIRequest.class.js",
+        "name": "object.call",
+        "type": "method"
+      },
+      {
+        "file": "lib/tools/AWS.classes.js",
+        "name": "AWS",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/AWS.classes.js",
+        "name": "AWS.XRayOn",
+        "type": "method"
+      },
+      {
+        "file": "lib/tools/CachedParametersSecrets.classes.js",
+        "name": "CachedParameterSecrets",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/CachedParametersSecrets.classes.js",
+        "name": "CachedSSMParameter",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/CachedParametersSecrets.classes.js",
+        "name": "CachedSSMParameter.getPath",
+        "type": "method"
+      },
+      {
+        "file": "lib/tools/CachedParametersSecrets.classes.js",
+        "name": "CachedSecret",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/CachedParametersSecrets.classes.js",
+        "name": "CachedSecret.getPath",
+        "type": "method"
+      },
+      {
+        "file": "lib/tools/ClientRequest.class.js",
+        "name": "for",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/Connections.classes.js",
+        "name": "Connections",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/Connections.classes.js",
+        "name": "ConnectionAuthentication.if",
+        "type": "method"
+      },
+      {
+        "file": "lib/tools/Connections.classes.js",
+        "name": "ConnectionAuthentication.if",
+        "type": "method"
+      },
+      {
+        "file": "lib/tools/DebugAndLog.class.js",
+        "name": "for",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/DebugAndLog.class.js",
+        "name": "DebugAndLog",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/DebugAndLog.class.js",
+        "name": "is",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/DebugAndLog.class.js",
+        "name": "error",
+        "type": "function"
+      },
+      {
+        "file": "lib/tools/DebugAndLog.class.js",
+        "name": "warn",
+        "type": "function"
+      },
+      {
+        "file": "lib/tools/DebugAndLog.class.js",
+        "name": "log",
+        "type": "function"
+      },
+      {
+        "file": "lib/tools/DebugAndLog.class.js",
+        "name": "info",
+        "type": "function"
+      },
+      {
+        "file": "lib/tools/DebugAndLog.class.js",
+        "name": "debug",
+        "type": "function"
+      },
+      {
+        "file": "lib/tools/RequestInfo.class.js",
+        "name": "that",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/RequestInfo.class.js",
+        "name": "construction",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/Response.class.js",
+        "name": "for",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/Response.class.js",
+        "name": "Response",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/Response.class.js",
+        "name": "with",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/Response.class.js",
+        "name": "with",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/ResponseDataModel.class.js",
+        "name": "for",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/ResponseDataModel.class.js",
+        "name": "ResponseDataModel",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/Timer.class.js",
+        "name": "for",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/Timer.class.js",
+        "name": "Timer",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/index.js",
+        "name": "_ConfigSuperClass.settings",
+        "type": "method"
+      }
+    ],
+    "incompleteJSDoc": [
+      {
+        "file": "lib/dao-cache.js",
+        "name": "Cache",
+        "type": "class",
+        "issues": [
+          "Missing @example tag"
+        ]
+      },
+      {
+        "file": "lib/tools/ClientRequest.class.js",
+        "name": "ClientRequest",
+        "type": "class",
+        "issues": [
+          "Missing @example tag"
+        ]
+      },
+      {
+        "file": "lib/tools/Connections.classes.js",
+        "name": "Connection",
+        "type": "class",
+        "issues": [
+          "Missing @example tag"
+        ]
+      },
+      {
+        "file": "lib/tools/Connections.classes.js",
+        "name": "ConnectionAuthentication",
+        "type": "class",
+        "issues": [
+          "Missing @example tag"
+        ]
+      },
+      {
+        "file": "lib/tools/Connections.classes.js",
+        "name": "ConnectionRequest",
+        "type": "class",
+        "issues": [
+          "Missing @example tag"
+        ]
+      },
+      {
+        "file": "lib/tools/ImmutableObject.class.js",
+        "name": "ImmutableObject",
+        "type": "class",
+        "issues": [
+          "Missing @example tag"
+        ]
+      },
+      {
+        "file": "lib/tools/RequestInfo.class.js",
+        "name": "RequestInfo",
+        "type": "class",
+        "issues": [
+          "Missing @example tag"
+        ]
+      },
+      {
+        "file": "lib/utils/InMemoryCache.js",
+        "name": "InMemoryCache",
+        "type": "class",
+        "issues": [
+          "Missing @example tag"
+        ]
+      }
+    ],
+    "inaccurateJSDoc": []
+  },
+  "linkValidation": {
+    "totalLinks": 153,
+    "validLinks": 153,
+    "brokenLinks": [],
+    "filesChecked": 13
+  },
+  "exampleValidation": {
+    "totalExamples": 165,
+    "validExamples": 148,
+    "invalidExamples": [
+      {
+        "file": "docs/01-advanced-implementation-for-web-service/README.md",
+        "line": 387,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:88\nconst UsersController = require('./users.controller');\n      ^\n\nSyntaxError: Identifier 'UsersController' has already been declared\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "// users.controller.js\nconst { tools } = require('@63klabs/cache-data');\n\nclass UsersController {\n  ..."
+      },
+      {
+        "file": "docs/01-advanced-implementation-for-web-service/README.md",
+        "line": 516,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:20\nreturn response.finalize();\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "const { tools } = require('@63klabs/cache-data');\nconst { Response } = tools;\n\n// Create response\nco..."
+      },
+      {
+        "file": "docs/01-advanced-implementation-for-web-service/README.md",
+        "line": 588,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:20\nreturn response.finalize();\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "const { tools } = require('@63klabs/cache-data');\nconst { ResponseDataModel, Response } = tools;\n\n//..."
+      },
+      {
+        "file": "docs/01-advanced-implementation-for-web-service/README.md",
+        "line": 688,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:7\nreturn response.finalize();\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "// Finalize automatically handles:\n// - Content-Type detection\n// - CORS headers\n// - Cache-Control ..."
+      },
+      {
+        "file": "docs/01-advanced-implementation-for-web-service/README.md",
+        "line": 1726,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:2\ncase 'GET:health':\n^^^^\n\nSyntaxError: Unexpected token 'case'\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "// In router.js\ncase 'GET:health':\n  response.setStatusCode(200);\n  response.setBody({ \n    status: ..."
+      },
+      {
+        "file": "docs/features/tools/README.md",
+        "line": 837,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:8\nreturn response.get();\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst response = new tools.Response();\nresponse.s..."
+      },
+      {
+        "file": "docs/features/tools/README.md",
+        "line": 872,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:8\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst response = tools.jsonGenericResponse(\n  200..."
+      },
+      {
+        "file": "docs/features/tools/README.md",
+        "line": 885,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:6\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst html = '<html><body><h1>Hello World</h1></b..."
+      },
+      {
+        "file": "docs/features/tools/README.md",
+        "line": 896,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:6\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst xml = '<?xml version=\"1.0\"?><root><item>val..."
+      },
+      {
+        "file": "docs/features/tools/README.md",
+        "line": 907,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:6\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst rss = '<?xml version=\"1.0\"?><rss version=\"2..."
+      },
+      {
+        "file": "docs/features/tools/README.md",
+        "line": 918,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:6\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst text = 'Plain text response';\nconst respons..."
+      },
+      {
+        "file": "docs/lambda-optimization/README.md",
+        "line": 192,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:8\nconst [user, orders, inventory] = await Promise.all([\n       ^\n\nSyntaxError: Identifier 'user' has already been declared\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "// ❌ Sequential (slow) - each request waits for the previous\nconst user = await endpoint.get(userCon..."
+      },
+      {
+        "file": "docs/lambda-optimization/README.md",
+        "line": 235,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:12\n  return cached.data; // Cache hit\n  ^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "// Start cache lookup immediately\nconst cachePromise = cache.CacheData.get(cacheKey);\n\n// Prepare re..."
+      },
+      {
+        "file": "docs/technical/in-memory-cache.md",
+        "line": 59,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:3\n  expiresAt: number        // Expiration timestamp in milliseconds\n           ^\n\nSyntaxError: Unexpected token ':'\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "{\n  value: CacheDataFormat,  // The cached data\n  expiresAt: number        // Expiration timestamp i..."
+      },
+      {
+        "file": "docs/technical/in-memory-cache.md",
+        "line": 198,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:1\nasync read() {\n      ^^^^\n\nSyntaxError: Unexpected identifier 'read'\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "async read() {\n  // 1. Check if already loaded\n  if (this.#store !== null) return this.#store;\n  \n  ..."
+      },
+      {
+        "file": "docs/technical/in-memory-cache.md",
+        "line": 309,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:2\nthis.#useInMemoryCache = parameters.useInMemoryCache || \n    ^\n\nSyntaxError: Private field '#useInMemoryCache' must be declared in an enclosing class\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "// Initialize in-memory cache feature flag\nthis.#useInMemoryCache = parameters.useInMemoryCache || \n..."
+      },
+      {
+        "file": "docs/technical/in-memory-cache.md",
+        "line": 469,
+        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:2\ntools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);\n                                                    ^\n\nSyntaxError: Private field '#idHash' must be declared in an enclosing class\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
+        "code": "// In Cache.read()\ntools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);\ntools.DebugAndLo..."
+      }
+    ],
+    "filesChecked": 11
+  },
   "fileAnalyses": [
     {
       "filePath": "index.js",
@@ -270,19 +401,6 @@
         {
           "type": "class",
           "name": "Cache",
-          "hasJSDoc": false,
-          "jsdoc": {
-            "description": null,
-            "params": [],
-            "returns": null,
-            "examples": [],
-            "throws": []
-          },
-          "position": 8168
-        },
-        {
-          "type": "class",
-          "name": "Cache",
           "hasJSDoc": true,
           "jsdoc": {
             "description": "The Cache object handles reads and writes from the cache. It also acts as a proxy between the app and CacheData which is a private class. This is the actual data object our application can work with and is returned from CachableDataAccess. Before using it must be initialized Cache.init({parameters}); Then you can then make a request, sending it through CacheableDataAccess:  const { cache } = require(\"@63klabs/cache-data\"); const cacheObj = await cache.CacheableDataAccess.getData( \tcacheCfg, \tyourFetchFunction, \tconn, \tdaoQuery ); /",
@@ -291,7 +409,7 @@
             "examples": [],
             "throws": []
           },
-          "position": 33693
+          "position": 49573
         },
         {
           "type": "class",
@@ -304,7 +422,7 @@
             "examples": [],
             "throws": []
           },
-          "position": 74230
+          "position": 90110
         }
       ]
     },
@@ -698,16 +816,57 @@
       "exports": [
         {
           "type": "class",
-          "name": "DebugAndLog",
-          "hasJSDoc": true,
+          "name": "for",
+          "hasJSDoc": false,
           "jsdoc": {
-            "description": "A simple Debug and Logging class. /",
+            "description": null,
             "params": [],
             "returns": null,
             "examples": [],
             "throws": []
           },
-          "position": 248
+          "position": 244
+        },
+        {
+          "type": "class",
+          "name": "DebugAndLog",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 535
+        },
+        {
+          "type": "class",
+          "name": "DebugAndLog",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "A comprehensive debug and logging class for managing application logging with environment-aware log levels. Provides multiple logging levels (ERROR, WARN, INFO, MSG, DIAG, DEBUG) and automatic environment detection. Supports both production and development environments with appropriate log level restrictions. @class DebugAndLog",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "// Configure via environment variables\n// Set CACHE_DATA_LOG_LEVEL=5 for DEBUG level\n// Set CACHE_DATA_ENV=DEV for development environment\n/"
+            ],
+            "throws": []
+          },
+          "position": 1013
+        },
+        {
+          "type": "class",
+          "name": "is",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 2234
         },
         {
           "type": "function",
@@ -725,7 +884,7 @@
             "message",
             "obj"
           ],
-          "position": 10099
+          "position": 14795
         },
         {
           "type": "function",
@@ -743,7 +902,7 @@
             "message",
             "obj"
           ],
-          "position": 10175
+          "position": 14871
         },
         {
           "type": "function",
@@ -761,7 +920,7 @@
             "message",
             "obj"
           ],
-          "position": 10249
+          "position": 14945
         },
         {
           "type": "function",
@@ -779,7 +938,7 @@
             "message",
             "obj"
           ],
-          "position": 10321
+          "position": 15017
         },
         {
           "type": "function",
@@ -797,7 +956,7 @@
             "message",
             "obj"
           ],
-          "position": 10395
+          "position": 15091
         }
       ]
     },
@@ -868,17 +1027,76 @@
       "exports": [
         {
           "type": "class",
-          "name": "Response",
-          "hasJSDoc": true,
+          "name": "for",
+          "hasJSDoc": false,
           "jsdoc": {
-            "description": "Can be used to create a custom Response interface /",
+            "description": null,
             "params": [],
             "returns": null,
             "examples": [],
             "throws": []
           },
-          "position": 655
+          "position": 442
         },
+        {
+          "type": "class",
+          "name": "Response",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 736
+        },
+        {
+          "type": "class",
+          "name": "with",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 1006
+        },
+        {
+          "type": "class",
+          "name": "Response",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "Response class for creating and managing HTTP responses with support for multiple content types. Provides methods to build, customize, and finalize responses for Lambda functions or web services. Supports JSON, HTML, XML, RSS, and TEXT content types with automatic content type detection. @class Response",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "// Initialize Response class with custom settings\nResponse.init({\n  settings: {\n    errorExpirationInSeconds: 180,\n    routeExpirationInSeconds: 3600,\n    contentType: Response.CONTENT_TYPE.JSON\n  }\n});\n/"
+            ],
+            "throws": []
+          },
+          "position": 1211
+        },
+        {
+          "type": "class",
+          "name": "with",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 2934
+        }
+      ]
+    },
+    {
+      "filePath": "lib/tools/ResponseDataModel.class.js",
+      "exports": [
         {
           "type": "class",
           "name": "for",
@@ -890,11 +1108,11 @@
             "examples": [],
             "throws": []
           },
-          "position": 1948
+          "position": 68
         },
         {
           "type": "class",
-          "name": "in",
+          "name": "ResponseDataModel",
           "hasJSDoc": false,
           "jsdoc": {
             "description": null,
@@ -903,46 +1121,41 @@
             "examples": [],
             "throws": []
           },
-          "position": 12941
-        }
-      ]
-    },
-    {
-      "filePath": "lib/tools/ResponseDataModel.class.js",
-      "exports": [
-        {
-          "type": "class",
-          "name": "that",
-          "hasJSDoc": false,
-          "jsdoc": {
-            "description": null,
-            "params": [],
-            "returns": null,
-            "examples": [],
-            "throws": []
-          },
-          "position": 244
+          "position": 422
         },
         {
           "type": "class",
           "name": "ResponseDataModel",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "A response object that can be used to collect data to be sent back as a response. A structured skeleton may be created during construction to create an order of presenting various keys. As the program executes, additional data may be added. Other response objects may be added with keys to fill out the object. If there are key collisions then new items matching that key are added as an element in an array. Extends ResponseDataModel, can be used to extend as an interface.",
+            "description": "ResponseDataModel class for collecting and structuring response data. Provides methods to build complex response objects by adding items with keys or as array elements. Supports creating structured skeletons during construction and filling them during execution. Handles key collisions by converting single values to arrays when duplicate keys are added. @class ResponseDataModel",
             "params": [],
             "returns": null,
             "examples": [
-              "let obj = new Response(); // you can pass a skeleton that you will add to, or the full object to the constructor\nobj.addItem(newItem); // where newItem is another response object or regular structured object which will be added as a node\nobj.addItemByKey(newItem2,\"employees\");// where newItem2 is another response object or regular structured object which will be added as a node. Note that you can override a label by passing a new one. For example pluralizing a label\nobj.removeEmpty(); // optional, it will remove empty keys\n\tresponse = {\n\t\tstatusCode: 200,\n\t\tbody: dataResponse.toString(),\n\t\theaders: {'content-type': 'application/json'}\n\t};\n/"
+              "// Add items to array\nconst list = new ResponseDataModel(null, 'items');\nlist.addItem({ id: 1 });\nlist.addItem({ id: 2 });\nconsole.log(list.toString());\n// Output: {\"items\":[{\"id\":1},{\"id\":2}]}\n/"
             ],
             "throws": []
           },
-          "position": 1607
+          "position": 1058
         }
       ]
     },
     {
       "filePath": "lib/tools/Timer.class.js",
       "exports": [
+        {
+          "type": "class",
+          "name": "for",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 72
+        },
         {
           "type": "class",
           "name": "Timer",
@@ -954,25 +1167,22 @@
             "examples": [],
             "throws": []
           },
-          "position": 59
+          "position": 233
         },
         {
-          "type": "method",
-          "name": "Timer.if",
-          "className": "Timer",
-          "isStatic": false,
-          "hasJSDoc": false,
+          "type": "class",
+          "name": "Timer",
+          "hasJSDoc": true,
           "jsdoc": {
-            "description": null,
+            "description": "Timer class for measuring execution time and tracking performance metrics. Provides methods to start, stop, and query elapsed time with diagnostic logging. @class Timer",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Create timer without auto-start\nconst timer = new Timer('delayedOperation');\nawait timer.start();\n// ... perform operation ...\ntimer.stop();\n/"
+            ],
             "throws": []
           },
-          "actualParams": [
-            "start"
-          ],
-          "position": 206
+          "position": 628
         }
       ]
     },

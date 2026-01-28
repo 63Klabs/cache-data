@@ -1,6 +1,44 @@
-# Endpoint Properties, Methods, and Use
+# Tools Module Documentation
 
-TODO
+## Overview
+
+The tools module provides a comprehensive set of utility classes and functions for AWS Lambda development. It includes logging, timing, AWS SDK integration, request/response handling, data manipulation, and connection management utilities.
+
+## Available Tools
+
+### Logging and Debugging
+
+- **[DebugAndLog](#debugandlog-class)**: Configurable logging with environment-based log levels
+- **[Timer](#timer-class)**: Performance timing for operations
+
+### AWS Integration
+
+- **[AWS](#aws-object)**: Simplified AWS SDK access for DynamoDB, S3, and SSM Parameter Store
+- **[CachedParameterSecrets](#cached-parameters-and-secrets)**: Cached access to SSM parameters and Secrets Manager
+
+### Request and Response Handling
+
+- **[APIRequest](#apirequest-class)**: HTTP request handling
+- **[ClientRequest](#clientrequest-class)**: Client request parsing and validation
+- **[RequestInfo](#requestinfo-class)**: Request information extraction
+- **[Response](#response-class)**: HTTP response formatting
+- **[ResponseDataModel](#responsedatamodel-class)**: Response data structure management
+- **[Generic Response Generators](#generic-response-generators)**: JSON, HTML, XML, RSS, and text response formatters
+
+### Data Utilities
+
+- **[ImmutableObject](#immutableobject-class)**: Create immutable objects
+- **[sanitize()](#sanitize-function)**: Scrub sensitive data from objects
+- **[obfuscate()](#obfuscate-function)**: Obfuscate strings
+- **[hashThisData()](#hashthisdata-function)**: Generate hashes for data
+- **[printMsg()](#printmsg-function)**: Formatted console output
+
+### Configuration and Connections
+
+- **[_ConfigSuperClass](#configsuperclass)**: Base class for application configuration
+- **[Connections](#connections-classes)**: Connection management and authentication
+
+---
 
 ## Monitoring and Logging
 
@@ -356,3 +394,687 @@ const command = new DeleteObjectCommand({
 
 const response = await tools.AWS.s3.client.send(command);
 ```
+
+
+## DebugAndLog Class
+
+Provides configurable logging with environment-based log levels and automatic sanitization of sensitive data.
+
+### Log Levels
+
+There are six levels of logging (0-5):
+
+- **0 - ERROR**: Errors only
+- **1 - WARN**: Warnings and errors
+- **2 - INFO**: Informational messages (default)
+- **3 - MSG**: More verbose messages
+- **4 - DIAG**: Diagnostic information and timers
+- **5 - DEBUG**: Everything
+
+### Setting Log Level
+
+DebugAndLog checks environment variables in this order:
+
+1. `CACHE_DATA_LOG_LEVEL`
+2. `LOG_LEVEL`
+3. `AWS_LAMBDA_LOG_LEVEL`
+
+```javascript
+// In CloudFormation template
+Environment:
+  Variables:
+    LOG_LEVEL: INFO
+```
+
+Or programmatically before calling any Config.init():
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+tools.DebugAndLog.setLogLevel(3); // or 'MSG'
+```
+
+### Logging Methods
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+tools.DebugAndLog.log(msgStr, tagStr, obj);    // logs at ALL levels
+tools.DebugAndLog.error(msgStr, obj);          // logs at ALL levels
+tools.DebugAndLog.warn(msgStr, obj);           // logs at level 1+
+tools.DebugAndLog.info(msgStr, obj);           // logs at level 2+
+tools.DebugAndLog.msg(msgStr, obj);            // logs at level 3+
+tools.DebugAndLog.diag(msgStr, obj);           // logs at level 4+
+tools.DebugAndLog.debug(msgStr, obj);          // logs at level 5
+```
+
+### Usage Examples
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+tools.DebugAndLog.info('Application started');
+tools.DebugAndLog.debug('Debug information', { data: 'value' });
+
+try {
+  // some code
+} catch (error) {
+  tools.DebugAndLog.error('Operation failed', error);
+}
+```
+
+### Environment Detection
+
+DebugAndLog automatically detects the deployment environment and limits log levels in production:
+
+Environment variables checked (in order):
+1. `CACHE_DATA_ENV`
+2. `DEPLOY_ENVIRONMENT`
+3. `DEPLOY_ENV`
+4. `ENV_TYPE`
+5. `NODE_ENV`
+
+Values: `PROD`, `TEST`, `DEV`
+
+**Note**: In production (`PROD`), log level cannot exceed 2 (INFO) for security.
+
+---
+
+## Timer Class
+
+Track execution time for operations with automatic logging at DIAG level.
+
+### Basic Usage
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const timer = new tools.Timer("Operation name", true); // true = start immediately
+
+// ... do work ...
+
+timer.stop(); // Logs elapsed time if log level >= 4 (DIAG)
+```
+
+### Getting Elapsed Time
+
+```javascript
+const timer = new tools.Timer("Task");
+timer.start();
+
+// ... do work ...
+
+const ms = timer.elapsed(); // Get elapsed time without stopping
+console.log(`Elapsed: ${ms}ms`);
+
+timer.stop(); // Stop and log
+```
+
+### Example
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const timer = new tools.Timer("Fetching data", true);
+
+const data = await fetchDataFromAPI();
+
+timer.stop(); // Logs: "[DIAG] Fetching data: 245ms"
+```
+
+---
+
+## AWS Object
+
+Simplified access to AWS SDK for DynamoDB, S3, and SSM Parameter Store.
+
+### AWS Information
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+console.log(`Node ${tools.AWS.NODE_VER} using AWS SDK ${tools.AWS.SDK_VER}`);
+console.log(`Region: ${tools.AWS.REGION}`);
+console.log(`SDK Version: ${tools.AWS.SDK_V3 ? 'v3' : 'v2'}`);
+```
+
+### DynamoDB Operations
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+// Put item
+const putParams = {
+  TableName: 'myTable',
+  Item: {
+    'id': '123',
+    'name': 'John Doe',
+    'email': 'john@example.com'
+  }
+};
+await tools.AWS.dynamo.put(putParams);
+
+// Get item
+const getParams = {
+  TableName: 'myTable',
+  Key: { 'id': '123' }
+};
+const result = await tools.AWS.dynamo.get(getParams);
+console.log(result.Item);
+
+// Scan table
+const scanParams = {
+  TableName: 'myTable',
+  FilterExpression: 'age > :age',
+  ExpressionAttributeValues: { ':age': 18 }
+};
+const scanResult = await tools.AWS.dynamo.scan(scanParams);
+
+// Update item
+const updateParams = {
+  TableName: 'myTable',
+  Key: { 'id': '123' },
+  UpdateExpression: 'set #name = :name',
+  ExpressionAttributeNames: { '#name': 'name' },
+  ExpressionAttributeValues: { ':name': 'Jane Doe' }
+};
+await tools.AWS.dynamo.update(updateParams);
+
+// Delete item
+const deleteParams = {
+  TableName: 'myTable',
+  Key: { 'id': '123' }
+};
+await tools.AWS.dynamo.delete(deleteParams);
+```
+
+### S3 Operations
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+// Put object
+const putParams = {
+  Bucket: 'myBucket',
+  Key: 'data.json',
+  Body: JSON.stringify({ data: 'value' }),
+  ContentType: 'application/json'
+};
+await tools.AWS.s3.put(putParams);
+
+// Get object
+const getParams = {
+  Bucket: 'myBucket',
+  Key: 'data.json'
+};
+const result = await tools.AWS.s3.get(getParams);
+const data = await result.Body.transformToString(); // SDK v3
+console.log(data);
+```
+
+### SSM Parameter Store
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+// Get parameters by name
+const nameQuery = {
+  Names: ['/app/config/apiKey', '/app/config/secret'],
+  WithDecryption: true
+};
+const params = await tools.AWS.ssm.getByName(nameQuery);
+
+// Get parameters by path
+const pathQuery = {
+  Path: '/app/config/',
+  WithDecryption: true
+};
+const pathParams = await tools.AWS.ssm.getByPath(pathQuery);
+```
+
+### Using Additional AWS SDK Commands
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+
+const command = new DeleteObjectCommand({
+  Bucket: 'myBucket',
+  Key: 'old-file.txt'
+});
+
+const response = await tools.AWS.s3.client.send(command);
+```
+
+---
+
+## Cached Parameters and Secrets
+
+Cache SSM parameters and Secrets Manager secrets to reduce API calls and improve performance.
+
+### CachedSSMParameter
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const apiKey = new tools.CachedSSMParameter({
+  name: '/app/config/apiKey',
+  maxAge_ms: 300000  // Cache for 5 minutes
+});
+
+// First call fetches from SSM
+const key1 = await apiKey.getValue();
+
+// Subsequent calls use cached value
+const key2 = await apiKey.getValue();
+
+// Force refresh
+await apiKey.prime();
+```
+
+### CachedSecret
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const dbPassword = new tools.CachedSecret({
+  name: 'prod/db/password',
+  maxAge_ms: 600000  // Cache for 10 minutes
+});
+
+const password = await dbPassword.getValue();
+```
+
+### CachedParameterSecrets
+
+Manage multiple cached parameters and secrets:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const secrets = new tools.CachedParameterSecrets();
+
+secrets.add(new tools.CachedSSMParameter({ name: '/app/apiKey' }));
+secrets.add(new tools.CachedSecret({ name: 'prod/db/password' }));
+
+// Prime all at once
+await secrets.prime();
+
+// Access individual values
+const apiKey = secrets.get('/app/apiKey').sync_getValue();
+const password = secrets.get('prod/db/password').sync_getValue();
+```
+
+---
+
+## Data Utilities
+
+### sanitize() Function
+
+Scrub sensitive data from objects for logging:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const obj = {
+  username: 'john',
+  password: 'secret123',
+  apiKey: 'key-12345678',
+  data: 'public info'
+};
+
+console.log(tools.sanitize(obj));
+// { username: 'john', password: '******123', apiKey: '******5678', data: 'public info' }
+```
+
+**Note**: This attempts to sanitize but may miss sensitive information. Avoid logging sensitive data when possible.
+
+### obfuscate() Function
+
+Obfuscate strings by showing only the last few characters:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const secret = '12345EXAMPLE7890';
+console.log(tools.obfuscate(secret));
+// ******7890
+
+// Custom options
+const options = { keep: 6, char: 'X', len: 16 };
+console.log(tools.obfuscate(secret, options));
+// XXXXXXXXXX456789
+```
+
+### hashThisData() Function
+
+Generate hashes for data:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const data = { user: 'john', action: 'login' };
+const hash = tools.hashThisData(data);
+console.log(hash); // SHA-256 hash of the data
+```
+
+### printMsg() Function
+
+Formatted console output:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+tools.printMsg('Application started', 'INFO');
+tools.printMsg('Error occurred', 'ERROR', errorObject);
+```
+
+---
+
+## ImmutableObject Class
+
+Create immutable objects that cannot be modified after creation:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const config = new tools.ImmutableObject({
+  apiUrl: 'https://api.example.com',
+  timeout: 5000
+});
+
+console.log(config.apiUrl); // 'https://api.example.com'
+
+// Attempting to modify throws an error
+config.apiUrl = 'https://other.com'; // Error!
+config.newProp = 'value'; // Error!
+delete config.timeout; // Error!
+```
+
+---
+
+## Request and Response Classes
+
+### APIRequest Class
+
+Handle HTTP requests to external APIs:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const request = new tools.APIRequest({
+  method: 'GET',
+  uri: 'https://api.example.com/data',
+  headers: { 'Authorization': 'Bearer token' }
+});
+
+const response = await request.send();
+console.log(response.statusCode, response.body);
+```
+
+### ClientRequest Class
+
+Parse and validate incoming Lambda requests:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+exports.handler = async (event, context) => {
+  const clientRequest = new tools.ClientRequest(event);
+  
+  const path = clientRequest.getPath();
+  const method = clientRequest.getMethod();
+  const headers = clientRequest.getHeaders();
+  const queryParams = clientRequest.getQueryStringParameters();
+  
+  // ... handle request ...
+};
+```
+
+### Response Class
+
+Format Lambda responses:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const response = new tools.Response();
+response.setStatusCode(200);
+response.setBody({ message: 'Success', data: results });
+response.setHeader('Content-Type', 'application/json');
+
+return response.get();
+```
+
+### ResponseDataModel Class
+
+Manage response data structure:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const dataModel = new tools.ResponseDataModel();
+dataModel.setData(results);
+dataModel.setMessage('Operation successful');
+dataModel.setSuccess(true);
+
+const response = new tools.Response();
+response.setBody(dataModel.get());
+```
+
+---
+
+## Generic Response Generators
+
+Pre-built response formatters for common content types.
+
+### JSON Response
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const response = tools.jsonGenericResponse(
+  200,
+  { message: 'Success', data: results }
+);
+
+return response;
+```
+
+### HTML Response
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const html = '<html><body><h1>Hello World</h1></body></html>';
+const response = tools.htmlGenericResponse(200, html);
+
+return response;
+```
+
+### XML Response
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const xml = '<?xml version="1.0"?><root><item>value</item></root>';
+const response = tools.xmlGenericResponse(200, xml);
+
+return response;
+```
+
+### RSS Response
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const rss = '<?xml version="1.0"?><rss version="2.0">...</rss>';
+const response = tools.rssGenericResponse(200, rss);
+
+return response;
+```
+
+### Text Response
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const text = 'Plain text response';
+const response = tools.textGenericResponse(200, text);
+
+return response;
+```
+
+---
+
+## _ConfigSuperClass
+
+Base class for application configuration. Extend this to create your own Config class:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+class Config extends tools._ConfigSuperClass {
+  static async init() {
+    // Initialize connections
+    this._connections = new tools.Connections();
+    
+    // Add connections
+    this._connections.add(new tools.Connection({
+      name: 'apiConnection',
+      host: 'api.example.com',
+      path: '/data'
+    }));
+    
+    // Load parameters from SSM
+    const params = await this._initParameters([
+      {
+        group: 'app',
+        path: '/myapp/config/',
+        names: ['apiKey', 'secret']
+      }
+    ]);
+    
+    this._settings = params;
+    
+    // Initialize cache
+    const { cache } = require('@63klabs/cache-data');
+    cache.Cache.init({
+      dynamoDbTable: process.env.CACHE_TABLE,
+      s3Bucket: process.env.CACHE_BUCKET,
+      secureDataKey: Buffer.from(params.app.secret, 'hex')
+    });
+  }
+}
+
+// Initialize at application boot
+Config.init();
+
+// Access later
+const conn = Config.getConn('apiConnection');
+const settings = Config.settings();
+```
+
+---
+
+## Connections Classes
+
+Manage connection configurations and authentication.
+
+### Connection Class
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const connection = new tools.Connection({
+  name: 'apiConnection',
+  protocol: 'https',
+  host: 'api.example.com',
+  path: '/v1/data',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  parameters: {
+    apiKey: 'your-key'
+  }
+});
+
+// Add cache profile
+connection.addCacheProfile({
+  profile: 'default',
+  defaultExpirationInSeconds: 300,
+  encrypt: true
+});
+
+// Get as object
+const connObj = connection.toObject();
+```
+
+### Connections Class
+
+Manage multiple connections:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const connections = new tools.Connections();
+
+connections.add(new tools.Connection({
+  name: 'api1',
+  host: 'api1.example.com'
+}));
+
+connections.add(new tools.Connection({
+  name: 'api2',
+  host: 'api2.example.com'
+}));
+
+// Get connection
+const api1 = connections.get('api1');
+```
+
+### ConnectionAuthentication Class
+
+Manage authentication for connections:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+
+const auth = new tools.ConnectionAuthentication({
+  type: 'bearer',
+  token: 'your-token-here'
+});
+
+const connection = new tools.Connection({
+  name: 'secureApi',
+  host: 'api.example.com',
+  authentication: auth
+});
+```
+
+---
+
+## API Reference
+
+For detailed API documentation including all methods, parameters, and return types, refer to the JSDoc comments in the source code:
+
+- **Timer class**: `src/lib/tools/Timer.class.js`
+- **DebugAndLog class**: `src/lib/tools/DebugAndLog.class.js`
+- **Response classes**: `src/lib/tools/Response.class.js`, `src/lib/tools/ResponseDataModel.class.js`
+- **Request classes**: `src/lib/tools/APIRequest.class.js`, `src/lib/tools/ClientRequest.class.js`, `src/lib/tools/RequestInfo.class.js`
+- **AWS classes**: `src/lib/tools/AWS.classes.js`
+- **Parameter/Secret classes**: `src/lib/tools/CachedParametersSecrets.classes.js`
+- **Connection classes**: `src/lib/tools/Connections.classes.js`
+- **Utility classes**: `src/lib/tools/ImmutableObject.class.js`, `src/lib/tools/utils.js`
+- **Response generators**: `src/lib/tools/generic.response.*.js`
+- **Config class**: `src/lib/tools/index.js`
+
+See JSDoc in source files for complete method signatures, parameters, return types, and usage examples.
+
+---
+
+## Related Documentation
+
+- [Cache Module](../cache/README.md) - Caching functionality
+- [Endpoint Module](../endpoint/README.md) - HTTP request handling
+- [Quick Start Guide](../../00-quick-start-implementation/README.md) - Getting started
+- [Advanced Implementation](../../01-advanced-implementation-for-web-service/README.md) - Web service patterns

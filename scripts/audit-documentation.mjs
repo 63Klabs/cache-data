@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 
 /**
- * Documentation Audit Script
+ * Documentation Audit and Validation Script
  * 
  * Scans all source files in src/ directory to:
  * - Identify all exported functions, methods, and classes
  * - Parse existing JSDoc comments
- * - Generate audit report showing: total exports, documented vs undocumented, incomplete JSDoc
+ * - Validate JSDoc completeness (all required tags present)
+ * - Validate JSDoc accuracy (parameters match code)
+ * - Validate links in all documentation files
+ * - Validate example code syntax
+ * - Generate comprehensive validation report
  * 
  * Requirements: 1.1, 9.5, 10.5
  */
@@ -14,12 +18,18 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
 const SRC_DIR = path.join(__dirname, '..', 'src');
+const DOCS_DIR = path.join(__dirname, '..', 'docs');
+const ROOT_DIR = path.join(__dirname, '..');
 const OUTPUT_FILE = path.join(__dirname, '..', '.kiro', 'specs', '1-3-6-documentation-enhancement', 'audit-report.json');
 
 /**
@@ -404,10 +414,299 @@ function analyzeCompleteness(item) {
 }
 
 /**
+ * Validate JSDoc accuracy - check if documented params match actual params
+ * @param {Object} item Export item
+ * @returns {Object} Accuracy validation results
+ */
+function validateJSDocAccuracy(item) {
+	const issues = [];
+	
+	if (!item.hasJSDoc || !item.jsdoc) {
+		return { accurate: true, issues: [] }; // Can't validate if no JSDoc
+	}
+	
+	const jsdoc = item.jsdoc;
+	const actualParams = item.actualParams || [];
+	const documentedParams = jsdoc.params.map(p => p.name);
+	
+	// Check for hallucinated parameters (documented but not in actual signature)
+	const hallucinatedParams = documentedParams.filter(p => !actualParams.includes(p));
+	if (hallucinatedParams.length > 0) {
+		issues.push(`Hallucinated parameters (not in actual signature): ${hallucinatedParams.join(', ')}`);
+	}
+	
+	// Check for parameter order mismatch
+	const commonParams = actualParams.filter(p => documentedParams.includes(p));
+	if (commonParams.length > 0) {
+		const actualOrder = commonParams.map(p => actualParams.indexOf(p));
+		const docOrder = commonParams.map(p => documentedParams.indexOf(p));
+		
+		for (let i = 0; i < actualOrder.length - 1; i++) {
+			if (actualOrder[i] > actualOrder[i + 1] && docOrder[i] < docOrder[i + 1]) {
+				issues.push('Parameter order in JSDoc does not match actual signature');
+				break;
+			}
+		}
+	}
+	
+	return {
+		accurate: issues.length === 0,
+		issues
+	};
+}
+
+/**
+ * Get all markdown files recursively
+ * @param {string} dir Directory to scan
+ * @param {Array<string>} fileList Accumulated file list
+ * @returns {Array<string>} List of markdown file paths
+ */
+function getMarkdownFiles(dir, fileList = []) {
+	if (!fs.existsSync(dir)) return fileList;
+	
+	const files = fs.readdirSync(dir);
+	
+	files.forEach(file => {
+		const filePath = path.join(dir, file);
+		const stat = fs.statSync(filePath);
+		
+		if (stat.isDirectory() && !file.startsWith('.') && file !== 'node_modules') {
+			getMarkdownFiles(filePath, fileList);
+		} else if (file.endsWith('.md')) {
+			fileList.push(filePath);
+		}
+	});
+	
+	return fileList;
+}
+
+/**
+ * Extract links from markdown content
+ * @param {string} content Markdown content
+ * @returns {Array<Object>} Array of links with line numbers
+ */
+function extractLinks(content) {
+	const links = [];
+	const lines = content.split('\n');
+	
+	// Match markdown links [text](url) and bare URLs
+	const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+	
+	lines.forEach((line, index) => {
+		let match;
+		while ((match = linkPattern.exec(line)) !== null) {
+			links.push({
+				text: match[1],
+				url: match[2],
+				line: index + 1
+			});
+		}
+	});
+	
+	return links;
+}
+
+/**
+ * Validate a single link
+ * @param {string} link Link URL
+ * @param {string} sourceFile Source file containing the link
+ * @returns {Object} Validation result
+ */
+function validateLink(link, sourceFile) {
+	// Skip anchor links
+	if (link.startsWith('#')) {
+		return { valid: true, type: 'anchor' };
+	}
+	
+	// External URLs
+	if (link.startsWith('http://') || link.startsWith('https://')) {
+		return { valid: true, type: 'external', note: 'External link not validated' };
+	}
+	
+	// Internal relative links
+	const sourceDir = path.dirname(sourceFile);
+	const targetPath = path.resolve(sourceDir, link.split('#')[0]); // Remove anchor
+	
+	if (fs.existsSync(targetPath)) {
+		return { valid: true, type: 'internal' };
+	}
+	
+	// Try relative to root
+	const rootPath = path.resolve(ROOT_DIR, link.split('#')[0]);
+	if (fs.existsSync(rootPath)) {
+		return { valid: true, type: 'internal' };
+	}
+	
+	return { valid: false, type: 'internal', error: 'File not found' };
+}
+
+/**
+ * Validate links in all documentation files
+ * @returns {Object} Link validation results
+ */
+function validateDocumentationLinks() {
+	console.log('\nValidating documentation links...');
+	
+	const markdownFiles = [
+		...getMarkdownFiles(DOCS_DIR),
+		path.join(ROOT_DIR, 'README.md'),
+		path.join(ROOT_DIR, 'CHANGELOG.md'),
+		path.join(ROOT_DIR, 'SECURITY.md')
+	].filter(f => fs.existsSync(f));
+	
+	const brokenLinks = [];
+	let totalLinks = 0;
+	let validLinks = 0;
+	
+	markdownFiles.forEach(file => {
+		const content = fs.readFileSync(file, 'utf-8');
+		const links = extractLinks(content);
+		
+		links.forEach(link => {
+			totalLinks++;
+			const validation = validateLink(link.url, file);
+			
+			if (validation.valid) {
+				validLinks++;
+			} else {
+				brokenLinks.push({
+					file: path.relative(ROOT_DIR, file),
+					line: link.line,
+					text: link.text,
+					url: link.url,
+					error: validation.error
+				});
+			}
+		});
+	});
+	
+	console.log(`  Checked ${totalLinks} links in ${markdownFiles.length} files`);
+	console.log(`  Valid: ${validLinks}, Broken: ${brokenLinks.length}`);
+	
+	return {
+		totalLinks,
+		validLinks,
+		brokenLinks,
+		filesChecked: markdownFiles.length
+	};
+}
+
+/**
+ * Extract code examples from markdown content
+ * @param {string} content Markdown content
+ * @returns {Array<Object>} Array of code examples
+ */
+function extractCodeExamples(content) {
+	const examples = [];
+	const lines = content.split('\n');
+	let inCodeBlock = false;
+	let currentExample = null;
+	let lineNumber = 0;
+	
+	lines.forEach((line, index) => {
+		if (line.trim().startsWith('```javascript') || line.trim().startsWith('```js')) {
+			inCodeBlock = true;
+			lineNumber = index + 1;
+			currentExample = {
+				code: '',
+				startLine: lineNumber
+			};
+		} else if (line.trim() === '```' && inCodeBlock) {
+			inCodeBlock = false;
+			if (currentExample && currentExample.code.trim()) {
+				examples.push(currentExample);
+			}
+			currentExample = null;
+		} else if (inCodeBlock && currentExample) {
+			currentExample.code += line + '\n';
+		}
+	});
+	
+	return examples;
+}
+
+/**
+ * Validate JavaScript code syntax
+ * @param {string} code JavaScript code
+ * @returns {Object} Validation result
+ */
+async function validateCodeSyntax(code) {
+	// Create a temporary file
+	const tempFile = path.join(ROOT_DIR, '.temp-validation.mjs');
+	
+	try {
+		fs.writeFileSync(tempFile, code);
+		
+		// Try to parse with Node.js
+		await execAsync(`node --check ${tempFile}`);
+		
+		return { valid: true };
+	} catch (error) {
+		return {
+			valid: false,
+			error: error.message
+		};
+	} finally {
+		// Clean up temp file
+		if (fs.existsSync(tempFile)) {
+			fs.unlinkSync(tempFile);
+		}
+	}
+}
+
+/**
+ * Validate example code in documentation files
+ * @returns {Promise<Object>} Example validation results
+ */
+async function validateExampleCode() {
+	console.log('\nValidating example code...');
+	
+	const markdownFiles = [
+		...getMarkdownFiles(DOCS_DIR),
+		path.join(ROOT_DIR, 'README.md')
+	].filter(f => fs.existsSync(f));
+	
+	const invalidExamples = [];
+	let totalExamples = 0;
+	let validExamples = 0;
+	
+	for (const file of markdownFiles) {
+		const content = fs.readFileSync(file, 'utf-8');
+		const examples = extractCodeExamples(content);
+		
+		for (const example of examples) {
+			totalExamples++;
+			const validation = await validateCodeSyntax(example.code);
+			
+			if (validation.valid) {
+				validExamples++;
+			} else {
+				invalidExamples.push({
+					file: path.relative(ROOT_DIR, file),
+					line: example.startLine,
+					error: validation.error,
+					code: example.code.substring(0, 100) + (example.code.length > 100 ? '...' : '')
+				});
+			}
+		}
+	}
+	
+	console.log(`  Checked ${totalExamples} code examples in ${markdownFiles.length} files`);
+	console.log(`  Valid: ${validExamples}, Invalid: ${invalidExamples.length}`);
+	
+	return {
+		totalExamples,
+		validExamples,
+		invalidExamples,
+		filesChecked: markdownFiles.length
+	};
+}
+
+/**
  * Generate audit report
  */
-function generateAuditReport() {
-	console.log('Starting documentation audit...\n');
+async function generateAuditReport() {
+	console.log('Starting documentation audit and validation...\n');
 	
 	const files = getJavaScriptFiles(SRC_DIR);
 	console.log(`Found ${files.length} JavaScript files\n`);
@@ -418,6 +717,7 @@ function generateAuditReport() {
 	let completeExports = 0;
 	const missingJSDoc = [];
 	const incompleteJSDoc = [];
+	const inaccurateJSDoc = [];
 	
 	files.forEach(file => {
 		console.log(`Analyzing: ${path.relative(SRC_DIR, file)}`);
@@ -448,8 +748,25 @@ function generateAuditReport() {
 					issues: completeness.issues
 				});
 			}
+			
+			// Validate accuracy
+			const accuracy = validateJSDocAccuracy(item);
+			if (!accuracy.accurate) {
+				inaccurateJSDoc.push({
+					file: analysis.filePath,
+					name: item.name,
+					type: item.type,
+					issues: accuracy.issues
+				});
+			}
 		});
 	});
+	
+	// Validate documentation links
+	const linkValidation = validateDocumentationLinks();
+	
+	// Validate example code
+	const exampleValidation = await validateExampleCode();
 	
 	const report = {
 		auditDate: new Date().toISOString(),
@@ -460,11 +777,20 @@ function generateAuditReport() {
 			completeFunctions: completeExports,
 			missingJSDocCount: missingJSDoc.length,
 			incompleteJSDocCount: incompleteJSDoc.length,
+			inaccurateJSDocCount: inaccurateJSDoc.length,
 			coveragePercentage: totalExports > 0 ? ((documentedExports / totalExports) * 100).toFixed(2) : 0,
-			completenessPercentage: totalExports > 0 ? ((completeExports / totalExports) * 100).toFixed(2) : 0
+			completenessPercentage: totalExports > 0 ? ((completeExports / totalExports) * 100).toFixed(2) : 0,
+			brokenLinksCount: linkValidation.brokenLinks.length,
+			invalidExamplesCount: exampleValidation.invalidExamples.length,
+			criticalErrors: missingJSDoc.length + inaccurateJSDoc.length + linkValidation.brokenLinks.length + exampleValidation.invalidExamples.length
 		},
-		missingJSDoc,
-		incompleteJSDoc,
+		jsdocAnalysis: {
+			missingJSDoc,
+			incompleteJSDoc,
+			inaccurateJSDoc
+		},
+		linkValidation,
+		exampleValidation,
 		fileAnalyses
 	};
 	
@@ -479,23 +805,49 @@ function generateAuditReport() {
 	
 	// Print summary
 	console.log('\n' + '='.repeat(60));
-	console.log('DOCUMENTATION AUDIT SUMMARY');
+	console.log('DOCUMENTATION AUDIT AND VALIDATION SUMMARY');
 	console.log('='.repeat(60));
-	console.log(`Total Files Analyzed: ${report.summary.totalFiles}`);
-	console.log(`Total Public Functions/Classes: ${report.summary.totalPublicFunctions}`);
-	console.log(`Documented: ${report.summary.documentedFunctions} (${report.summary.coveragePercentage}%)`);
-	console.log(`Complete Documentation: ${report.summary.completeFunctions} (${report.summary.completenessPercentage}%)`);
-	console.log(`Missing JSDoc: ${report.summary.missingJSDocCount}`);
-	console.log(`Incomplete JSDoc: ${report.summary.incompleteJSDocCount}`);
+	console.log('\nJSDoc Analysis:');
+	console.log(`  Total Files Analyzed: ${report.summary.totalFiles}`);
+	console.log(`  Total Public Functions/Classes: ${report.summary.totalPublicFunctions}`);
+	console.log(`  Documented: ${report.summary.documentedFunctions} (${report.summary.coveragePercentage}%)`);
+	console.log(`  Complete Documentation: ${report.summary.completeFunctions} (${report.summary.completenessPercentage}%)`);
+	console.log(`  Missing JSDoc: ${report.summary.missingJSDocCount}`);
+	console.log(`  Incomplete JSDoc: ${report.summary.incompleteJSDocCount}`);
+	console.log(`  Inaccurate JSDoc: ${report.summary.inaccurateJSDocCount}`);
+	
+	console.log('\nLink Validation:');
+	console.log(`  Total Links Checked: ${linkValidation.totalLinks}`);
+	console.log(`  Valid Links: ${linkValidation.validLinks}`);
+	console.log(`  Broken Links: ${linkValidation.brokenLinks.length}`);
+	
+	console.log('\nExample Code Validation:');
+	console.log(`  Total Examples Checked: ${exampleValidation.totalExamples}`);
+	console.log(`  Valid Examples: ${exampleValidation.validExamples}`);
+	console.log(`  Invalid Examples: ${exampleValidation.invalidExamples.length}`);
+	
+	console.log('\n' + '='.repeat(60));
+	console.log(`CRITICAL ERRORS: ${report.summary.criticalErrors}`);
 	console.log('='.repeat(60));
 	console.log(`\nDetailed report saved to: ${OUTPUT_FILE}\n`);
 	
-	return report;
+	// Exit with error code if critical errors found
+	if (report.summary.criticalErrors > 0) {
+		console.error('❌ Validation failed with critical errors');
+		return report;
+	} else {
+		console.log('✅ All validation checks passed');
+		return report;
+	}
 }
 
 // Run the audit
 try {
-	generateAuditReport();
+	const report = await generateAuditReport();
+	// Exit with error code if there are critical errors
+	if (report.summary.criticalErrors > 0) {
+		process.exit(1);
+	}
 } catch (error) {
 	console.error('Error during audit:', error);
 	process.exit(1);

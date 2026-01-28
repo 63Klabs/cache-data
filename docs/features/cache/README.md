@@ -469,3 +469,80 @@ Or remove the parameter entirely (defaults to `false`).
 ## Support
 
 For issues, questions, or feature requests related to the in-memory cache, please refer to the project's issue tracker or documentation.
+
+
+## API Reference
+
+For detailed API documentation including all methods, parameters, and return types, refer to the JSDoc comments in the source code:
+
+- **S3Cache class**: Low-level S3 storage operations - see `src/lib/dao-cache.js`
+- **DynamoDbCache class**: Low-level DynamoDB storage operations - see `src/lib/dao-cache.js`
+- **CacheData class**: Internal cache data management - see `src/lib/dao-cache.js`
+- **Cache class**: Public cache interface - see `src/lib/dao-cache.js`
+- **CacheableDataAccess**: High-level caching with automatic data fetching - see `src/lib/dao-cache.js`
+
+### Key Methods
+
+#### Cache.init(parameters)
+
+Initialize the cache system with configuration. Must be called before using any cache functionality.
+
+**Parameters:**
+- `dynamoDbTable` (string): DynamoDB table name for cache storage
+- `s3Bucket` (string): S3 bucket name for large cached objects
+- `secureDataKey` (Buffer|string): Encryption key for private data
+- `secureDataAlgorithm` (string, optional): Encryption algorithm (default: 'aes-256-cbc')
+- `DynamoDbMaxCacheSize_kb` (number, optional): Max size for DynamoDB storage (default: 10)
+- `purgeExpiredCacheEntriesAfterXHours` (number, optional): Hours to keep expired entries (default: 24)
+- `timeZoneForInterval` (string, optional): Timezone for interval calculations (default: 'Etc/UTC')
+- `useInMemoryCache` (boolean, optional): Enable in-memory L0 cache (default: false)
+- `inMemoryCacheMaxEntries` (number, optional): Override automatic capacity calculation
+- `inMemoryCacheEntriesPerGB` (number, optional): Entries per GB heuristic (default: 5000)
+- `inMemoryCacheDefaultMaxEntries` (number, optional): Fallback capacity (default: 1000)
+
+See JSDoc for complete parameter details and examples.
+
+#### Cache.info()
+
+Returns configuration information about the cache system.
+
+**Returns:** Object containing all cache configuration settings
+
+#### new Cache(connection, cacheProfile)
+
+Create a new cache instance for a specific connection and cache profile.
+
+**Parameters:**
+- `connection` (Object): Connection details that uniquely identify the cached resource
+- `cacheProfile` (Object): Cache behavior configuration including expiration, encryption, etc.
+
+See JSDoc for complete parameter details and examples.
+
+#### cache.read()
+
+Read data from cache. Checks in-memory cache first (if enabled), then DynamoDB/S3.
+
+**Returns:** Promise resolving to cached data or null if not found/expired
+
+#### cache.write(body, headers, statusCode)
+
+Write data to cache with automatic tier selection and encryption.
+
+**Parameters:**
+- `body` (string): Content to cache
+- `headers` (Object): HTTP headers to cache
+- `statusCode` (string|number): HTTP status code
+
+**Returns:** Promise resolving to true if successful
+
+#### cache.getStatus()
+
+Get the cache status indicating where data came from.
+
+**Returns:** One of:
+- `Cache.STATUS_CACHE_IN_MEM`: Data from in-memory cache
+- `Cache.STATUS_CACHE`: Data from DynamoDB/S3
+- `Cache.STATUS_NO_CACHE`: No cached data
+- `Cache.STATUS_CACHE_ERROR`: Error occurred, stale data returned
+
+See JSDoc in source files for complete method signatures, parameters, return types, and usage examples.

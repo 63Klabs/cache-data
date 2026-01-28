@@ -5,7 +5,7 @@ A package for AWS Lambda Node.js applications to access and cache data from remo
 > Note: This repository and package has moved from chadkluck to 63Klabs but is still managed by the same developer.
 
 - [@63klabs/cache-data on npmjs.com](https://www.npmjs.com/package/@63klabs/cache-data)
-- [@63klabs/cache-data on GitHub](https://github.com/@63klabs/cache-data)
+- [@63klabs/cache-data on GitHub](https://github.com/63Klabs/cache-data)
 
 ## Description
 
@@ -17,19 +17,55 @@ It can be used in place of Express.js for simple web service applications as it 
 
 This package has been used in production environments for web service applications receiving over 1 million requests per week with a 75% cache-hit rate lowering latency to less than 100ms in most cases. This is a considerable improvement when faced with resource intense processes, connection pools, API rate limits, and slow endpoints.
 
+## Features
+
+The @63klabs/cache-data package provides three main modules:
+
+### Cache Module
+- **Distributed Caching**: Share cached data across concurrent Lambda executions using DynamoDb and S3
+- **In-Memory Cache**: Optional in-memory caching layer for improved response times within a single execution
+- **Flexible Storage**: Automatic storage selection based on data size (DynamoDb for small items, S3 for large items)
+- **Data Encryption**: Secure your cached data with encryption keys stored in SSM Parameter Store
+- **Cache Profiles**: Configure multiple cache profiles with different expiration policies
+
+### Endpoint Module
+- **HTTP/HTTPS Requests**: Make requests to external APIs and endpoints with built-in retry logic
+- **Connection Management**: Define and manage multiple endpoint connections with authentication
+- **Request Caching**: Automatically cache endpoint responses to reduce API calls and improve performance
+- **Flexible Configuration**: Support for custom headers, query parameters, request bodies, and timeouts
+
+### Tools Module
+- **Logging and Debugging**: `DebugAndLog` class for structured logging with configurable log levels
+- **Performance Timing**: `Timer` class for measuring execution time and performance metrics
+- **Request Handling**: `ClientRequest` and `Response` classes for building web service applications
+- **AWS Integration**: Direct access to AWS SDK v3 for DynamoDb, S3, and SSM Parameter Store
+- **Parameter and Secret Caching**: `CachedParameterSecrets` classes for AWS Parameters and Secrets Lambda Extension
+- **Utility Functions**: Data sanitization, obfuscation, hashing, and immutable object creation
+- **Response Generators**: Built-in generators for JSON, HTML, XML, RSS, and text responses
+
 ## Getting Started
 
 ### Requirements
 
-- Node >22 runtime on Lambda
-- AWS Lambda, S3 bucket, DynamoDb table, and SSM Parameter Store
-- A basic understanding of CloudFormation, Lambda, S3, DynamoDb, and SSM Parameters
-- A basic understanding of IAM policies, especially the Lambda Execution Role, that will allow Lambda to access S3, DynamoDb, and SSM Parameter Store
-- Lambda function should have between 512MB and 2048MB of memory allocated. (>1024MB recommended). See [Lambda Optimization: Memory Allocation](./docs/lambda-optimization/README.md#lambda-memory-allocation).
+- Node.js >=20.0.0 runtime on Lambda
+- AWS Services:
+  - **AWS Lambda**: For running your serverless functions
+  - **Amazon S3**: For storing large cached objects
+  - **Amazon DynamoDB**: For storing cache metadata and small cached objects
+  - **AWS Systems Manager (SSM) Parameter Store**: For storing configuration and encryption keys
+- A basic understanding of CloudFormation, Lambda, S3, DynamoDB, and SSM Parameters
+- A basic understanding of IAM policies, especially the Lambda Execution Role, that will allow Lambda to access S3, DynamoDB, and SSM Parameter Store
+- Lambda function should have between 512MB and 2048MB of memory allocated (>1024MB recommended). See [Lambda Optimization: Memory Allocation](./docs/lambda-optimization/README.md#lambda-memory-allocation)
 
 ### Installing
 
-The simplest way to get started is to use the [63klabs Atlantis Templates and Script platform](hhttps://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments) to deploy this and other ready-to-run solutions via CI/CD.
+Install the package using npm:
+
+```bash
+npm install @63klabs/cache-data
+```
+
+The simplest way to get started is to use the [63klabs Atlantis Templates and Script platform](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments) to deploy this and other ready-to-run solutions via CI/CD.
 
 However, if you want to write your own templates and code, follow the following steps:
 
@@ -37,15 +73,17 @@ However, if you want to write your own templates and code, follow the following 
    - Use the [key generation script](./docs/00-example-implementation/generate-put-ssm.py) during [the build](./docs/00-example-implementation/example-buildspec.yml) to establish a key to encrypt your data.
 2. Lambda CloudFormation Template:
    - See [Lambda template example](./docs/00-example-implementation/example-template-lambda-function.yml) 
-   - Node: AWS Lambda supported version of Node
-   - Memory: Allocate at least 256MB (512-1024MB recommended)
+   - Node: AWS Lambda supported version of Node (>=20.0.0)
+   - Memory: Allocate at least 512MB (1024MB+ recommended)
    - Environment Variables: Add the cache-data environment variables to your Lambda function.
-   - Execution Role: Include access to S3 and DynamoDb in your Lambda's execution role.
-3. S3 and DynamoDb CloudFormation Template to store your cache:
-   - See [S3 and DynamoDb Cache Store template example](./docs/00-example-implementation/example-template-s3-and-dynamodb-cache-store.yml)
+   - Execution Role: Include access to S3 and DynamoDB in your Lambda's execution role.
+3. S3 and DynamoDB CloudFormation Template to store your cache:
+   - See [S3 and DynamoDB Cache Store template example](./docs/00-example-implementation/example-template-s3-and-dynamodb-cache-store.yml)
    - Include in your application infrastructure template or as separate infrastructure.
 4. Install the @63klabs/cache-data package:
-   - `npm install @63klabs/cache-data`
+   ```bash
+   npm install @63klabs/cache-data
+   ```
 5. Add code to your Lambda function to utilize caching and other cache-data utilities:
    - See [example code for index and handler](./docs/00-example-implementation/example-handler.js)
    - See [example code for config initialization](./docs/00-example-implementation/example-config.js)
@@ -55,6 +93,68 @@ It is recommended that you use the quick-start method when implementing for the 
 - [Quick Start Implementation](./docs/00-quick-start-implementation/README.md)
 - [Advanced Implementation for Providing a Web Service](./docs/01-advanced-implementation-for-web-service/README.md)
 - [Additional Documentation](./docs/README.md)
+
+## Quick Start Examples
+
+### Basic Caching Example
+
+```javascript
+const { cache } = require("@63klabs/cache-data");
+
+// Initialize cache with your S3 bucket and DynamoDB table
+cache.Cache.init({
+  s3Bucket: process.env.CACHE_DATA_S3_BUCKET,
+  dynamoDbTable: process.env.CACHE_DATA_DYNAMODB_TABLE,
+  securityKey: process.env.CACHE_DATA_SECURITY_KEY
+});
+
+// Cache some data
+const cacheKey = "my-data-key";
+const dataToCache = { message: "Hello, World!", timestamp: Date.now() };
+
+await cache.Cache.put(cacheKey, dataToCache, 3600); // Cache for 1 hour
+
+// Retrieve cached data
+const cachedData = await cache.Cache.get(cacheKey);
+if (cachedData) {
+  console.log("Retrieved from cache:", cachedData);
+}
+```
+
+### Making Endpoint Requests
+
+```javascript
+const { endpoint } = require("@63klabs/cache-data");
+
+// Make a simple GET request to an API
+const response = await endpoint.get(
+  { host: "api.example.com", path: "/data" },
+  { parameters: { q: "search-term" } }
+);
+
+console.log("API Response:", response.body);
+console.log("Status Code:", response.statusCode);
+```
+
+### Using Utility Tools
+
+```javascript
+const { tools } = require("@63klabs/cache-data");
+
+// Create a timer to measure performance
+const timer = new tools.Timer("my-operation");
+timer.start();
+
+// Your code here...
+
+timer.stop();
+console.log(`Operation took ${timer.elapsed()}ms`);
+
+// Use the logger
+const logger = new tools.DebugAndLog("MyApp");
+logger.info("Application started");
+logger.error("An error occurred", { details: "error info" });
+```
 
 ## Help
 
@@ -70,7 +170,7 @@ See [SECURITY](./SECURITY.md) for information on reporting concerns.
 
 ## Change Log
 
-See [Change Log](CHANGELOG.md) for version history and changes.
+See [Change Log](./CHANGELOG.md) for version history and changes.
 
 ## Issues, Features, and Enhancements
 
