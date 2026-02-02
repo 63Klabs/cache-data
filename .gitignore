@@ -10,6 +10,7 @@ venv*
 *.DS_Store
 *desktop.ini
 package-lock.json
+audit-report.json
 
 # If you need to remove .DS_Store
 # find . -name .DS_Store -print0 | xargs -0 git rm -f --ignore-unmatch
