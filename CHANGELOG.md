@@ -6,7 +6,9 @@ Proposed and upcoming changes may be found on [63Klabs/cache-data Issues](https:
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
-> Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
+## v1.3.7 (unreleased)
+
+- Next release
 
 ## v1.3.6 (2025-02-02)
 
