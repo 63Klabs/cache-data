@@ -10,6 +10,30 @@ const { safeClone } = require('./utils');
  * 
  *************************************************************************** */
 
+/**
+ * @class Connections
+ * @property {object} _connections An object containing Connection objects
+ * @example
+ * // Create a Connections container with multiple connections
+ * const connections = new Connections([
+ *   { name: 'api', host: 'api.example.com', path: '/v1/users' },
+ *   { name: 'auth', host: 'auth.example.com', path: '/oauth/token' }
+ * ]);
+ * 
+ * // Get a specific connection
+ * const apiConnection = connections.get('api');
+ * const connectionObj = apiConnection.get();
+ * 
+ * @example
+ * // Add connections dynamically
+ * const connections = new Connections();
+ * connections.add({ name: 'database', host: 'db.example.com', path: '/query' });
+ * connections.add({ name: 'cache', host: 'cache.example.com', path: '/get' });
+ * 
+ * // Use with endpoint requests
+ * const dbConn = connections.get('database');
+ * const result = await endpoint.get(dbConn);
+ */
 class Connections {
 	
 	_connections = {};
@@ -85,6 +109,41 @@ class Connections {
  * that can then be used to generate and submit a request to a DAO class or 
  * APIRequest object.
  * You can store and manage multiple connections using the Connections object.
+ * @example
+ * // Create a simple connection
+ * const apiConnection = new Connection({
+ *   name: 'userAPI',
+ *   host: 'api.example.com',
+ *   path: '/v1/users',
+ *   method: 'GET'
+ * });
+ * 
+ * // Get connection object for use with endpoint
+ * const connObj = apiConnection.get();
+ * const users = await endpoint.get(connObj);
+ * 
+ * @example
+ * // Create connection with authentication
+ * const authConn = new Connection({
+ *   name: 'secureAPI',
+ *   host: 'secure.example.com',
+ *   path: '/api/data',
+ *   authentication: {
+ *     headers: { 'x-api-key': 'your-api-key' }
+ *   }
+ * });
+ * 
+ * @example
+ * // Create connection with cache configuration
+ * const cachedConn = new Connection({
+ *   name: 'cachedAPI',
+ *   host: 'api.example.com',
+ *   path: '/data',
+ *   cache: {
+ *     profile: 'default',
+ *     expirationInSeconds: 300
+ *   }
+ * });
  */
 class Connection {
 
@@ -297,14 +356,43 @@ class Connection {
  * Header, parameter, and/or Basic auth key/value pairs can be passed in. 
  * Additional methods could be added in the future.
  * 
- * new ConnectionAuthentication(
- * {
- *  headers: { x-key: "bsomeKeyForAHeaderField", x-user: "myUserID" },
- *  parameters: { apikey: "myExampleApiKeyForResource1234" },
- *  body: { key: "myExampleApiKeyForResource1283" },
- *  basic: { username: "myUsername", password: "myPassword" }
- * }
- * );
+ * @example
+ * // Create authentication with API key in header
+ * const auth = new ConnectionAuthentication({
+ *   headers: { 
+ *     'x-api-key': 'your-api-key-here',
+ *     'x-user-id': 'user123'
+ *   }
+ * });
+ * 
+ * @example
+ * // Create authentication with query parameters
+ * const auth = new ConnectionAuthentication({
+ *   parameters: { 
+ *     apikey: 'your-api-key',
+ *     token: 'auth-token'
+ *   }
+ * });
+ * 
+ * @example
+ * // Create authentication with Basic auth
+ * const auth = new ConnectionAuthentication({
+ *   basic: { 
+ *     username: 'myUsername',
+ *     password: 'myPassword'
+ *   }
+ * });
+ * 
+ * @example
+ * // Use with Connection
+ * const connection = new Connection({
+ *   name: 'secureAPI',
+ *   host: 'api.example.com',
+ *   path: '/secure/data',
+ *   authentication: new ConnectionAuthentication({
+ *     headers: { 'Authorization': 'Bearer token123' }
+ *   })
+ * });
  */
 class ConnectionAuthentication {
 
@@ -437,6 +525,44 @@ class ConnectionAuthentication {
  * Connection by adding request specific parameters. While a Connection 
  * cannot be modified after creation (it is a config), a ClientRequest can be 
  * modified as the application or DAO assembles the request.
+ * @example
+ * // Create a connection request from a base connection
+ * const baseConnection = new Connection({
+ *   name: 'api',
+ *   host: 'api.example.com',
+ *   path: '/users'
+ * });
+ * 
+ * const request = new ConnectionRequest(baseConnection.get());
+ * 
+ * // Add dynamic headers
+ * request.addHeader('Authorization', `Bearer ${token}`);
+ * request.addHeader('X-Request-ID', requestId);
+ * 
+ * // Add query parameters
+ * request.addParameter('limit', 10);
+ * request.addParameter('page', 1);
+ * 
+ * // Make the request
+ * const result = await endpoint.get(request);
+ * 
+ * @example
+ * // Build a request dynamically in a DAO
+ * class UsersDAO {
+ *   static async getUser(userId, authToken) {
+ *     const request = new ConnectionRequest({
+ *       host: 'api.example.com',
+ *       path: `/users/${userId}`
+ *     });
+ *     
+ *     request.addHeaders({
+ *       'Authorization': `Bearer ${authToken}`,
+ *       'Content-Type': 'application/json'
+ *     });
+ *     
+ *     return await endpoint.get(request);
+ *   }
+ * }
  */
 class ConnectionRequest extends Connection {
 

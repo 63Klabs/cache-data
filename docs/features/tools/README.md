@@ -837,12 +837,14 @@ Format Lambda responses:
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
-const response = new tools.Response();
-response.setStatusCode(200);
-response.setBody({ message: 'Success', data: results });
-response.setHeader('Content-Type', 'application/json');
+async function createResponse(results) {
+  const response = new tools.Response();
+  response.setStatusCode(200);
+  response.setBody({ message: 'Success', data: results });
+  response.setHeader('Content-Type', 'application/json');
 
-return response.get();
+  return response.get();
+}
 ```
 
 ### ResponseDataModel Class
@@ -872,12 +874,14 @@ Pre-built response formatters for common content types.
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
-const response = tools.jsonGenericResponse(
-  200,
-  { message: 'Success', data: results }
-);
+async function jsonResponse(results) {
+  const response = tools.jsonGenericResponse(
+    200,
+    { message: 'Success', data: results }
+  );
 
-return response;
+  return response;
+}
 ```
 
 ### HTML Response
@@ -885,10 +889,12 @@ return response;
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
-const html = '<html><body><h1>Hello World</h1></body></html>';
-const response = tools.htmlGenericResponse(200, html);
+async function htmlResponse() {
+  const html = '<html><body><h1>Hello World</h1></body></html>';
+  const response = tools.htmlGenericResponse(200, html);
 
-return response;
+  return response;
+}
 ```
 
 ### XML Response
@@ -896,10 +902,12 @@ return response;
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
-const xml = '<?xml version="1.0"?><root><item>value</item></root>';
-const response = tools.xmlGenericResponse(200, xml);
+async function xmlResponse() {
+  const xml = '<?xml version="1.0"?><root><item>value</item></root>';
+  const response = tools.xmlGenericResponse(200, xml);
 
-return response;
+  return response;
+}
 ```
 
 ### RSS Response
@@ -907,10 +915,12 @@ return response;
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
-const rss = '<?xml version="1.0"?><rss version="2.0">...</rss>';
-const response = tools.rssGenericResponse(200, rss);
+async function rssResponse() {
+  const rss = '<?xml version="1.0"?><rss version="2.0">...</rss>';
+  const response = tools.rssGenericResponse(200, rss);
 
-return response;
+  return response;
+}
 ```
 
 ### Text Response
@@ -918,10 +928,12 @@ return response;
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
-const text = 'Plain text response';
-const response = tools.textGenericResponse(200, text);
+async function textResponse() {
+  const text = 'Plain text response';
+  const response = tools.textGenericResponse(200, text);
 
-return response;
+  return response;
+}
 ```
 
 ---

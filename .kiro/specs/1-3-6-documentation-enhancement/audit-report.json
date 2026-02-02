@@ -1,26 +1,21 @@
 {
-  "auditDate": "2026-01-28T03:04:48.723Z",
+  "auditDate": "2026-02-02T04:50:53.826Z",
   "summary": {
     "totalFiles": 23,
-    "totalPublicFunctions": 54,
-    "documentedFunctions": 16,
-    "completeFunctions": 8,
-    "missingJSDocCount": 38,
-    "incompleteJSDocCount": 8,
+    "totalPublicFunctions": 55,
+    "documentedFunctions": 21,
+    "completeFunctions": 21,
+    "missingJSDocCount": 34,
+    "incompleteJSDocCount": 0,
     "inaccurateJSDocCount": 0,
-    "coveragePercentage": "29.63",
-    "completenessPercentage": "14.81",
+    "coveragePercentage": "38.18",
+    "completenessPercentage": "38.18",
     "brokenLinksCount": 0,
-    "invalidExamplesCount": 17,
-    "criticalErrors": 55
+    "invalidExamplesCount": 0,
+    "criticalErrors": 34
   },
   "jsdocAnalysis": {
     "missingJSDoc": [
-      {
-        "file": "lib/dao-cache.js",
-        "name": "CacheableDataAccess",
-        "type": "class"
-      },
       {
         "file": "lib/tools/APIRequest.class.js",
         "name": "object",
@@ -62,33 +57,18 @@
         "type": "class"
       },
       {
-        "file": "lib/tools/AWS.classes.js",
-        "name": "AWS.XRayOn",
-        "type": "method"
-      },
-      {
         "file": "lib/tools/CachedParametersSecrets.classes.js",
         "name": "CachedParameterSecrets",
         "type": "class"
       },
       {
         "file": "lib/tools/CachedParametersSecrets.classes.js",
-        "name": "CachedSSMParameter",
+        "name": "CachedParameterSecret",
         "type": "class"
       },
       {
         "file": "lib/tools/CachedParametersSecrets.classes.js",
-        "name": "CachedSSMParameter.getPath",
-        "type": "method"
-      },
-      {
-        "file": "lib/tools/CachedParametersSecrets.classes.js",
-        "name": "CachedSecret",
-        "type": "class"
-      },
-      {
-        "file": "lib/tools/CachedParametersSecrets.classes.js",
-        "name": "CachedSecret.getPath",
+        "name": "CachedParameterSecret.write",
         "type": "method"
       },
       {
@@ -158,6 +138,11 @@
       },
       {
         "file": "lib/tools/RequestInfo.class.js",
+        "name": "CustomRequestInfo",
+        "type": "class"
+      },
+      {
+        "file": "lib/tools/RequestInfo.class.js",
         "name": "construction",
         "type": "class"
       },
@@ -200,79 +185,9 @@
         "file": "lib/tools/Timer.class.js",
         "name": "Timer",
         "type": "class"
-      },
-      {
-        "file": "lib/tools/index.js",
-        "name": "_ConfigSuperClass.settings",
-        "type": "method"
       }
     ],
-    "incompleteJSDoc": [
-      {
-        "file": "lib/dao-cache.js",
-        "name": "Cache",
-        "type": "class",
-        "issues": [
-          "Missing @example tag"
-        ]
-      },
-      {
-        "file": "lib/tools/ClientRequest.class.js",
-        "name": "ClientRequest",
-        "type": "class",
-        "issues": [
-          "Missing @example tag"
-        ]
-      },
-      {
-        "file": "lib/tools/Connections.classes.js",
-        "name": "Connection",
-        "type": "class",
-        "issues": [
-          "Missing @example tag"
-        ]
-      },
-      {
-        "file": "lib/tools/Connections.classes.js",
-        "name": "ConnectionAuthentication",
-        "type": "class",
-        "issues": [
-          "Missing @example tag"
-        ]
-      },
-      {
-        "file": "lib/tools/Connections.classes.js",
-        "name": "ConnectionRequest",
-        "type": "class",
-        "issues": [
-          "Missing @example tag"
-        ]
-      },
-      {
-        "file": "lib/tools/ImmutableObject.class.js",
-        "name": "ImmutableObject",
-        "type": "class",
-        "issues": [
-          "Missing @example tag"
-        ]
-      },
-      {
-        "file": "lib/tools/RequestInfo.class.js",
-        "name": "RequestInfo",
-        "type": "class",
-        "issues": [
-          "Missing @example tag"
-        ]
-      },
-      {
-        "file": "lib/utils/InMemoryCache.js",
-        "name": "InMemoryCache",
-        "type": "class",
-        "issues": [
-          "Missing @example tag"
-        ]
-      }
-    ],
+    "incompleteJSDoc": [],
     "inaccurateJSDoc": []
   },
   "linkValidation": {
@@ -282,112 +197,9 @@
     "filesChecked": 13
   },
   "exampleValidation": {
-    "totalExamples": 165,
-    "validExamples": 148,
-    "invalidExamples": [
-      {
-        "file": "docs/01-advanced-implementation-for-web-service/README.md",
-        "line": 387,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:88\nconst UsersController = require('./users.controller');\n      ^\n\nSyntaxError: Identifier 'UsersController' has already been declared\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "// users.controller.js\nconst { tools } = require('@63klabs/cache-data');\n\nclass UsersController {\n  ..."
-      },
-      {
-        "file": "docs/01-advanced-implementation-for-web-service/README.md",
-        "line": 516,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:20\nreturn response.finalize();\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "const { tools } = require('@63klabs/cache-data');\nconst { Response } = tools;\n\n// Create response\nco..."
-      },
-      {
-        "file": "docs/01-advanced-implementation-for-web-service/README.md",
-        "line": 588,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:20\nreturn response.finalize();\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "const { tools } = require('@63klabs/cache-data');\nconst { ResponseDataModel, Response } = tools;\n\n//..."
-      },
-      {
-        "file": "docs/01-advanced-implementation-for-web-service/README.md",
-        "line": 688,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:7\nreturn response.finalize();\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "// Finalize automatically handles:\n// - Content-Type detection\n// - CORS headers\n// - Cache-Control ..."
-      },
-      {
-        "file": "docs/01-advanced-implementation-for-web-service/README.md",
-        "line": 1726,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:2\ncase 'GET:health':\n^^^^\n\nSyntaxError: Unexpected token 'case'\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "// In router.js\ncase 'GET:health':\n  response.setStatusCode(200);\n  response.setBody({ \n    status: ..."
-      },
-      {
-        "file": "docs/features/tools/README.md",
-        "line": 837,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:8\nreturn response.get();\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst response = new tools.Response();\nresponse.s..."
-      },
-      {
-        "file": "docs/features/tools/README.md",
-        "line": 872,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:8\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst response = tools.jsonGenericResponse(\n  200..."
-      },
-      {
-        "file": "docs/features/tools/README.md",
-        "line": 885,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:6\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst html = '<html><body><h1>Hello World</h1></b..."
-      },
-      {
-        "file": "docs/features/tools/README.md",
-        "line": 896,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:6\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst xml = '<?xml version=\"1.0\"?><root><item>val..."
-      },
-      {
-        "file": "docs/features/tools/README.md",
-        "line": 907,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:6\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst rss = '<?xml version=\"1.0\"?><rss version=\"2..."
-      },
-      {
-        "file": "docs/features/tools/README.md",
-        "line": 918,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:6\nreturn response;\n^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "const { tools } = require('@63klabs/cache-data');\n\nconst text = 'Plain text response';\nconst respons..."
-      },
-      {
-        "file": "docs/lambda-optimization/README.md",
-        "line": 192,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:8\nconst [user, orders, inventory] = await Promise.all([\n       ^\n\nSyntaxError: Identifier 'user' has already been declared\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "// ❌ Sequential (slow) - each request waits for the previous\nconst user = await endpoint.get(userCon..."
-      },
-      {
-        "file": "docs/lambda-optimization/README.md",
-        "line": 235,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:12\n  return cached.data; // Cache hit\n  ^^^^^^\n\nSyntaxError: Illegal return statement\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "// Start cache lookup immediately\nconst cachePromise = cache.CacheData.get(cacheKey);\n\n// Prepare re..."
-      },
-      {
-        "file": "docs/technical/in-memory-cache.md",
-        "line": 59,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:3\n  expiresAt: number        // Expiration timestamp in milliseconds\n           ^\n\nSyntaxError: Unexpected token ':'\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "{\n  value: CacheDataFormat,  // The cached data\n  expiresAt: number        // Expiration timestamp i..."
-      },
-      {
-        "file": "docs/technical/in-memory-cache.md",
-        "line": 198,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:1\nasync read() {\n      ^^^^\n\nSyntaxError: Unexpected identifier 'read'\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "async read() {\n  // 1. Check if already loaded\n  if (this.#store !== null) return this.#store;\n  \n  ..."
-      },
-      {
-        "file": "docs/technical/in-memory-cache.md",
-        "line": 309,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:2\nthis.#useInMemoryCache = parameters.useInMemoryCache || \n    ^\n\nSyntaxError: Private field '#useInMemoryCache' must be declared in an enclosing class\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "// Initialize in-memory cache feature flag\nthis.#useInMemoryCache = parameters.useInMemoryCache || \n..."
-      },
-      {
-        "file": "docs/technical/in-memory-cache.md",
-        "line": 469,
-        "error": "Command failed: node --check /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs\n/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/.temp-validation.mjs:2\ntools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);\n                                                    ^\n\nSyntaxError: Private field '#idHash' must be declared in an enclosing class\n    at checkSyntax (node:internal/main/check_syntax:72:5)\n\nNode.js v24.13.0\n",
-        "code": "// In Cache.read()\ntools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);\ntools.DebugAndLo..."
-      }
-    ],
+    "totalExamples": 168,
+    "validExamples": 168,
+    "invalidExamples": [],
     "filesChecked": 11
   },
   "fileAnalyses": [
@@ -403,26 +215,30 @@
           "name": "Cache",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "The Cache object handles reads and writes from the cache. It also acts as a proxy between the app and CacheData which is a private class. This is the actual data object our application can work with and is returned from CachableDataAccess. Before using it must be initialized Cache.init({parameters}); Then you can then make a request, sending it through CacheableDataAccess:  const { cache } = require(\"@63klabs/cache-data\"); const cacheObj = await cache.CacheableDataAccess.getData( \tcacheCfg, \tyourFetchFunction, \tconn, \tdaoQuery ); /",
+            "description": "The Cache object handles the settings for the cache system Before using it must be initialized. Many settings can be set through Environment variables or by passing parameters to Cache.init(): Cache.init({parameters}); Then you can then make a request, sending it through CacheableDataAccess:  const { cache } = require(\"@63klabs/cache-data\"); const cacheObj = await cache.CacheableDataAccess.getData( \tcacheCfg, \tyourFetchFunction, \tconn, \tdaoQuery );",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Initialize the cache system\nCache.init({\n  dynamoDbTable: 'my-cache-table',\n  s3Bucket: 'my-cache-bucket',\n  idHashAlgorithm: 'sha256'\n});\n// Create a cache instance with connection and profile\nconst connection = { host: 'api.example.com', path: '/data' };\nconst cacheProfile = {\n  defaultExpirationInSeconds: 300,\n  encrypt: true\n};\nconst cacheInstance = new Cache(connection, cacheProfile);\n/"
+            ],
             "throws": []
           },
-          "position": 49573
+          "position": 53723
         },
         {
           "type": "class",
           "name": "CacheableDataAccess",
-          "hasJSDoc": false,
+          "hasJSDoc": true,
           "jsdoc": {
-            "description": null,
+            "description": "The CacheableDataAccess object provides an interface to the cache. It is responsible for reading from and writing to cache. All requests to data go through the cache Before using CacheableDataAccess, the Cache must be initialized.",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Init should be done outside the handler\nCache.init({parameters});\n// Then you can then make a request in the handler\n// sending it through CacheableDataAccess:\nconst { cache } = require(\"@63klabs/cache-data\");\nconst cacheObj = await cache.CacheableDataAccess.getData(\n\tcacheCfg,\n\tyourFetchFunction,\n\tconn,\n\tdaoQuery\n);\n/"
+            ],
             "throws": []
           },
-          "position": 90110
+          "position": 116624
         }
       ]
     },
@@ -561,7 +377,7 @@
             "examples": [],
             "throws": []
           },
-          "position": 2017
+          "position": 2394
         },
         {
           "type": "class",
@@ -576,23 +392,7 @@
             ],
             "throws": []
           },
-          "position": 4426
-        },
-        {
-          "type": "method",
-          "name": "AWS.XRayOn",
-          "className": "AWS",
-          "isStatic": false,
-          "hasJSDoc": false,
-          "jsdoc": {
-            "description": null,
-            "params": [],
-            "returns": null,
-            "examples": [],
-            "throws": []
-          },
-          "actualParams": [],
-          "position": 4504
+          "position": 4803
         }
       ]
     },
@@ -610,14 +410,60 @@
             "examples": [],
             "throws": []
           },
-          "position": 1055
+          "position": 974
+        },
+        {
+          "type": "class",
+          "name": "CachedParameterSecrets",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "@class CachedParameterSecrets - Container class for CachedParameterSecret objects",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "// Create parameters and secrets\nconst dbPassword = new CachedSSMParameter('/myapp/db/password');\nconst apiKey = new CachedSecret('myapp-api-key');\n// Prime all parameters and secrets before use\nawait CachedParameterSecrets.prime();\n// Get all names\nconst names = CachedParameterSecrets.getNames();\nconsole.log(names); // ['/myapp/db/password', 'myapp-api-key']\n// Get specific parameter\nconst param = CachedParameterSecrets.get('/myapp/db/password');\nconst value = await param.getValue();\n/"
+            ],
+            "throws": []
+          },
+          "position": 1606
+        },
+        {
+          "type": "class",
+          "name": "CachedParameterSecret",
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "position": 4236
+        },
+        {
+          "type": "method",
+          "name": "CachedParameterSecret.write",
+          "className": "CachedParameterSecret",
+          "isStatic": false,
+          "hasJSDoc": false,
+          "jsdoc": {
+            "description": null,
+            "params": [],
+            "returns": null,
+            "examples": [],
+            "throws": []
+          },
+          "actualParams": [
+            "data"
+          ],
+          "position": 4946
         },
         {
           "type": "class",
           "name": "CachedParameterSecret",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "Parent class to extend CachedSSMParameter and CachedSecret classes. Accesses data through Systems Manager Parameter Store and Secrets Manager Lambda Extension Since the Lambda Extension runs a localhost via http, it handles it's own http request. Also, since the lambda extension needs time to boot during a cold start, it is not available during the regular init phase outside of the handler. Therefore, we can pass the Object to be used as the secret and then perform an async .get() or .getValue() at runtime. If we need to use a synchronous function, then we must perform a .prime() and make sure it is complete before calling the sync function.",
+            "description": "@class CachedParameterSecret - Base class for CachedSSMParameter and CachedSecret Accesses data through Systems Manager Parameter Store and Secrets Manager Lambda Extension Since the Lambda Extension runs a localhost via http, it handles it's own http request. Also, since the lambda extension needs time to boot during a cold start, it is not available during the regular init phase outside of the handler. Therefore, we can pass the Object to be used as the secret and then perform an async .get() or .getValue() at runtime. If we need to use a synchronous function, then we must perform a .prime() and make sure it is complete before calling the sync function.",
             "params": [],
             "returns": null,
             "examples": [
@@ -625,65 +471,37 @@
             ],
             "throws": []
           },
-          "position": 4790
+          "position": 5505
         },
         {
           "type": "class",
           "name": "CachedSSMParameter",
-          "hasJSDoc": false,
+          "hasJSDoc": true,
           "jsdoc": {
-            "description": null,
+            "description": "CachedSSMParameter extends CachedParameterSecret and is used to retrieve parameters from AWS Systems Manager Parameter Store @extends CachedParameterSecret",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Use with synchronous functions after priming\nconst apiKey = new CachedSSMParameter('/myapp/api/key');\nasync function init() {\n  // Prime the parameter in the background\n  apiKey.prime();\n  // Do other initialization work...\n  // Ensure parameter is loaded before sync usage\n  await apiKey.prime();\n  // Now safe to use in sync functions\n  const key = apiKey.sync_getValue();\n  return key;\n}\n/"
+            ],
             "throws": []
           },
-          "position": 13942
-        },
-        {
-          "type": "method",
-          "name": "CachedSSMParameter.getPath",
-          "className": "CachedSSMParameter",
-          "isStatic": false,
-          "hasJSDoc": false,
-          "jsdoc": {
-            "description": null,
-            "params": [],
-            "returns": null,
-            "examples": [],
-            "throws": []
-          },
-          "actualParams": [],
-          "position": 14000
+          "position": 15658
         },
         {
           "type": "class",
           "name": "CachedSecret",
-          "hasJSDoc": false,
+          "hasJSDoc": true,
           "jsdoc": {
-            "description": null,
+            "description": "CachedSecret extends CachedParameterSecret and is used to retrieve secrets from AWS Secrets Manager @extends CachedParameterSecret",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Prime multiple secrets at once\nconst secret1 = new CachedSecret('secret-1');\nconst secret2 = new CachedSecret('secret-2');\n// Prime all secrets in parallel\nawait CachedParameterSecrets.prime();\n// Now all secrets are loaded and cached\nconst value1 = secret1.sync_getValue();\nconst value2 = secret2.sync_getValue();\n/"
+            ],
             "throws": []
           },
-          "position": 14249
-        },
-        {
-          "type": "method",
-          "name": "CachedSecret.getPath",
-          "className": "CachedSecret",
-          "isStatic": false,
-          "hasJSDoc": false,
-          "jsdoc": {
-            "description": null,
-            "params": [],
-            "returns": null,
-            "examples": [],
-            "throws": []
-          },
-          "actualParams": [],
-          "position": 14302
+          "position": 17292
         }
       ]
     },
@@ -695,13 +513,15 @@
           "name": "ClientRequest",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "Extends RequestInfo Can be used to create a custom ClientRequest object /",
+            "description": "Extends RequestInfo Can be used to create a custom ClientRequest object",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Use in Lambda handler\nexports.handler = async (event, context) => {\n  const clientRequest = new ClientRequest(event, context);\n  if (!clientRequest.isValid()) {\n    return { statusCode: 400, body: 'Invalid request' };\n  }\n  const userId = clientRequest.getPathAt(1);\n  const queryParams = clientRequest.getQueryStringParameters();\n  // Add logging for monitoring\n  clientRequest.addPathLog(`users/${userId}`);\n  clientRequest.addQueryLog(`limit=${queryParams.limit}`);\n  // Process request...\n  return { statusCode: 200, body: 'Success' };\n};\n/"
+            ],
             "throws": []
           },
-          "position": 274
+          "position": 1366
         },
         {
           "type": "class",
@@ -714,7 +534,7 @@
             "examples": [],
             "throws": []
           },
-          "position": 2161
+          "position": 3253
         }
       ]
     },
@@ -732,33 +552,52 @@
             "examples": [],
             "throws": []
           },
-          "position": 440
+          "position": 448
+        },
+        {
+          "type": "class",
+          "name": "Connections",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "@class Connections @property {object} _connections An object containing Connection objects",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "// Add connections dynamically\nconst connections = new Connections();\nconnections.add({ name: 'database', host: 'db.example.com', path: '/query' });\nconnections.add({ name: 'cache', host: 'cache.example.com', path: '/get' });\n// Use with endpoint requests\nconst dbConn = connections.get('database');\nconst result = await endpoint.get(dbConn);\n/"
+            ],
+            "throws": []
+          },
+          "position": 1319
         },
         {
           "type": "class",
           "name": "Connection",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "The Connection object provides the base for requests but does not carry the request. myConnection.get() will return an object (associative array) that can then be used to generate and submit a request to a DAO class or APIRequest object. You can store and manage multiple connections using the Connections object. /",
+            "description": "The Connection object provides the base for requests but does not carry the request. myConnection.get() will return an object (associative array) that can then be used to generate and submit a request to a DAO class or APIRequest object. You can store and manage multiple connections using the Connections object.",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Create connection with cache configuration\nconst cachedConn = new Connection({\n  name: 'cachedAPI',\n  host: 'api.example.com',\n  path: '/data',\n  cache: {\n    profile: 'default',\n    expirationInSeconds: 300\n  }\n});\n/"
+            ],
             "throws": []
           },
-          "position": 2498
+          "position": 4234
         },
         {
           "type": "class",
           "name": "ConnectionAuthentication",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "ConnectionAuthentication allows auth tokens, parameters, etc to be stored separately from regular connection request parameters so that they can be protected from modification or accidental access. Header, parameter, and/or Basic auth key/value pairs can be passed in. Additional methods could be added in the future. new ConnectionAuthentication( {  headers: { x-key: \"bsomeKeyForAHeaderField\", x-user: \"myUserID\" },  parameters: { apikey: \"myExampleApiKeyForResource1234\" },  body: { key: \"myExampleApiKeyForResource1283\" },  basic: { username: \"myUsername\", password: \"myPassword\" } } ); /",
+            "description": "ConnectionAuthentication allows auth tokens, parameters, etc to be stored separately from regular connection request parameters so that they can be protected from modification or accidental access. Header, parameter, and/or Basic auth key/value pairs can be passed in. Additional methods could be added in the future.",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Use with Connection\nconst connection = new Connection({\n  name: 'secureAPI',\n  host: 'api.example.com',\n  path: '/secure/data',\n  authentication: new ConnectionAuthentication({\n    headers: { 'Authorization': 'Bearer token123' }\n  })\n});\n/"
+            ],
             "throws": []
           },
-          "position": 9618
+          "position": 11955
         },
         {
           "type": "method",
@@ -776,7 +615,7 @@
           "actualParams": [
             "obj !"
           ],
-          "position": 9856
+          "position": 12193
         },
         {
           "type": "method",
@@ -794,20 +633,22 @@
           "actualParams": [
             "\"parameters\" in obj && obj.parameters !"
           ],
-          "position": 9943
+          "position": 12280
         },
         {
           "type": "class",
           "name": "ConnectionRequest",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "A Connection provides the base for a ClientRequest. A ClientRequest extends the Connection by adding request specific parameters. While a Connection cannot be modified after creation (it is a config), a ClientRequest can be modified as the application or DAO assembles the request. /",
+            "description": "A Connection provides the base for a ClientRequest. A ClientRequest extends the Connection by adding request specific parameters. While a Connection cannot be modified after creation (it is a config), a ClientRequest can be modified as the application or DAO assembles the request.",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Build a request dynamically in a DAO\nclass UsersDAO {\n  static async getUser(userId, authToken) {\n    const request = new ConnectionRequest({\n      host: 'api.example.com',\n      path: `/users/${userId}`\n    });\n    request.addHeaders({\n      'Authorization': `Bearer ${authToken}`,\n      'Content-Type': 'application/json'\n    });\n    return await endpoint.get(request);\n  }\n}\n/"
+            ],
             "throws": []
           },
-          "position": 13302
+          "position": 16665
         }
       ]
     },
@@ -968,13 +809,15 @@
           "name": "ImmutableObject",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "Create an object that is able to return a copy and not a reference to its properties. /",
+            "description": "Create an object that is able to return a copy and not a reference to its properties.",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Use for connection configurations\nconst connections = new ImmutableObject({\n  api: { host: 'api.example.com', path: '/v1' },\n  auth: { host: 'auth.example.com', path: '/oauth' }\n});\nconnections.finalize();\n// Each get() returns a fresh copy\nconst apiConn1 = connections.get('api');\nconst apiConn2 = connections.get('api');\napiConn1.path = '/v2'; // apiConn2 is unaffected\n/"
+            ],
             "throws": []
           },
-          "position": 143
+          "position": 1242
         }
       ]
     },
@@ -996,16 +839,31 @@
         },
         {
           "type": "class",
-          "name": "RequestInfo",
-          "hasJSDoc": true,
+          "name": "CustomRequestInfo",
+          "hasJSDoc": false,
           "jsdoc": {
-            "description": "Processes the request from the event data. Parses out client details such as ip and user agent. May be extended to provide custom processing for the application. /",
+            "description": null,
             "params": [],
             "returns": null,
             "examples": [],
             "throws": []
           },
-          "position": 580
+          "position": 1236
+        },
+        {
+          "type": "class",
+          "name": "RequestInfo",
+          "hasJSDoc": true,
+          "jsdoc": {
+            "description": "Processes the request from the event data. Parses out client details such as ip and user agent. May be extended to provide custom processing for the application.",
+            "params": [],
+            "returns": null,
+            "examples": [
+              "// Get request data as object\nconst requestInfo = new RequestInfo(event);\nconst fullData = requestInfo.toObject(true); // Include sensitive data\nconst safeData = requestInfo.toObject(); // Sensitive data stripped\n/"
+            ],
+            "throws": []
+          },
+          "position": 1688
         },
         {
           "type": "class",
@@ -1018,7 +876,7 @@
             "examples": [],
             "throws": []
           },
-          "position": 911
+          "position": 2019
         }
       ]
     },
@@ -1223,22 +1081,6 @@
             "throws": []
           },
           "position": 4027
-        },
-        {
-          "type": "method",
-          "name": "_ConfigSuperClass.settings",
-          "className": "_ConfigSuperClass",
-          "isStatic": true,
-          "hasJSDoc": false,
-          "jsdoc": {
-            "description": null,
-            "params": [],
-            "returns": null,
-            "examples": [],
-            "throws": []
-          },
-          "actualParams": [],
-          "position": 4136
         }
       ]
     },
@@ -1258,13 +1100,15 @@
           "name": "InMemoryCache",
           "hasJSDoc": true,
           "jsdoc": {
-            "description": "InMemoryCache - Ultra-fast in-memory L0 cache for AWS Lambda Provides microsecond-level cache access using JavaScript Map with LRU eviction. Designed for Lambda execution model with synchronous operations and no background processes. /",
+            "description": "InMemoryCache - Ultra-fast in-memory L0 cache for AWS Lambda Provides microsecond-level cache access using JavaScript Map with LRU eviction. Designed for Lambda execution model with synchronous operations and no background processes.",
             "params": [],
             "returns": null,
-            "examples": [],
+            "examples": [
+              "// Clear cache when needed\ncache.clear();\nconsole.log('Cache cleared');\n/"
+            ],
             "throws": []
           },
-          "position": 256
+          "position": 1443
         }
       ]
     }

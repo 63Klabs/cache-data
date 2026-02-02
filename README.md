@@ -164,9 +164,13 @@ Review the [Documentation](./docs/README.md) which includes implementation guide
 
 A full implementation example and tutorial is provided as one of the Atlantis Application Starters available through the [Atlantis Tutorials repository](https://github.com/63klabs/atlantis-tutorials). (Atlantis is a collection of templates and deployment scripts to assist in starting and automating serverless deployments using AWS SAM and CloudFormation.)
 
-## Security
+## Tutorials
 
-See [SECURITY](./SECURITY.md) for information on reporting concerns.
+Read the [Atlantis Tutorials introductory page](https://github.com/63Klabs/atlantis-tutorials) for overall usage of Atlantis Platform Templates and Scripts.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
 
 ## Change Log
 
@@ -176,18 +180,18 @@ See [Change Log](./CHANGELOG.md) for version history and changes.
 
 Visit the [Issues section of the @63Klabs Cache-Data GitHub repository](https://github.com/63Klabs/cache-data/issues) for information on reported issues, upcoming fixes and enhancements, and to submit requests.
 
-## License
+## Security
 
-This project is licensed under the MIT License - see the LICENSE.txt file for details
+If you discover any security related issues, please see the [SECURITY](SECURITY.md) file for details.
 
-## Author
+## Contributing
 
-### Chad Kluck
+Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
-- Software, DevOps, and Developer Experience Engineer
-- [AWS Certified Developer - Associate](https://www.credly.com/users/chad-kluck/badges)
-- [Website: chadkluck.me](https://chadkluck.me/)
-- [GitHub: chadkluck](https://github.com/chadkluck)
-- [GitHub: 63Klabs](https://github.com/63klabs)
-- [Mastodon: @chadkluck@universeodon.com](https://universeodon.com/@chadkluck)
-- [LinkedIn](https://www.linkedin.com/in/chadkluck/)
+## AI Context
+
+See [AI_CONTEXT.md](AI_CONTEXT.md) for important context and guidelines for AI-generated code in this repository.
+
+The context file is also helpful (and perhaps essential) for HUMANS developing within the application's structured platform as well.
+
+AI Assisted Engineering of this solution was provided by [Kiro](https://kiro.dev/). Steering documents are provided in the repository's [.kiro](.kiro/steering/ai-context-reference.md) directory. Because testing is tightly coupled with the implementation, it is suggested all documents, code, and tests are thoroughly reviewed before, and updated after, any changes.

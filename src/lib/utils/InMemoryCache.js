@@ -3,6 +3,45 @@
  * 
  * Provides microsecond-level cache access using JavaScript Map with LRU eviction.
  * Designed for Lambda execution model with synchronous operations and no background processes.
+ * @example
+ * // Create cache with automatic sizing based on Lambda memory
+ * const cache = new InMemoryCache();
+ * 
+ * // Store data with expiration
+ * const data = { user: 'john', email: 'john@example.com' };
+ * const expiresAt = Date.now() + (5 * 60 * 1000); // 5 minutes
+ * cache.set('user:123', data, expiresAt);
+ * 
+ * // Retrieve data
+ * const result = cache.get('user:123');
+ * if (result.cache === 1) {
+ *   console.log('Cache hit:', result.data);
+ * }
+ * 
+ * @example
+ * // Create cache with explicit max entries
+ * const cache = new InMemoryCache({ maxEntries: 10000 });
+ * 
+ * // Check cache info
+ * const info = cache.info();
+ * console.log(`Cache size: ${info.size}/${info.maxEntries}`);
+ * console.log(`Memory: ${info.memoryMB}MB`);
+ * 
+ * @example
+ * // Use with Cache.init() for in-memory caching
+ * Cache.init({
+ *   useInMemoryCache: true,
+ *   inMemoryCacheMaxEntries: 5000
+ * });
+ * 
+ * // Cache automatically uses InMemoryCache as L0 cache
+ * const cacheInstance = new Cache(connection, profile);
+ * const data = await cacheInstance.read(); // Checks in-memory first
+ * 
+ * @example
+ * // Clear cache when needed
+ * cache.clear();
+ * console.log('Cache cleared');
  */
 
 class InMemoryCache {

@@ -1,9 +1,20 @@
+/**
+ * Can a value be considered true?
+ * "true", "1", 1, and true are all true
+ * @param {boolean|number|string|null|undefined} value 
+ * @returns {boolean} Whether or not the value could be considered true
+ */
 const isTrue = (value) => {
 	return (value !== null && typeof value !== 'undefined' && 
 		(value === true || value === 1 || value === "1" || 
 		(typeof value === 'string' && value.toLowerCase() === "true")));
 };
 
+/**
+ * Should we enable X-Ray?
+ * Checks for either CacheData_AWSXRayOn or CACHE_DATA_AWS_X_RAY_ON in process.env
+ * @returns {boolean} True if X-Ray is enabled
+ */
 const USE_XRAY = isTrue(process.env?.CacheData_AWSXRayOn) || isTrue(process.env?.CACHE_DATA_AWS_X_RAY_ON);
 
 let AWSXRay = null;
@@ -88,12 +99,19 @@ class AWS {
 	static #nodeVer = [];
 	static #aws_region = null;
 
+	/**
+	 * @private
+	 * @returns {boolean} True if X-Ray is enabled and initialized
+	 */
 	static get #XRayOn() {
 		return initializeXRay() !== null;
 	}
 
 	constructor() {}
 
+	/**
+	 * @returns {number[]} Node version in array [major, minor, patch]
+	 */
 	static get nodeVersionArray() {
 		if (this.#nodeVer.length === 0) {
 			// split this.NODE_VER into an array of integers
@@ -102,6 +120,12 @@ class AWS {
 		return this.#nodeVer;
 	};
 
+	/**
+	 * Returns the AWS Region from process.env.AWS_REGION.
+	 * If not set, it will return 'us-east-1' and issue a warning.
+	 *
+	 * @returns {string} AWS Region
+	 */
 	static get region() {
 		if (this.#aws_region === null) {
 
@@ -122,17 +146,59 @@ class AWS {
 		return this.#aws_region;
 	}
 
+	/**
+	 * @returns {string} Node.js version ex: '24.12.0'
+	 */
 	static get NODE_VER() { return ( ("versions" in process && "node" in process.versions) ? process.versions.node : "0.0.0"); }
+	
+	/**
+	 * @returns {number} Node.js major version ex: 24
+	 */
 	static get NODE_VER_MAJOR() { return ( this.nodeVersionArray[0] ); }
+
+	/**
+	 * @returns {number} Node.js minor version ex: 12
+	 */
 	static get NODE_VER_MINOR() { return ( this.nodeVersionArray[1] ); }
+
+	/**
+	 * @returns {number} Node.js patch version ex: 0
+	 */
 	static get NODE_VER_PATCH() { return ( this.nodeVersionArray[2] ); }
+
+	/**
+	 * @returns {string} Node.js major.minor version ex: '24.12'
+	 */
 	static get NODE_VER_MAJOR_MINOR() { return (this.nodeVersionArray[0] + "." + this.nodeVersionArray[1]); }
+	
+	/**
+	 * @returns {number[]} Node.js version array [major, minor, patch]
+	 */
 	static get NODE_VER_ARRAY() { return (this.nodeVersionArray); }
+
+	/**
+	 * @returns {'V2'|'V3'} AWS SDK Version being used based on Node.js version. V2 for Node.js < 18, V3 for Node.js >= 18
+	 */
 	static get SDK_VER() { return ((this.NODE_VER_MAJOR < 18) ? "V2" : "V3"); }
+
+	/**
+	 * @returns {string} AWS Region
+	 */
 	static get REGION() { return ( this.region ); }
+
+	/**
+	 * @returns {boolean} True if using AWS SDK v2
+	 */
 	static get SDK_V2() { return (this.SDK_VER === "V2"); }
+
+	/**
+	 * @returns {boolean} True if using AWS SDK v3
+	 */
 	static get SDK_V3() { return (this.SDK_VER === "V3"); }
 
+	/**
+	 * @returns {object} Information about the current Node.js and AWS environment
+	 */
 	static get INFO() { 
 		return ( {
 			NODE_VER: this.NODE_VER,
@@ -149,6 +215,10 @@ class AWS {
 		});
 	}
 
+	/**
+	 * @private
+	 * @returns {object} SDK v3 objects
+	 */
 	static #SDK = (
 		function(){
 
@@ -209,6 +279,9 @@ class AWS {
 		}
 	)();
 	
+	/**
+	 * @returns {object} DynamoDB Document Client and functions for put, get, scan, delete, update
+	 */
 	static get dynamo() {
 		return {
 			client: this.#SDK.dynamo.client,
@@ -221,6 +294,9 @@ class AWS {
 		};
 	}
 
+	/**
+	 * @returns {object} S3 Client and functions for put, get
+	 */
 	static get s3() {
 		return {
 			client: this.#SDK.s3.client,
@@ -230,6 +306,9 @@ class AWS {
 		};
 	}
 
+	/**
+	 * @returns {object} SSM Client and functions for getByName, getByPath
+	 */
 	static get ssm() {
 		return {
 			client: this.#SDK.ssm.client,
@@ -239,6 +318,9 @@ class AWS {
 		};
 	}
 
+	/**
+	 * @returns {object} AWS X-Ray SDK
+	 */
 	static get XRay() {
 		return AWSXRay;
 	}

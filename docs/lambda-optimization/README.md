@@ -191,18 +191,24 @@ When you need data from multiple endpoints and the requests are independent, dis
 
 ```javascript
 // ❌ Sequential (slow) - each request waits for the previous
-const user = await endpoint.get(userConnection);
-const orders = await endpoint.get(ordersConnection);
-const inventory = await endpoint.get(inventoryConnection);
-// Total time: sum of all three requests
+async function fetchSequential() {
+  const user = await endpoint.get(userConnection);
+  const orders = await endpoint.get(ordersConnection);
+  const inventory = await endpoint.get(inventoryConnection);
+  // Total time: sum of all three requests
+  return { user, orders, inventory };
+}
 
 // ✅ Parallel (fast) - all requests run simultaneously
-const [user, orders, inventory] = await Promise.all([
-  endpoint.get(userConnection),
-  endpoint.get(ordersConnection),
-  endpoint.get(inventoryConnection)
-]);
-// Total time: longest single request
+async function fetchParallel() {
+  const [user, orders, inventory] = await Promise.all([
+    endpoint.get(userConnection),
+    endpoint.get(ordersConnection),
+    endpoint.get(inventoryConnection)
+  ]);
+  // Total time: longest single request
+  return { user, orders, inventory };
+}
 ```
 
 ### Async Initialization Pattern
@@ -233,25 +239,26 @@ exports.handler = async (event, context) => {
 Cache-data's cache operations are also async, allowing you to check cache while preparing other data:
 
 ```javascript
-// Start cache lookup immediately
-const cachePromise = cache.CacheData.get(cacheKey);
+async function fetchWithCache(cacheKey, connection, ttl) {
+  // Start cache lookup immediately
+  const cachePromise = cache.CacheData.get(cacheKey);
 
-// Prepare request while cache lookup runs
-const connection = Config.getConnection('api');
-const headers = prepareHeaders(event);
+  // Prepare request while cache lookup runs
+  const headers = prepareHeaders(event);
 
-// Wait for cache result
-const cached = await cachePromise;
+  // Wait for cache result
+  const cached = await cachePromise;
 
-if (cached.cache === 1) {
-  return cached.data; // Cache hit
+  if (cached.cache === 1) {
+    return cached.data; // Cache hit
+  }
+
+  // Cache miss - make request
+  const result = await endpoint.get(connection);
+  await cache.CacheData.set(cacheKey, result, ttl);
+
+  return result;
 }
-
-// Cache miss - make request
-const result = await endpoint.get(connection);
-await cache.CacheData.set(cacheKey, result, ttl);
-
-return result;
 ```
 
 ### Best Practices for Async Operations

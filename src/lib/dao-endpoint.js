@@ -68,8 +68,7 @@ const tools = require("./tools/index.js");
  * The response body is automatically parsed as JSON if possible, otherwise returned as text.
  * 
  * @param {ConnectionObject} connection - Connection configuration object specifying the endpoint details
- * @param {Object} [query={}] - Additional query data to merge with connection parameters
- * @param {Object.<string, string|number|boolean>} [query.parameters] - Query string parameters to merge with connection.parameters
+ * @param {Object} [query={}] - Additional query data to merge with connection parameters. If query.parameters is provided, it will be merged with connection.parameters
  * @returns {Promise<{success: boolean, statusCode: number, body: Object|string|null, headers: Object}>} Response object containing success status, HTTP status code, parsed body, and response headers
  * @throws {Error} Throws an error if the request fails due to network issues or invalid configuration
  * 
@@ -153,8 +152,7 @@ class Endpoint {
 	 * connection.parameters. All connection properties are set with appropriate defaults.
 	 * 
 	 * @param {ConnectionObject} connection - Connection configuration object with endpoint details
-	 * @param {Object} [query={}] - Additional query data to merge with connection
-	 * @param {Object.<string, string|number|boolean>} [query.parameters] - Query parameters to merge with connection.parameters
+	 * @param {Object} [query={}] - Additional query data to merge with connection. If query.parameters is provided, it will be merged with connection.parameters
 	 * 
 	 * @example
 	 * // Basic constructor usage

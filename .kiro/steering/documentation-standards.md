@@ -372,16 +372,16 @@ npm install package-name
 
 ## Documentation
 
-- [Quick Start Guide](docs/00-quick-start-implementation/)
-- [Advanced Implementation](docs/01-advanced-implementation-for-web-service/)
-- [Features Documentation](docs/features/)
-- [Examples](docs/00-example-implementation/)
+- [Quick Start Guide](../../docs/00-quick-start-implementation/README.md)
+- [Advanced Implementation](../../docs/01-advanced-implementation-for-web-service/README.md)
+- [Features Documentation](../../docs/features/README.md)
+- [Examples](../../docs/00-example-implementation/README.md)
 
 ## Related Resources
 
-- [Changelog](CHANGELOG.md)
-- [Security Policy](SECURITY.md)
-- [Issues](link-to-issues)
+- [Changelog](../../CHANGELOG.md)
+- [Security Policy](../../SECURITY.md)
+- [Issues](https://github.com/63Klabs/cache-data/issues)
 
 ## License
 
@@ -421,7 +421,7 @@ npm install package-name
 ## API Reference
 
 See JSDoc documentation for detailed API information:
-- [ClassName](../../src/lib/module.js) - Link to source with JSDoc
+- [Cache Module](../../src/lib/dao-cache.js) - Link to source with JSDoc
 
 ## Common Patterns
 
@@ -442,8 +442,8 @@ See JSDoc documentation for detailed API information:
 
 ## Related Documentation
 
-- [Related Feature 1](../other-feature/)
-- [Related Feature 2](../another-feature/)
+- [Related Feature 1](../../docs/features/README.md)
+- [Related Feature 2](../../docs/features/README.md)
 ```
 
 ---

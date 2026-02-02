@@ -57,10 +57,11 @@ The `InMemoryCache` class provides the core caching functionality using JavaScri
 Each cache entry is stored as:
 
 ```javascript
-{
-  value: CacheDataFormat,  // The cached data
-  expiresAt: number        // Expiration timestamp in milliseconds
-}
+// Cache entry structure (conceptual representation)
+// {
+//   value: CacheDataFormat,  // The cached data
+//   expiresAt: number        // Expiration timestamp in milliseconds
+// }
 ```
 
 The `Map` key is the `idHash` (a hash of the request parameters), and the value is the entry object above.
@@ -196,71 +197,74 @@ The `Cache.read()` method integrates the L0_Cache into the existing cache flow:
 ### Flow Logic
 
 ```javascript
-async read() {
+// Pseudo-code representation of Cache.read() flow
+// Note: Private fields (#) shown for illustration - actual implementation in src/lib/dao-cache.js
+
+async function cacheRead() {
   // 1. Check if already loaded
-  if (this.#store !== null) return this.#store;
+  // if (this.#store !== null) return this.#store;
   
   let staleData = null;
   
   // 2. Check L0_Cache if enabled
-  if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null) {
-    const memResult = Cache.#inMemoryCache.get(this.#idHash);
-    
-    if (memResult.cache === 1) {
-      // Hit - return immediately
-      this.#store = memResult.data;
-      this.#status = Cache.STATUS_CACHE_IN_MEM;
-      tools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);
-      return this.#store;
-    } else if (memResult.cache === -1) {
-      // Expired - retain for fallback
-      staleData = memResult.data;
-      tools.DebugAndLog.debug(`In-memory cache expired, retaining stale data: ${this.#idHash}`);
-    }
-    // cache === 0 means miss, continue to DynamoDB
-  }
+  // if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null) {
+  //   const memResult = Cache.#inMemoryCache.get(this.#idHash);
+  //   
+  //   if (memResult.cache === 1) {
+  //     // Hit - return immediately
+  //     this.#store = memResult.data;
+  //     this.#status = Cache.STATUS_CACHE_IN_MEM;
+  //     tools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);
+  //     return this.#store;
+  //   } else if (memResult.cache === -1) {
+  //     // Expired - retain for fallback
+  //     staleData = memResult.data;
+  //     tools.DebugAndLog.debug(`In-memory cache expired, retaining stale data: ${this.#idHash}`);
+  //   }
+  //   // cache === 0 means miss, continue to DynamoDB
+  // }
   
   // 3. Fetch from DynamoDB
   try {
-    this.#store = await CacheData.read(this.#idHash, this.#syncedLaterTimestampInSeconds);
-    this.#status = (this.#store.cache.statusCode === null) ? 
-      Cache.STATUS_NO_CACHE : Cache.STATUS_CACHE;
+    // this.#store = await CacheData.read(this.#idHash, this.#syncedLaterTimestampInSeconds);
+    // this.#status = (this.#store.cache.statusCode === null) ? 
+    //   Cache.STATUS_NO_CACHE : Cache.STATUS_CACHE;
     
     // 4. Store in L0_Cache if successful
-    if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null && 
-        this.#store.cache.statusCode !== null) {
-      const expiresAt = this.#store.cache.expires * 1000; // Convert to milliseconds
-      Cache.#inMemoryCache.set(this.#idHash, this.#store, expiresAt);
-      tools.DebugAndLog.debug(`Stored in L0_Cache: ${this.#idHash}`);
-    }
+    // if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null && 
+    //     this.#store.cache.statusCode !== null) {
+    //   const expiresAt = this.#store.cache.expires * 1000; // Convert to milliseconds
+    //   Cache.#inMemoryCache.set(this.#idHash, this.#store, expiresAt);
+    //   tools.DebugAndLog.debug(`Stored in L0_Cache: ${this.#idHash}`);
+    // }
     
-    return this.#store;
+    // return this.#store;
   } catch (error) {
     // 5. Error handling with stale data fallback
-    if (staleData !== null) {
-      // Calculate new expiration using error extension
-      const newExpires = this.#syncedNowTimestampInSeconds + 
-        this.#defaultExpirationExtensionOnErrorInSeconds;
-      const newExpiresAt = newExpires * 1000;
-      
-      // Update stale data expiration
-      staleData.cache.expires = newExpires;
-      
-      // Store updated stale data back in L0_Cache
-      if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null) {
-        Cache.#inMemoryCache.set(this.#idHash, staleData, newExpiresAt);
-      }
-      
-      this.#store = staleData;
-      this.#status = Cache.STATUS_CACHE_ERROR;
-      tools.DebugAndLog.warn(`Returning stale data due to error: ${this.#idHash}`);
-      return this.#store;
-    }
+    // if (staleData !== null) {
+    //   // Calculate new expiration using error extension
+    //   const newExpires = this.#syncedNowTimestampInSeconds + 
+    //     this.#defaultExpirationExtensionOnErrorInSeconds;
+    //   const newExpiresAt = newExpires * 1000;
+    //   
+    //   // Update stale data expiration
+    //   staleData.cache.expires = newExpires;
+    //   
+    //   // Store updated stale data back in L0_Cache
+    //   if (Cache.#useInMemoryCache && Cache.#inMemoryCache !== null) {
+    //     Cache.#inMemoryCache.set(this.#idHash, staleData, newExpiresAt);
+    //   }
+    //   
+    //   this.#store = staleData;
+    //   this.#status = Cache.STATUS_CACHE_ERROR;
+    //   tools.DebugAndLog.warn(`Returning stale data due to error: ${this.#idHash}`);
+    //   return this.#store;
+    // }
     
     // No stale data available
-    this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
-    this.#status = Cache.STATUS_CACHE_ERROR;
-    return this.#store;
+    // this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
+    // this.#status = Cache.STATUS_CACHE_ERROR;
+    // return this.#store;
   }
 }
 ```
@@ -307,20 +311,25 @@ Cache.init({
 The initialization logic in `Cache.init()`:
 
 ```javascript
-// Initialize in-memory cache feature flag
-this.#useInMemoryCache = parameters.useInMemoryCache || 
-  (process.env.CACHE_USE_IN_MEMORY === 'true') || 
-  false;
+// Pseudo-code representation of Cache.init() initialization
+// Note: Private fields (#) shown for illustration - actual implementation in src/lib/dao-cache.js
 
-// Initialize InMemoryCache if enabled
-if (this.#useInMemoryCache) {
-  const InMemoryCache = require('./utils/InMemoryCache.js');
-  this.#inMemoryCache = new InMemoryCache({
-    maxEntries: parameters.inMemoryCacheMaxEntries,
-    entriesPerGB: parameters.inMemoryCacheEntriesPerGB,
-    defaultMaxEntries: parameters.inMemoryCacheDefaultMaxEntries
-  });
-  tools.DebugAndLog.debug('In-memory cache initialized');
+function cacheInit(parameters) {
+  // Initialize in-memory cache feature flag
+  // this.#useInMemoryCache = parameters.useInMemoryCache || 
+  //   (process.env.CACHE_USE_IN_MEMORY === 'true') || 
+  //   false;
+
+  // Initialize InMemoryCache if enabled
+  // if (this.#useInMemoryCache) {
+  //   const InMemoryCache = require('./utils/InMemoryCache.js');
+  //   this.#inMemoryCache = new InMemoryCache({
+  //     maxEntries: parameters.inMemoryCacheMaxEntries,
+  //     entriesPerGB: parameters.inMemoryCacheEntriesPerGB,
+  //     defaultMaxEntries: parameters.inMemoryCacheDefaultMaxEntries
+  //   });
+  //   tools.DebugAndLog.debug('In-memory cache initialized');
+  // }
 }
 ```
 
@@ -467,10 +476,10 @@ When extending the in-memory cache:
 Enable debug logging to trace cache behavior:
 
 ```javascript
-// In Cache.read()
-tools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);
-tools.DebugAndLog.debug(`In-memory cache expired, retaining stale data: ${this.#idHash}`);
-tools.DebugAndLog.debug(`Stored in L0_Cache: ${this.#idHash}`);
+// Example debug output from Cache.read()
+// tools.DebugAndLog.debug(`In-memory cache hit: ${this.#idHash}`);
+// tools.DebugAndLog.debug(`In-memory cache expired, retaining stale data: ${this.#idHash}`);
+// tools.DebugAndLog.debug(`Stored in L0_Cache: ${this.#idHash}`);
 ```
 
 Use `Cache.info()` to inspect cache state:

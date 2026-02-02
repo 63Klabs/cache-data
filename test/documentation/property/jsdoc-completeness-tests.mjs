@@ -31,6 +31,8 @@ function parseJSDoc(jsdocComment) {
 
 	let currentTag = null;
 	let descriptionLines = [];
+	let returnsBuffer = '';
+	let braceCount = 0;
 
 	for (const line of lines) {
 		// Skip comment markers
@@ -46,11 +48,23 @@ function parseJSDoc(jsdocComment) {
 			}
 			currentTag = 'param';
 		} else if (cleanLine.startsWith('@returns')) {
-			const match = cleanLine.match(/@returns\s+\{([^}]+)\}/);
-			if (match) {
-				result.returns = { type: match[1] };
-			}
+			// Start collecting @returns content (may span multiple lines with nested braces)
 			currentTag = 'returns';
+			returnsBuffer = cleanLine;
+			// Count braces to handle nested types like {{key: value}}
+			braceCount = (cleanLine.match(/\{/g) || []).length - (cleanLine.match(/\}/g) || []).length;
+			
+			// If braces are balanced on this line, parse immediately
+			if (braceCount === 0) {
+				const match = returnsBuffer.match(/@returns\s+\{([^}]+)\}/);
+				if (match) {
+					result.returns = { type: match[1] };
+				} else {
+					// No type annotation, just description
+					result.returns = { type: 'any' };
+				}
+				returnsBuffer = '';
+			}
 		} else if (cleanLine.startsWith('@example')) {
 			currentTag = 'example';
 			result.examples.push('');
@@ -64,6 +78,22 @@ function parseJSDoc(jsdocComment) {
 			// Description or continuation of current tag
 			if (currentTag === null) {
 				descriptionLines.push(cleanLine);
+			} else if (currentTag === 'returns' && braceCount > 0) {
+				// Continue collecting @returns content
+				returnsBuffer += ' ' + cleanLine;
+				braceCount += (cleanLine.match(/\{/g) || []).length - (cleanLine.match(/\}/g) || []).length;
+				
+				// If braces are now balanced, parse the complete @returns
+				if (braceCount === 0) {
+					// Extract type - everything between first { and last }
+					const typeMatch = returnsBuffer.match(/@returns\s+(\{[\s\S]*?\})\s*(.*)/);
+					if (typeMatch) {
+						result.returns = { type: typeMatch[1] };
+					} else {
+						result.returns = { type: 'any' };
+					}
+					returnsBuffer = '';
+				}
 			} else if (currentTag === 'example' && result.examples.length > 0) {
 				result.examples[result.examples.length - 1] += cleanLine + '\n';
 			}
@@ -77,7 +107,7 @@ function parseJSDoc(jsdocComment) {
 /**
  * Extract function/method signature from code
  * @param {string} code The function code
- * @returns {Object} Function signature with name and parameters
+ * @returns {Object|null} Function signature with name and parameters, or null if not found
  */
 function extractFunctionSignature(code) {
 	// Match various function patterns
@@ -92,11 +122,19 @@ function extractFunctionSignature(code) {
 		if (match) {
 			const name = match[1];
 			const paramsStr = match[2].trim();
-			const params = paramsStr ? paramsStr.split(',').map(p => {
+			
+			// If paramsStr is empty, return empty params array
+			if (!paramsStr || paramsStr.length === 0) {
+				return { name, params: [] };
+			}
+			
+			// Parse parameters
+			const params = paramsStr.split(',').map(p => {
 				// Extract parameter name, handling defaults and destructuring
 				const paramName = p.trim().split('=')[0].trim().split(':')[0].trim();
 				return paramName.replace(/[{}[\]]/g, '').split(',')[0].trim();
-			}) : [];
+			}).filter(p => p && p.length > 0);  // Filter out empty or falsy strings
+			
 			return { name, params };
 		}
 	}
@@ -123,27 +161,29 @@ describe("JSDoc Completeness - Property-Based Tests", () => {
 			const content = fs.readFileSync(cacheFilePath, 'utf-8');
 
 			// Extract all class definitions and their methods
-			const classPattern = /\/\*\*[\s\S]*?\*\/\s*class\s+(\w+)\s*\{[\s\S]*?\n\}/g;
-			const methodPattern = /\/\*\*[\s\S]*?\*\/\s*(?:static\s+)?(?:async\s+)?(\w+)\s*\([^)]*\)\s*\{/g;
-
+			const classPattern = /class\s+(\w+)\s*\{/g;
+			
 			let match;
 			const issues = [];
 
 			// Find all classes
 			while ((match = classPattern.exec(content)) !== null) {
 				const className = match[1];
-				const classBlock = match[0];
-
+				const classStartIndex = match.index;
+				
 				// Check if class is exported
 				const isExported = content.includes(`module.exports`) && 
-					(content.includes(className) || classBlock.includes('class ' + className));
+					(content.includes(className));
 
 				if (!isExported && !['S3Cache', 'DynamoDbCache', 'CacheData', 'Cache', 'CacheableDataAccess'].includes(className)) {
 					continue; // Skip non-exported classes
 				}
 
-				// Extract JSDoc for class
-				const classJSDocMatch = classBlock.match(/\/\*\*([\s\S]*?)\*\//);
+				// Find the JSDoc comment immediately before the class keyword
+				// Look backwards from the class position to find the JSDoc
+				const beforeClass = content.substring(Math.max(0, classStartIndex - 2000), classStartIndex);
+				const classJSDocMatch = beforeClass.match(/\/\*\*([\s\S]*?)\*\/\s*$/);
+				
 				if (classJSDocMatch) {
 					const jsdoc = parseJSDoc(classJSDocMatch[0]);
 					
@@ -156,38 +196,62 @@ describe("JSDoc Completeness - Property-Based Tests", () => {
 					if (jsdoc.examples.length === 0) {
 						issues.push(`${className}: Missing @example tag`);
 					}
+				} else {
+					issues.push(`${className}: Missing JSDoc comment for class`);
 				}
 
-				// Find all methods in this class
+				// Find the end of this class to create a class block
+				// Simple approach: find the next "class" or end of file
+				const nextClassMatch = classPattern.exec(content);
+				const classEndIndex = nextClassMatch ? nextClassMatch.index : content.length;
+				classPattern.lastIndex = classStartIndex + 1; // Reset to continue from current class
+				
+				const classBlock = content.substring(classStartIndex, classEndIndex);
+
+				// Find all methods in this class - use a more precise pattern
+				// Match JSDoc followed immediately by method declaration
+				const methodPattern = /\/\*\*([\s\S]*?)\*\/\s*(static\s+)?(async\s+)?(\w+)\s*\(([^)]*)\)\s*\{/g;
 				const methodMatches = [...classBlock.matchAll(methodPattern)];
+				
 				for (const methodMatch of methodMatches) {
-					const methodName = methodMatch[1];
+					const isStatic = methodMatch[2] !== undefined;
+					const isAsync = methodMatch[3] !== undefined;
+					const methodName = methodMatch[4];
+					const paramsStr = methodMatch[5];
 					
 					// Skip constructor and private methods
 					if (methodName === 'constructor' || methodName.startsWith('_') || methodName.startsWith('#')) {
 						continue;
 					}
 
-					// Extract JSDoc for method
-					const methodJSDocMatch = methodMatch[0].match(/\/\*\*([\s\S]*?)\*\//);
-					if (!methodJSDocMatch) {
-						issues.push(`${className}.${methodName}: Missing JSDoc comment`);
-						continue;
-					}
-
-					const jsdoc = parseJSDoc(methodJSDocMatch[0]);
-					const signature = extractFunctionSignature(methodMatch[0]);
+					// Parse JSDoc
+					const jsdocText = '/**' + methodMatch[1] + '*/';
+					const jsdoc = parseJSDoc(jsdocText);
+					
+					// Parse actual parameters from signature
+					const actualParams = paramsStr.trim() ? paramsStr.split(',').map(p => {
+						// Extract parameter name, handling defaults, destructuring, and optional params
+						let paramName = p.trim().split('=')[0].trim();
+						// Remove type annotations (TypeScript style, though this is JS)
+						paramName = paramName.split(':')[0].trim();
+						// Remove brackets for optional params
+						paramName = paramName.replace(/[\[\]]/g, '');
+						// Handle destructuring - just get the first identifier
+						if (paramName.includes('{') || paramName.includes('[')) {
+							paramName = paramName.replace(/[{}[\]]/g, '').split(',')[0].trim();
+						}
+						return paramName;
+					}).filter(p => p && p.length > 0) : [];
 
 					// Check for description
 					if (!jsdoc.description || jsdoc.description.length < 10) {
 						issues.push(`${className}.${methodName}: Missing or insufficient description`);
 					}
 
-					// Check for @param tags
-					if (signature && signature.params.length > 0) {
-						const nonOptionalParams = signature.params.filter(p => !p.includes('='));
-						if (jsdoc.params.length < nonOptionalParams.length) {
-							issues.push(`${className}.${methodName}: Missing @param tags (expected ${signature.params.length}, found ${jsdoc.params.length})`);
+					// Check for @param tags (only if method has parameters)
+					if (actualParams.length > 0) {
+						if (jsdoc.params.length < actualParams.length) {
+							issues.push(`${className}.${methodName}: Missing @param tags (expected ${actualParams.length}, found ${jsdoc.params.length})`);
 						}
 					}
 

@@ -135,49 +135,64 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 				const content = fs.readFileSync(filePath, 'utf-8');
 				const fileName = path.basename(filePath);
 
-				// Extract all functions and methods with JSDoc
-				const functionPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(\w+)\s*[=:]\s*(?:async\s+)?(?:function\s*)?\(([^)]*)\)\s*(?:=>)?\s*\{/g;
-				const methodPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(\w+)\s*\(([^)]*)\)\s*\{/g;
+				// Improved pattern that better matches JSDoc with their actual functions
+				// This pattern ensures we capture the complete function declaration including private/internal markers
+				const combinedPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:const\s+)?([_#]?\w+)\s*[=:]?\s*(?:async\s+)?(?:function\s*)?\(([^)]*)\)\s*(?:=>)?\s*\{/g;
 
 				let match;
-				const patterns = [functionPattern, methodPattern];
+				while ((match = combinedPattern.exec(content)) !== null) {
+					const jsdocComment = match[1];
+					const functionName = match[2];
+					const paramsStr = match[3] || '';
 
-				for (const pattern of patterns) {
-					while ((match = pattern.exec(content)) !== null) {
-						const jsdocComment = match[1];
-						const functionName = match[2];
-						const paramsStr = match[3] || '';
+					// Skip private methods, internal functions, and constructors
+					// These are intentionally not part of the public API
+					if (functionName.startsWith('_') || functionName.startsWith('#') || functionName === 'constructor') {
+						continue;
+					}
 
-						// Skip private methods and constructors
-						if (functionName.startsWith('_') || functionName.startsWith('#') || functionName === 'constructor') {
-							continue;
-						}
+					// Parse JSDoc
+					const jsdoc = parseJSDoc('/**' + jsdocComment + '*/');
 
-						// Parse JSDoc
-						const jsdoc = parseJSDoc('/**' + jsdocComment + '*/');
-
-						// Parse actual function parameters
-						const actualParams = paramsStr ? paramsStr.split(',').map(p => {
-							let paramName = p.trim().split('=')[0].trim();
-							// Remove type annotations
-							paramName = paramName.split(':')[0].trim();
-							// Remove brackets for optional params
-							paramName = paramName.replace(/[\[\]]/g, '');
-							// Handle destructuring
-							if (paramName.includes('{') || paramName.includes('[')) {
-								paramName = paramName.replace(/[{}[\]]/g, '').split(',')[0].trim();
+					// Parse actual function parameters
+					const actualParams = paramsStr ? paramsStr.split(',').map(p => {
+						let paramName = p.trim().split('=')[0].trim();
+						// Remove type annotations
+						paramName = paramName.split(':')[0].trim();
+						// Remove brackets for optional params
+						paramName = paramName.replace(/[\[\]]/g, '');
+						// Handle destructuring - extract first parameter name
+						if (paramName.includes('{') || paramName.includes('[')) {
+							// For destructured params, we consider the whole destructure as one param
+							// Extract the variable name if it's like "{ prop1, prop2 }"
+							const destructureMatch = paramName.match(/^[{\[]([^}\]]+)[}\]]/);
+							if (destructureMatch) {
+								// Return null for complex destructuring, filter out later
+								return null;
 							}
-							return paramName;
-						}).filter(p => p.length > 0) : [];
+						}
+						return paramName;
+					}).filter(p => p && p.length > 0) : [];
 
-						// Check for hallucinated parameters (in JSDoc but not in code)
-						if (jsdoc.params.length > 0) {
-							for (const jsdocParam of jsdoc.params) {
-								const paramName = jsdocParam.name;
-								// Check if this parameter exists in actual function signature
-								if (!actualParams.includes(paramName)) {
-									issues.push(`${fileName}:${functionName}: JSDoc documents parameter '${paramName}' that doesn't exist in function signature`);
+					// Check for hallucinated parameters (in JSDoc but not in code)
+					if (jsdoc.params.length > 0) {
+						for (const jsdocParam of jsdoc.params) {
+							const paramName = jsdocParam.name;
+							
+							// Handle nested parameter documentation (e.g., options.property)
+							// These are valid and document properties of object parameters
+							if (paramName.includes('.')) {
+								const baseParam = paramName.split('.')[0];
+								if (!actualParams.includes(baseParam)) {
+									issues.push(`${fileName}:${functionName}: JSDoc documents nested parameter '${paramName}' but base parameter '${baseParam}' doesn't exist in function signature`);
 								}
+								// If base param exists, nested documentation is valid
+								continue;
+							}
+							
+							// Check if this parameter exists in actual function signature
+							if (!actualParams.includes(paramName)) {
+								issues.push(`${fileName}:${functionName}: JSDoc documents parameter '${paramName}' that doesn't exist in function signature`);
 							}
 						}
 					}
@@ -198,8 +213,8 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 			const content = fs.readFileSync(cacheFilePath, 'utf-8');
 			const issues = [];
 
-			// Extract all class methods with JSDoc
-			const methodPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(\w+)\s*\(([^)]*)\)\s*\{/g;
+			// Improved pattern that captures private/internal functions correctly
+			const methodPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
 
 			let match;
 			while ((match = methodPattern.exec(content)) !== null) {
@@ -207,7 +222,7 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 				const methodName = match[2];
 				const paramsStr = match[3].trim();
 
-				// Skip private methods and constructors
+				// Skip private methods, internal functions, and constructors
 				if (methodName.startsWith('_') || methodName.startsWith('#') || methodName === 'constructor') {
 					continue;
 				}
@@ -224,15 +239,29 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 					paramName = paramName.replace(/[\[\]]/g, '');
 					// Handle destructuring
 					if (paramName.includes('{') || paramName.includes('[')) {
-						paramName = paramName.replace(/[{}[\]]/g, '').split(',')[0].trim();
+						// Skip complex destructuring for now
+						const destructureMatch = paramName.match(/^[{\[]([^}\]]+)[}\]]/);
+						if (destructureMatch) {
+							return null;
+						}
 					}
 					return paramName;
-				}).filter(p => p.length > 0) : [];
+				}).filter(p => p && p.length > 0) : [];
 
 				// Check for hallucinated parameters (in JSDoc but not in code)
 				if (jsdoc.params.length > 0) {
 					for (const jsdocParam of jsdoc.params) {
 						const paramName = jsdocParam.name;
+						
+						// Handle nested parameter documentation (e.g., options.property)
+						if (paramName.includes('.')) {
+							const baseParam = paramName.split('.')[0];
+							if (!actualParams.includes(baseParam)) {
+								issues.push(`dao-cache.js:${methodName}: JSDoc documents nested parameter '${paramName}' but base parameter '${baseParam}' doesn't exist in function signature`);
+							}
+							continue;
+						}
+						
 						// Check if this parameter exists in actual function signature
 						if (!actualParams.includes(paramName)) {
 							issues.push(`dao-cache.js:${methodName}: JSDoc documents parameter '${paramName}' that doesn't exist in function signature`);
@@ -255,8 +284,8 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 			const content = fs.readFileSync(endpointFilePath, 'utf-8');
 			const issues = [];
 
-			// Extract all functions and methods with JSDoc
-			const functionPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:function\s+)?(\w+)\s*\(([^)]*)\)\s*\{/g;
+			// Improved pattern that captures private/internal functions correctly
+			const functionPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:function\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
 
 			let match;
 			while ((match = functionPattern.exec(content)) !== null) {
@@ -281,15 +310,29 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 					paramName = paramName.replace(/[\[\]]/g, '');
 					// Handle destructuring
 					if (paramName.includes('{') || paramName.includes('[')) {
-						paramName = paramName.replace(/[{}[\]]/g, '').split(',')[0].trim();
+						// Skip complex destructuring for now
+						const destructureMatch = paramName.match(/^[{\[]([^}\]]+)[}\]]/);
+						if (destructureMatch) {
+							return null;
+						}
 					}
 					return paramName;
-				}).filter(p => p.length > 0) : [];
+				}).filter(p => p && p.length > 0) : [];
 
 				// Check for hallucinated parameters (in JSDoc but not in code)
 				if (jsdoc.params.length > 0) {
 					for (const jsdocParam of jsdoc.params) {
 						const paramName = jsdocParam.name;
+						
+						// Handle nested parameter documentation (e.g., options.property)
+						if (paramName.includes('.')) {
+							const baseParam = paramName.split('.')[0];
+							if (!actualParams.includes(baseParam)) {
+								issues.push(`dao-endpoint.js:${functionName}: JSDoc documents nested parameter '${paramName}' but base parameter '${baseParam}' doesn't exist in function signature`);
+							}
+							continue;
+						}
+						
 						// Check if this parameter exists in actual function signature
 						if (!actualParams.includes(paramName)) {
 							issues.push(`dao-endpoint.js:${functionName}: JSDoc documents parameter '${paramName}' that doesn't exist in function signature`);
@@ -312,8 +355,8 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 			const content = fs.readFileSync(indexFilePath, 'utf-8');
 			const issues = [];
 
-			// Extract all functions and methods with JSDoc
-			const functionPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:function\s+)?(\w+)\s*\(([^)]*)\)\s*\{/g;
+			// Improved pattern that captures private/internal functions correctly
+			const functionPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:function\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
 
 			let match;
 			while ((match = functionPattern.exec(content)) !== null) {
@@ -338,15 +381,29 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 					paramName = paramName.replace(/[\[\]]/g, '');
 					// Handle destructuring
 					if (paramName.includes('{') || paramName.includes('[')) {
-						paramName = paramName.replace(/[{}[\]]/g, '').split(',')[0].trim();
+						// Skip complex destructuring for now
+						const destructureMatch = paramName.match(/^[{\[]([^}\]]+)[}\]]/);
+						if (destructureMatch) {
+							return null;
+						}
 					}
 					return paramName;
-				}).filter(p => p.length > 0) : [];
+				}).filter(p => p && p.length > 0) : [];
 
 				// Check for hallucinated parameters (in JSDoc but not in code)
 				if (jsdoc.params.length > 0) {
 					for (const jsdocParam of jsdoc.params) {
 						const paramName = jsdocParam.name;
+						
+						// Handle nested parameter documentation (e.g., options.property)
+						if (paramName.includes('.')) {
+							const baseParam = paramName.split('.')[0];
+							if (!actualParams.includes(baseParam)) {
+								issues.push(`src/index.js:${functionName}: JSDoc documents nested parameter '${paramName}' but base parameter '${baseParam}' doesn't exist in function signature`);
+							}
+							continue;
+						}
+						
 						// Check if this parameter exists in actual function signature
 						if (!actualParams.includes(paramName)) {
 							issues.push(`src/index.js:${functionName}: JSDoc documents parameter '${paramName}' that doesn't exist in function signature`);

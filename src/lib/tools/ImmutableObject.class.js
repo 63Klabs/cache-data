@@ -3,6 +3,45 @@ const { safeClone } = require('./utils');
 /**
  * Create an object that is able to return a copy and not
  * a reference to its properties.
+ * @example
+ * // Create an immutable object
+ * const config = new ImmutableObject({
+ *   apiKey: 'secret-key',
+ *   timeout: 5000,
+ *   retries: 3
+ * });
+ * 
+ * // Lock it to prevent changes
+ * config.finalize();
+ * 
+ * // Get a copy (not a reference)
+ * const configCopy = config.get();
+ * configCopy.apiKey = 'modified'; // Original is unchanged
+ * 
+ * @example
+ * // Create and finalize immediately
+ * const settings = new ImmutableObject({
+ *   database: { host: 'localhost', port: 5432 },
+ *   cache: { ttl: 300 }
+ * }, true);
+ * 
+ * // Get nested values
+ * const dbConfig = settings.get('database');
+ * console.log(dbConfig); // { host: 'localhost', port: 5432 }
+ * 
+ * @example
+ * // Use for connection configurations
+ * const connections = new ImmutableObject({
+ *   api: { host: 'api.example.com', path: '/v1' },
+ *   auth: { host: 'auth.example.com', path: '/oauth' }
+ * });
+ * 
+ * connections.finalize();
+ * 
+ * // Each get() returns a fresh copy
+ * const apiConn1 = connections.get('api');
+ * const apiConn2 = connections.get('api');
+ * apiConn1.path = '/v2'; // apiConn2 is unaffected
  */
 class ImmutableObject {
 

@@ -13,6 +13,44 @@ const ImmutableObject = require("./ImmutableObject.class");
  * Processes the request from the event data. Parses out
  * client details such as ip and user agent. May be extended
  * to provide custom processing for the application.
+ * @example
+ * // Basic usage in Lambda handler
+ * exports.handler = async (event, context) => {
+ *   const requestInfo = new RequestInfo(event);
+ *   
+ *   // Get client information
+ *   const userAgent = requestInfo.getClientUserAgent();
+ *   const clientIP = requestInfo.getClientIP();
+ *   const referer = requestInfo.getClientReferer();
+ *   
+ *   console.log(`Request from ${clientIP} using ${userAgent}`);
+ *   
+ *   // Check if request is valid
+ *   if (!requestInfo.isValid()) {
+ *     return { statusCode: 400, body: 'Invalid request' };
+ *   }
+ *   
+ *   // Process request...
+ * };
+ * 
+ * @example
+ * // Extend RequestInfo for custom processing
+ * class CustomRequestInfo extends RequestInfo {
+ *   constructor(event) {
+ *     super(event);
+ *     // Add custom processing
+ *   }
+ *   
+ *   getCustomData() {
+ *     return this.get('client');
+ *   }
+ * }
+ * 
+ * @example
+ * // Get request data as object
+ * const requestInfo = new RequestInfo(event);
+ * const fullData = requestInfo.toObject(true); // Include sensitive data
+ * const safeData = requestInfo.toObject(); // Sensitive data stripped
  */
 class RequestInfo {
 

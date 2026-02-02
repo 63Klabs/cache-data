@@ -92,6 +92,22 @@ class _ConfigSuperClass {
 	static _connections = null;
 	static _settings = null;
 
+	/**
+	 * Get the application settings object
+	 * 
+	 * Returns the settings object that was initialized during Config.init(). 
+	 * This typically contains application-specific configuration values loaded 
+	 * from parameter store, environment variables, or other sources.
+	 * 
+	 * @returns {object|null} Settings object containing application configuration, or null if not initialized
+	 * @example
+	 * // Access application settings
+	 * const settings = Config.settings();
+	 * if (settings) {
+	 *   console.log('App version:', settings.version);
+	 *   console.log('Environment:', settings.environment);
+	 * }
+	 */
 	static settings() {
 		return _ConfigSuperClass._settings;
 	};

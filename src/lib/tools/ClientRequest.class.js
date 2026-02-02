@@ -7,6 +7,42 @@ const { safeClone } = require('./utils');
 /**
  * Extends RequestInfo
  * Can be used to create a custom ClientRequest object
+ * @example
+ * // Initialize ClientRequest with validations
+ * ClientRequest.init({
+ *   validations: {
+ *     referrers: ['example.com', 'myapp.com'],
+ *     parameters: {
+ *       queryStringParameters: {
+ *         limit: (value) => !isNaN(value) && value > 0 && value <= 100,
+ *         page: (value) => !isNaN(value) && value > 0
+ *       },
+ *       pathParameters: {
+ *         id: (value) => /^[a-zA-Z0-9-]+$/.test(value)
+ *       }
+ *     }
+ *   }
+ * });
+ * 
+ * @example
+ * // Use in Lambda handler
+ * exports.handler = async (event, context) => {
+ *   const clientRequest = new ClientRequest(event, context);
+ *   
+ *   if (!clientRequest.isValid()) {
+ *     return { statusCode: 400, body: 'Invalid request' };
+ *   }
+ *   
+ *   const userId = clientRequest.getPathAt(1);
+ *   const queryParams = clientRequest.getQueryStringParameters();
+ *   
+ *   // Add logging for monitoring
+ *   clientRequest.addPathLog(`users/${userId}`);
+ *   clientRequest.addQueryLog(`limit=${queryParams.limit}`);
+ *   
+ *   // Process request...
+ *   return { statusCode: 200, body: 'Success' };
+ * };
  */
 class ClientRequest extends RequestInfo { 
 
@@ -84,8 +120,8 @@ class ClientRequest extends RequestInfo {
 	 * This is used to initialize the ClientRequest class for all requests.
 	 * Add ClientRequest.init(options) to the Config.init process or at the
 	 * top of the main index.js file outside of the handler.
-	 * @param {Array<string>} options.validations.referrers An array of accepted referrers. String matching goes from right to left, so ['example.com'] will allow example.com and subdomain.example.com
-	 * @param {object} options.validations.parameters An object containing functions for validating request parameters (path, querystring, headers, cookies, etc).
+	 * @param {object} options - Configuration options with validations property containing referrers and parameters
+	 * @throws {Error} If options is not an object
 	 */
 	static init(options) {
 		if (typeof options === 'object') {
@@ -194,12 +230,8 @@ class ClientRequest extends RequestInfo {
 	}
 
 
-	/**
-	 * Utility function for getPathArray and getResourceArray
-	 * @param {array<string>} arr array to slice
-	 * @param {number} n number of elements to return
-	 * @returns {array<string>} array of elements
-	 */
+	// Utility function for getPathArray and getResourceArray
+	// Returns array slice based on n parameter
 	#getArray(arr, n = 0) {
 		if (n === 0 || arr.length <= n || (n < 0 && arr.length <= (n*-1))) {
 			return arr;

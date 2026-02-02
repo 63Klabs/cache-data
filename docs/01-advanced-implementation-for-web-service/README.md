@@ -385,10 +385,10 @@ async function route(clientRequest, response) {
 Organize routes into controller functions:
 
 ```javascript
-// users.controller.js
+// users.controller.js - Example 1: Basic controller
 const { tools } = require('@63klabs/cache-data');
 
-class UsersController {
+class UsersControllerBasic {
   
   static async list(clientRequest, response) {
     const queryParams = clientRequest.getQueryStringParameters();
@@ -517,23 +517,25 @@ The `Response` class provides comprehensive response handling with support for m
 const { tools } = require('@63klabs/cache-data');
 const { Response } = tools;
 
-// Create response
-const response = new Response(clientRequest);
+async function handleRequest(clientRequest, results) {
+  // Create response
+  const response = new Response(clientRequest);
 
-// Set status code
-response.setStatusCode(200);
+  // Set status code
+  response.setStatusCode(200);
 
-// Set body (automatically detects content type)
-response.setBody({ message: 'Success', data: results });
+  // Set body (automatically detects content type)
+  response.setBody({ message: 'Success', data: results });
 
-// Set headers
-response.setHeaders({ 'X-Custom-Header': 'value' });
+  // Set headers
+  response.setHeaders({ 'X-Custom-Header': 'value' });
 
-// Add individual header
-response.addHeader('Cache-Control', 'max-age=3600');
+  // Add individual header
+  response.addHeader('Cache-Control', 'max-age=3600');
 
-// Finalize and return
-return response.finalize();
+  // Finalize and return
+  return response.finalize();
+}
 ```
 
 ### Content Types
@@ -589,23 +591,25 @@ Build complex response structures with `ResponseDataModel`:
 const { tools } = require('@63klabs/cache-data');
 const { ResponseDataModel, Response } = tools;
 
-// Create response model with skeleton
-const dataModel = new ResponseDataModel({ 
-  users: [], 
-  metadata: { page: 1, total: 0 } 
-}, 'data');
+async function buildUserResponse(users, response) {
+  // Create response model with skeleton
+  const dataModel = new ResponseDataModel({ 
+    users: [], 
+    metadata: { page: 1, total: 0 } 
+  }, 'data');
 
-// Add items to array
-users.forEach(user => {
-  dataModel.addItemByKey(user, 'users');
-});
+  // Add items to array
+  users.forEach(user => {
+    dataModel.addItemByKey(user, 'users');
+  });
 
-// Add metadata
-dataModel.addItemByKey({ page: 1, total: users.length }, 'metadata');
+  // Add metadata
+  dataModel.addItemByKey({ page: 1, total: users.length }, 'metadata');
 
-// Set as response body
-response.setBody(dataModel.toObject());
-return response.finalize();
+  // Set as response body
+  response.setBody(dataModel.toObject());
+  return response.finalize();
+}
 ```
 
 ### Response with Nested Data
@@ -686,25 +690,27 @@ The `finalize()` method:
 - Logs the response to CloudWatch
 
 ```javascript
-// Finalize automatically handles:
-// - Content-Type detection
-// - CORS headers
-// - Cache-Control headers
-// - Execution time tracking
-// - CloudWatch logging
-return response.finalize();
+async function finalizeResponse(response) {
+  // Finalize automatically handles:
+  // - Content-Type detection
+  // - CORS headers
+  // - Cache-Control headers
+  // - Execution time tracking
+  // - CloudWatch logging
+  return response.finalize();
 
-// Returns:
-// {
-//   statusCode: 200,
-//   headers: {
-//     'Content-Type': 'application/json',
-//     'Access-Control-Allow-Origin': '*',
-//     'Cache-Control': 'max-age=3600',
-//     'x-exec-ms': '45'
-//   },
-//   body: '{"data":"value"}'
-// }
+  // Returns:
+  // {
+  //   statusCode: 200,
+  //   headers: {
+  //     'Content-Type': 'application/json',
+  //     'Access-Control-Allow-Origin': '*',
+  //     'Cache-Control': 'max-age=3600',
+  //     'x-exec-ms': '45'
+  //   },
+  //   body: '{"data":"value"}'
+  // }
+}
 ```
 
 ### Reset and Reuse
@@ -827,9 +833,10 @@ module.exports = UsersDAO;
 ### Using Custom DAO in Controllers
 
 ```javascript
+// Example 2: Controller with custom DAO
 const UsersDAO = require('./users.dao');
 
-class UsersController {
+class UsersControllerWithDAO {
   
   static async get(clientRequest, response) {
     try {
@@ -1152,10 +1159,11 @@ module.exports = UsersDAO;
 ### Users Controller (controllers/users.controller.js)
 
 ```javascript
+// Example 3: Full controller with DAO and logging
 const { tools } = require('@63klabs/cache-data');
 const UsersDAO = require('../dao/users.dao');
 
-class UsersController {
+class UsersControllerFull {
   
   static async list(clientRequest, response) {
     try {
@@ -1724,15 +1732,21 @@ responseObj.setBody(response.toObject());
 Add a health check endpoint:
 
 ```javascript
-// In router.js
-case 'GET:health':
-  response.setStatusCode(200);
-  response.setBody({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: process.env.APP_VERSION || '1.0.0'
-  });
-  return response.finalize();
+// In router.js - inside your switch statement
+async function handleRoute(route, response) {
+  switch(route) {
+    case 'GET:health':
+      response.setStatusCode(200);
+      response.setBody({ 
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: process.env.APP_VERSION || '1.0.0'
+      });
+      return response.finalize();
+    
+    // ... other cases
+  }
+}
 ```
 
 ### 10. Monitor and Optimize

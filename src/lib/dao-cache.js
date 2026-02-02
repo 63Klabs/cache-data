@@ -142,12 +142,16 @@ class S3Cache {
 	 * and ReadableStream response types from the AWS SDK, parsing the JSON
 	 * content into a usable object.
 	 * 
+	 * This method is used internally when reading cache data from S3 to convert
+	 * the raw response body into a usable JavaScript object.
+	 * 
 	 * @param {Buffer|ReadableStream} s3Body The S3 response body to convert
 	 * @returns {Promise<Object>} A parsed JSON object from the S3 body content
 	 * @throws {SyntaxError} If the body content is not valid JSON
 	 * @example
 	 * const s3Response = await tools.AWS.s3.get(params);
 	 * const dataObject = await S3Cache.s3BodyToObject(s3Response.Body);
+	 * console.log(dataObject); // { cache: { body: '...', headers: {...} } }
 	 */
 	static async s3BodyToObject(s3Body) {
 		let str = "";
@@ -622,9 +626,18 @@ class CacheData {
 	}
 
 	/**
-	 * Used in the init() method, based on the timeZoneForInterval and current
-	 * date, set the offset in minutes (offset from UTC taking into account
-	 * daylight savings time for that time zone)
+	 * Internal method to set the timezone offset in minutes from UTC. This method
+	 * is called during init() to calculate the offset based on the configured
+	 * timeZoneForInterval and the current date/time, accounting for daylight
+	 * saving time transitions.
+	 * 
+	 * The offset is stored as a negative value following POSIX conventions, where
+	 * positive offsets are west of UTC and negative offsets are east of UTC.
+	 * 
+	 * @private
+	 * @example
+	 * // Called internally during CacheData.init()
+	 * CacheData._setOffsetInMinutes();
 	 */
 	static _setOffsetInMinutes() {
 		this.#offsetInMinutes = ( -1 * moment.tz.zone(this.getTimeZoneForInterval()).utcOffset(Date.now())); // invert by *-1 because of POSIX
@@ -713,12 +726,25 @@ class CacheData {
 	};
 
 	/**
+	 * Internal method to process cached data retrieved from storage. Handles
+	 * S3 pointer resolution, decryption of private data, and formatting of
+	 * the cache response.
 	 * 
-	 * @param {string} idHash 
-	 * @param {Object} item 
-	 * @param {number} syncedNow 
-	 * @param {number} syncedLater 
-	 * @returns {Promise<{ body: string, headers: Object, expires: number, statusCode: string }>}
+	 * If the cached item is stored in S3 (indicated by objInS3 flag), this method
+	 * fetches the full data from S3. For private/encrypted data, it performs
+	 * decryption before returning.
+	 * 
+	 * @private
+	 * @param {string} idHash The unique identifier hash for the cache entry
+	 * @param {Object} item The cache item object from DynamoDB
+	 * @param {number} syncedNow Timestamp to use for immediate expiration on errors
+	 * @param {number} syncedLater Default expiration timestamp to use if cache is not found
+	 * @returns {Promise<{body: string|null, headers: Object|null, expires: number, statusCode: string|null}>} Processed cache data
+	 * @example
+	 * // Called internally by CacheData.read()
+	 * const now = Math.floor(Date.now() / 1000);
+	 * const later = now + 300;
+	 * const processed = await CacheData._process(idHash, item, now, later);
 	 */
 	static async _process(idHash, item, syncedNow, syncedLater) {
 		
@@ -1050,9 +1076,23 @@ class CacheData {
 	};
 
 	/**
+	 * Internal method to encrypt data classified as private. Uses the configured
+	 * encryption algorithm and secure data key to encrypt the provided text.
 	 * 
-	 * @param {string} text Data to encrypt
-	 * @returns {string} Encrypted data
+	 * This method generates a random initialization vector (IV) for each encryption
+	 * operation to ensure unique ciphertext even for identical plaintext. The IV
+	 * is returned along with the encrypted data.
+	 * 
+	 * Note: null values are substituted with "{{{null}}}" before encryption to
+	 * handle the edge case of null data.
+	 * 
+	 * @private
+	 * @param {string|null} text Data to encrypt
+	 * @returns {{iv: string, encryptedData: string}} Object containing the IV and encrypted data, both as hex strings
+	 * @example
+	 * // Called internally by CacheData.write()
+	 * const encrypted = CacheData._encrypt('sensitive data');
+	 * console.log(encrypted); // { iv: 'abc123...', encryptedData: 'def456...' }
 	 */
 	static _encrypt (text) {
 
@@ -1073,9 +1113,27 @@ class CacheData {
 	};
 	
 	/**
+	 * Internal method to decrypt data classified as private. Uses the configured
+	 * encryption algorithm and secure data key to decrypt the provided encrypted data.
 	 * 
-	 * @param {string} data Data to decrypt
-	 * @returns {string} Decrypted data
+	 * This method requires both the initialization vector (IV) and the encrypted data
+	 * that were produced by the _encrypt() method. It reverses the encryption process
+	 * to recover the original plaintext.
+	 * 
+	 * Note: The special value "{{{null}}}" is converted back to null after decryption
+	 * to handle the edge case of null data.
+	 * 
+	 * @private
+	 * @param {{iv: string, encryptedData: string, plainEncoding?: string, cryptEncoding?: string}} data Object containing encrypted data and IV
+	 * @param {string} data.iv The initialization vector as a hex string
+	 * @param {string} data.encryptedData The encrypted data as a hex string
+	 * @param {string} [data.plainEncoding] Optional plain text encoding (defaults to PLAIN_ENCODING)
+	 * @param {string} [data.cryptEncoding] Optional cipher text encoding (defaults to CRYPT_ENCODING)
+	 * @returns {string|null} Decrypted data as plaintext, or null if original data was null
+	 * @example
+	 * // Called internally by CacheData._process()
+	 * const decrypted = CacheData._decrypt({ iv: 'abc123...', encryptedData: 'def456...' });
+	 * console.log(decrypted); // 'sensitive data'
 	 */
 	static _decrypt (data) {
 		
@@ -1209,26 +1267,32 @@ class CacheData {
 	};
 
 	/**
-	 * We can set times and expirations on intervals, such as every
-	 * 15 seconds (mm:00, mm:15, mm:30, mm:45), every half hour 
-	 * (hh:00:00, hh:30:00), every hour (T00:00:00, T01:00:00), etc.
-	 * In some cases such as every 2 hours, the interval is calculated
-	 * from midnight in the timezone specified in timeZoneForInterval 
-	 * Spans of days (such as every two days (48 hours) or every three
-	 * days (72 hours) are calculated from midnight of the UNIX epoch
+	 * Calculate the interval-based expiration time for cache entries. This method
+	 * rounds up to the next interval boundary based on the specified interval duration.
+	 * 
+	 * Intervals can be set for various durations such as every 15 seconds (mm:00, mm:15,
+	 * mm:30, mm:45), every hour (T00:00:00, T01:00:00), etc. For intervals of 2+ hours,
+	 * calculations are based on midnight in the configured timeZoneForInterval. For
+	 * multi-day intervals (48+ hours), calculations are based on the UNIX epoch
 	 * (January 1, 1970).
 	 * 
-	 * When a timezone is set in timeZoneForInterval, then there is
-	 * a slight adjustment made so that the interval lines up with
-	 * midnight of the "local" time. For example, if an organization
-	 * is primarily located in the Central Time Zone (or their 
-	 * nightly batch jobs occur at GMT-05:00) then timeZoneForInterval
-	 * may be set to "America/Chicago" so that midnight in 
-	 * "America/Chicago" may be used for calculations. That keeps
-	 * every 4 hours on hours 00, 04, 08, 12, 16, etc.
-	 * @param {number} intervalInSeconds 
-	 * @param {number} timestampInSeconds 
-	 * @returns {number} Next interval in seconds
+	 * When a timezone is configured, the interval aligns with local midnight rather
+	 * than UTC midnight. For example, with timeZoneForInterval set to "America/Chicago",
+	 * a 4-hour interval will align to hours 00, 04, 08, 12, 16, 20 in Chicago time.
+	 * 
+	 * @param {number} intervalInSeconds The interval duration in seconds (e.g., 3600 for 1 hour)
+	 * @param {number} [timestampInSeconds=0] The timestamp to calculate from (0 = use current time)
+	 * @returns {number} The next interval boundary timestamp in seconds
+	 * @example
+	 * // Calculate next 15-minute interval
+	 * const now = Math.floor(Date.now() / 1000);
+	 * const nextInterval = CacheData.nextIntervalInSeconds(900, now); // 900 = 15 minutes
+	 * console.log(new Date(nextInterval * 1000)); // Next :00, :15, :30, or :45
+	 * 
+	 * @example
+	 * // Calculate next hourly interval (uses current time)
+	 * const nextHour = CacheData.nextIntervalInSeconds(3600);
+	 * console.log(new Date(nextHour * 1000)); // Next hour boundary
 	 */
 	static nextIntervalInSeconds(intervalInSeconds, timestampInSeconds = 0 ) {
 
@@ -1328,6 +1392,22 @@ class CacheData {
  *		conn, 
  *		daoQuery
  *	);
+ * 
+ * @example
+ * // Initialize the cache system
+ * Cache.init({
+ *   dynamoDbTable: 'my-cache-table',
+ *   s3Bucket: 'my-cache-bucket',
+ *   idHashAlgorithm: 'sha256'
+ * });
+ * 
+ * // Create a cache instance with connection and profile
+ * const connection = { host: 'api.example.com', path: '/data' };
+ * const cacheProfile = { 
+ *   defaultExpirationInSeconds: 300,
+ *   encrypt: true 
+ * };
+ * const cacheInstance = new Cache(connection, cacheProfile);
  */
 class Cache {
 
@@ -1450,6 +1530,7 @@ class Cache {
 	 * @param {number} parameters.DynamoDbMaxCacheSize_kb Can also be set with environment variable CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB
 	 * @param {number} parameters.purgeExpiredCacheEntriesAfterXHours Can also be set with environment variable CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS
 	 * @param {string} parameters.timeZoneForInterval Can also be set with environment variable CACHE_DATA_TIME_ZONE_FOR_INTERVAL
+	 * @throws {Error} If parameters is not an object or is null
 	 */
 	static init(parameters) {
 		// check if parameters is an object
@@ -1484,8 +1565,14 @@ class Cache {
 	};
 
 	/**
-	 * Returns all the common information such as hash algorithm, s3 bucket, 
-	 * dynamo db location, etc.
+	 * Get comprehensive configuration information about the Cache system.
+	 * Returns an object containing all configuration parameters including
+	 * the ID hash algorithm, DynamoDB table, S3 bucket, encryption settings,
+	 * size limits, timezone information, and in-memory cache status.
+	 * 
+	 * This method combines Cache-specific settings with CacheData configuration
+	 * to provide a complete view of the cache system configuration.
+	 * 
 	 * @returns {{
 	 * 		idHashAlgorithm: string,
 	 * 		dynamoDbTable: string, 
@@ -1495,8 +1582,16 @@ class Cache {
 	 * 		DynamoDbMaxCacheSize_kb: number,
 	 * 		purgeExpiredCacheEntriesAfterXHours: number,
 	 * 		timeZoneForInterval: string,
-	 * 		offsetInMinutes: number
-	 * }}
+	 * 		offsetInMinutes: number,
+	 * 		useInMemoryCache: boolean,
+	 * 		inMemoryCache?: Object
+	 * }} Configuration information object
+	 * @example
+	 * const info = Cache.info();
+	 * console.log(`Hash algorithm: ${info.idHashAlgorithm}`);
+	 * console.log(`DynamoDB table: ${info.dynamoDbTable}`);
+	 * console.log(`S3 bucket: ${info.s3Bucket.bucket}`);
+	 * console.log(`In-memory cache enabled: ${info.useInMemoryCache}`);
 	 */
 	static info() {
 		const info = Object.assign({ idHashAlgorithm: this.#idHashAlgorithm }, CacheData.info()); // merge into 1 object
@@ -1511,8 +1606,22 @@ class Cache {
 	};
 
 	/**
+	 * Test the interval calculation functionality by computing next intervals
+	 * for various durations. This method is useful for debugging and verifying
+	 * that interval-based cache expiration is working correctly with the
+	 * configured timezone.
 	 * 
-	 * @returns {object} Test data of nextIntervalInSeconds method
+	 * Returns an object containing the current cache configuration and test
+	 * results showing the next interval boundary for various durations from
+	 * 15 seconds to 120 hours (5 days).
+	 * 
+	 * @returns {{info: Object, tests: Object}} Object containing cache info and test results with next interval timestamps
+	 * @example
+	 * const testResults = Cache.testInterval();
+	 * console.log('Current time:', testResults.tests.start);
+	 * console.log('Next 15-second interval:', testResults.tests.sec_15);
+	 * console.log('Next hourly interval:', testResults.tests.min_60);
+	 * console.log('Next daily interval:', testResults.tests.hrs_24);
 	 */
 	static testInterval () {
 		let ts = CacheData.convertTimestampFromMilliToSeconds(Date.now());
@@ -1545,14 +1654,27 @@ class Cache {
 	};
 
 	/**
-	 * When testing a variable as a boolean, 0, false, and null are false,
-	 * but the string "false" is true. Since we can be dealing with JSON data,
-	 * query parameters, and strings coded as "false" we want to include the
-	 * string "false" as false.
-	 * This function only adds "false" to the list of values already considered
-	 * false by JavaScript
-	 * @param {*} value A value you want to turn to boolean
-	 * @returns {boolean} Does the value equal false according to JavaScript evaluation rules?
+	 * Convert a value to boolean with special handling for the string "false".
+	 * 
+	 * JavaScript's Boolean() function treats any non-empty string as true, including
+	 * the string "false". This method adds special handling for the string "false"
+	 * (case-insensitive) to return false, which is useful when dealing with JSON data,
+	 * query parameters, or configuration strings.
+	 * 
+	 * All other values are evaluated using JavaScript's standard Boolean() conversion.
+	 * 
+	 * @param {*} value A value to convert to boolean
+	 * @returns {boolean} The boolean representation of the value, with "false" string treated as false
+	 * @example
+	 * Cache.bool(true);      // true
+	 * Cache.bool(false);     // false
+	 * Cache.bool("true");    // true
+	 * Cache.bool("false");   // false (special handling)
+	 * Cache.bool("FALSE");   // false (case-insensitive)
+	 * Cache.bool(1);         // true
+	 * Cache.bool(0);         // false
+	 * Cache.bool(null);      // false
+	 * Cache.bool("");        // false
 	 */
 	static bool (value) {
 
@@ -1563,33 +1685,62 @@ class Cache {
 	};
 	
 	/**
-	 * Generate an etag based on an id and content body
-	 * @param {string} idHash Hashed content identifier. For web pages this a hash of host, path, query, etc.
-	 * @param {string} content Content. usually body and static headers
-	 * @returns {string} An etag specific to that content and id
+	 * Generate an ETag hash for cache validation. Creates a unique hash by combining
+	 * the cache ID hash with the content body. This is used for HTTP ETag headers to
+	 * enable conditional requests and cache validation.
+	 * 
+	 * This is a convenience wrapper around CacheData.generateEtag().
+	 * 
+	 * @param {string} idHash The unique identifier hash for the cache entry
+	 * @param {string} content The content body to include in the ETag calculation
+	 * @returns {string} A 10-character ETag hash
+	 * @example
+	 * const etag = Cache.generateEtag('abc123', '{"data":"value"}');
+	 * console.log(`ETag: ${etag}`); // e.g., "a1b2c3d4e5"
 	 */
 	static generateEtag(idHash, content) {
 		return CacheData.generateEtag(idHash, content);
 	};
 
 	/**
-	 * To make submitted key comparison easier against a standard set of keys,
-	 * lowercase keys in the object.
-	 * @param {object} objectWithKeys Object we want to lowercase keys on
-	 * @returns {object} Object with lowercase keys
+	 * Convert all keys in an object to lowercase. Useful for normalizing HTTP headers
+	 * or other key-value pairs for case-insensitive comparison.
+	 * 
+	 * This is a convenience wrapper around CacheData.lowerCaseKeys().
+	 * 
+	 * Note: If lowercasing keys causes a collision (e.g., "Content-Type" and "content-type"),
+	 * one value will overwrite the other.
+	 * 
+	 * @param {Object} objectWithKeys Object whose keys should be lowercased
+	 * @returns {Object} New object with all keys converted to lowercase
+	 * @example
+	 * const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' };
+	 * const normalized = Cache.lowerCaseKeys(headers);
+	 * console.log(normalized); // { 'content-type': 'application/json', 'cache-control': 'no-cache' }
 	 */
 	static lowerCaseKeys(objectWithKeys) {
 		return CacheData.lowerCaseKeys(objectWithKeys);
 	};
 
 	/**
-	 * Generate an internet formatted date such as those used in headers.
+	 * Generate an internet-formatted date string for use in HTTP headers.
+	 * Converts a Unix timestamp to the standard HTTP date format.
 	 * 
-	 * Example: "Wed, 28 Jul 2021 12:24:11 GMT"
+	 * This is a convenience wrapper around CacheData.generateInternetFormattedDate().
 	 * 
-	 * @param {number} timestamp Unix timestamp in seconds or milliseconds. 
-	 * @param {boolean} inMilliseconds Set to true if timestamp is in milliseconds. Default is false.
-	 * @returns {string} Formatted date/time such as Wed, 28 Jul 2021 12:24:11 GMT
+	 * Example output: "Wed, 28 Jul 2021 12:24:11 GMT"
+	 * 
+	 * @param {number} timestamp Unix timestamp (in seconds by default, or milliseconds if inMilliseconds is true)
+	 * @param {boolean} [inMilliseconds=false] Set to true if timestamp is in milliseconds
+	 * @returns {string} Internet-formatted date string (e.g., "Wed, 28 Jul 2021 12:24:11 GMT")
+	 * @example
+	 * const now = Math.floor(Date.now() / 1000);
+	 * const dateStr = Cache.generateInternetFormattedDate(now);
+	 * console.log(dateStr); // "Mon, 26 Jan 2026 15:30:45 GMT"
+	 * 
+	 * @example
+	 * const nowMs = Date.now();
+	 * const dateStr = Cache.generateInternetFormattedDate(nowMs, true);
 	 */
 	static generateInternetFormattedDate(timestamp, inMilliseconds = false) {
 		return CacheData.generateInternetFormattedDate(timestamp, inMilliseconds);
@@ -1635,6 +1786,24 @@ class Cache {
 	 * 
 	 * @param {Object|Array|string} idObject Object, Array, or string to hash. Object may contain a single value with a text string, or complex http request broken down into parts
 	 * @returns {string} A hash representing the object (Algorithm used is set in Cache object constructor)
+	 * @example
+	 * // Hash a simple object
+	 * const connection = { host: 'api.example.com', path: '/users' };
+	 * const hash = Cache.generateIdHash(connection);
+	 * console.log(hash); // "a1b2c3d4e5f6..."
+	 * 
+	 * @example
+	 * // Hash a complex request object
+	 * const requestObj = {
+	 *   query: { type: 'user', id: '123' },
+	 *   connection: { host: 'api.example.com', path: '/data' },
+	 *   cachePolicy: { ttl: 300 }
+	 * };
+	 * const hash = Cache.generateIdHash(requestObj);
+	 * 
+	 * @example
+	 * // Hash a simple string ID
+	 * const hash = Cache.generateIdHash('MYID-03-88493');
 	 */
 	static generateIdHash(idObject) {
 
@@ -1692,6 +1861,20 @@ class Cache {
 	 * @param {Array|string} identifierArrayOrString An array we wish to join together as an id. (also could be a string which we won't touch)
 	 * @param {string} glue The glue or delimiter to place between the array elements once it is in string form
 	 * @returns {string} The array in string form delimited by the glue.
+	 * @example
+	 * // Join array elements with default delimiter
+	 * const id = Cache.multipartId(['user', '123', 'profile']);
+	 * console.log(id); // "user-123-profile"
+	 * 
+	 * @example
+	 * // Use custom delimiter
+	 * const id = Cache.multipartId(['api', 'v2', 'users'], '/');
+	 * console.log(id); // "api/v2/users"
+	 * 
+	 * @example
+	 * // Pass a string (returns unchanged)
+	 * const id = Cache.multipartId('already-a-string');
+	 * console.log(id); // "already-a-string"
 	 */
 	static multipartId (identifierArrayOrString, glue = "-") {
 		let id = null;
@@ -1702,11 +1885,22 @@ class Cache {
 	};
 
 	/**
-	 * Uses Date.parse() but returns seconds instead of milliseconds.
-	 * Takes a date string (such as "2011-10-10T14:48:00") and returns the number of seconds since January 1, 1970, 00:00:00 UTC
-	 * @param {string} date 
-	 * @returns {number} The date in seconds since January 1, 1970, 00:00:00 UTC
-	*/
+	 * Convert a date string to a Unix timestamp in seconds. Uses Date.parse() to
+	 * parse the date string and converts the result from milliseconds to seconds.
+	 * 
+	 * This method is useful for converting HTTP date headers (like "Expires" or
+	 * "Last-Modified") into Unix timestamps for comparison and calculation.
+	 * 
+	 * @param {string} date Date string to parse (e.g., "2011-10-10T14:48:00" or "Wed, 28 Jul 2021 12:24:11 GMT")
+	 * @returns {number} The date in seconds since January 1, 1970, 00:00:00 UTC, or 0 if parsing fails
+	 * @example
+	 * const timestamp = Cache.parseToSeconds("2021-07-28T12:24:11Z");
+	 * console.log(timestamp); // 1627476251
+	 * 
+	 * @example
+	 * const timestamp = Cache.parseToSeconds("Wed, 28 Jul 2021 12:24:11 GMT");
+	 * console.log(timestamp); // 1627476251
+	 */
 	static parseToSeconds(date) {
 		let timestampInSeconds = 0;
 		try {
@@ -1738,6 +1932,16 @@ class Cache {
 	 * @param {number} intervalInSeconds 
 	 * @param {number} timestampInSeconds 
 	 * @returns {number} Next interval in seconds
+	 * @example
+	 * // Calculate next 15-minute interval
+	 * const now = Math.floor(Date.now() / 1000);
+	 * const next15Min = Cache.nextIntervalInSeconds(15 * 60, now);
+	 * console.log(new Date(next15Min * 1000)); // Next 15-minute boundary
+	 * 
+	 * @example
+	 * // Calculate next hourly interval
+	 * const nextHour = Cache.nextIntervalInSeconds(3600);
+	 * console.log(new Date(nextHour * 1000)); // Next hour boundary
 	 */
 	static nextIntervalInSeconds(intervalInSeconds, timestampInSeconds = 0) {
 		return CacheData.nextIntervalInSeconds(intervalInSeconds, timestampInSeconds);
@@ -1745,23 +1949,48 @@ class Cache {
 
 
 	/**
-	 * Calculate the number of Kilobytes in memory a String takes up.
-	 * This function first calculates the number of bytes in the String using
-	 * Buffer.byteLength() and then converts it to KB = (bytes / 1024)
-	 * @param {string} aString A string to calculate on
-	 * @param {string} encode What character encoding should be used? Default is "utf8"
-	 * @returns String size in estimated KB
+	 * Calculate the size of a string in kilobytes. Uses Buffer.byteLength() to
+	 * determine the byte size based on the specified character encoding, then
+	 * converts to KB (bytes / 1024).
+	 * 
+	 * This is a convenience wrapper around CacheData.calculateKBytes().
+	 * 
+	 * The result is rounded to 3 decimal places for precision (0.001 KB = 1 byte).
+	 * 
+	 * @param {string} aString The string to measure
+	 * @param {string} [encode='utf8'] Character encoding to use for byte calculation
+	 * @returns {number} String size in kilobytes, rounded to 3 decimal places
+	 * @example
+	 * const text = 'Hello, World!';
+	 * const sizeKB = Cache.calculateKBytes(text);
+	 * console.log(`Size: ${sizeKB} KB`);
+	 * 
+	 * @example
+	 * const largeText = 'x'.repeat(10000);
+	 * const sizeKB = Cache.calculateKBytes(largeText);
+	 * console.log(`Size: ${sizeKB} KB`); // ~9.766 KB
 	 */
 	static calculateKBytes ( aString, encode = CacheData.PLAIN_ENCODING ) {
 		return CacheData.calculateKBytes( aString, encode);
 	};
 
 	/**
-	 * Converts a comma delimited string or an array to an array with all
-	 * lowercase values. Can be used to pass a comma delimited string
-	 * for conversion to an array that will then be used as (lowercase) keys.
-	 * @param {string|Array} list 
-	 * @returns Array with lowercase values
+	 * Convert a comma-delimited string or array to an array with all lowercase values.
+	 * This method is useful for normalizing lists of header names or other identifiers
+	 * for case-insensitive comparison.
+	 * 
+	 * If an array is provided, it is first converted to a comma-delimited string,
+	 * then lowercased and split back into an array.
+	 * 
+	 * @param {string|Array.<string>} list Comma-delimited string or array to convert
+	 * @returns {Array.<string>} Array with all values converted to lowercase
+	 * @example
+	 * const headers = Cache.convertToLowerCaseArray('Content-Type,Cache-Control,ETag');
+	 * console.log(headers); // ['content-type', 'cache-control', 'etag']
+	 * 
+	 * @example
+	 * const headers = Cache.convertToLowerCaseArray(['Content-Type', 'Cache-Control']);
+	 * console.log(headers); // ['content-type', 'cache-control']
 	 */
 	static convertToLowerCaseArray(list) {
 
@@ -1775,15 +2004,43 @@ class Cache {
 	};
 
 	/**
-	 * Takes either a csv string or an Array. It will return an array
-	 * with lowercase values to be used as header keys
-	 * @param {string|Array} list 
-	 * @returns Array with lowercase values
+	 * Internal method to parse and normalize the headersToRetain configuration.
+	 * Converts either a comma-delimited string or array into an array of lowercase
+	 * header names that should be retained from the origin response.
+	 * 
+	 * @private
+	 * @param {string|Array.<string>} list Comma-delimited string or array of header names
+	 * @returns {Array.<string>} Array of lowercase header names to retain
+	 * @example
+	 * // Called internally during Cache constructor
+	 * const headers = this.#parseHeadersToRetain('Content-Type,Cache-Control');
+	 * // Returns: ['content-type', 'cache-control']
 	 */
 	#parseHeadersToRetain (list) {
 		return Cache.convertToLowerCaseArray(list);
 	};
 
+	/**
+	 * Get the cache profile configuration for this Cache instance.
+	 * Returns an object containing all the cache policy settings that were
+	 * configured when this Cache object was created.
+	 * 
+	 * @returns {{
+	 * 		overrideOriginHeaderExpiration: boolean,
+	 * 		defaultExpirationInSeconds: number,
+	 * 		defaultExpirationExtensionOnErrorInSeconds: number,
+	 * 		expirationIsOnInterval: boolean,
+	 * 		headersToRetain: Array<string>,
+	 * 		hostId: string,
+	 * 		pathId: string,
+	 * 		encrypt: boolean
+	 * }} Cache profile configuration object
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * const profile = cache.profile();
+	 * console.log(`Expiration: ${profile.defaultExpirationInSeconds}s`);
+	 * console.log(`Encrypted: ${profile.encrypt}`);
+	 */
 	profile () {
 		return {
 			overrideOriginHeaderExpiration: this.#overrideOriginHeaderExpiration,
@@ -1798,8 +2055,25 @@ class Cache {
 	};
 
 	/**
+	 * Read cached data from storage (DynamoDB and potentially S3). This method
+	 * first checks the in-memory cache (if enabled), then falls back to DynamoDB.
 	 * 
-	 * @returns {Promise<CacheDataFormat>}
+	 * If data is found in the in-memory cache and not expired, it is returned
+	 * immediately. Otherwise, data is fetched from DynamoDB and stored in the
+	 * in-memory cache for future requests.
+	 * 
+	 * This method is called automatically by CacheableDataAccess.getData() and
+	 * typically does not need to be called directly.
+	 * 
+	 * @returns {Promise<CacheDataFormat>} Formatted cache data with body, headers, expires, and statusCode
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * if (cache.needsRefresh()) {
+	 *   console.log('Cache miss or expired');
+	 * } else {
+	 *   console.log('Cache hit:', cache.getBody());
+	 * }
 	 */
 	async read () {
 
@@ -1877,6 +2151,39 @@ class Cache {
 
 	};
 
+	/**
+	 * Get diagnostic test data for this Cache instance. Returns an object containing
+	 * the results of calling various getter methods, useful for debugging and
+	 * verifying cache state.
+	 * 
+	 * This method is primarily for testing and debugging purposes.
+	 * 
+	 * @returns {{
+	 * 		get: CacheDataFormat,
+	 * 		getStatus: string,
+	 * 		getETag: string,
+	 * 		getLastModified: string,
+	 * 		getExpires: number,
+	 * 		getExpiresGMT: string,
+	 * 		getHeaders: Object,
+	 * 		getSyncedNowTimestampInSeconds: number,
+	 * 		getBody: string,
+	 * 		getIdHash: string,
+	 * 		getClassification: string,
+	 * 		needsRefresh: boolean,
+	 * 		isExpired: boolean,
+	 * 		isEmpty: boolean,
+	 * 		isPrivate: boolean,
+	 * 		isPublic: boolean,
+	 * 		currentStatus: string,
+	 * 		calculateDefaultExpires: number
+	 * }} Object containing test data from various cache methods
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const testData = cache.test();
+	 * console.log('Cache test data:', testData);
+	 */
 	test() {
 		return {
 			get: this.get(),
@@ -1901,40 +2208,86 @@ class Cache {
 	};
 
 	/**
+	 * Get the complete cache data object. Returns the internal cache store
+	 * containing the cached body, headers, expiration, and status code.
 	 * 
-	 * @returns {CacheDataFormat}
+	 * @returns {CacheDataFormat} The complete cache data object
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const data = cache.get();
+	 * console.log(data.cache.body);
+	 * console.log(data.cache.expires);
 	 */
 	get() {
 		return this.#store;
 	};
 
 	/**
+	 * Get the source status of the cache data. Returns a status string indicating
+	 * where the data came from and its current state.
 	 * 
-	 * @returns {string}
+	 * Possible values include:
+	 * - Cache.STATUS_NO_CACHE: No cached data exists
+	 * - Cache.STATUS_CACHE: Data from cache
+	 * - Cache.STATUS_CACHE_IN_MEM: Data from in-memory cache
+	 * - Cache.STATUS_EXPIRED: Cached data was expired
+	 * - Cache.STATUS_CACHE_SAME: Cache updated but content unchanged
+	 * - Cache.STATUS_ORIGINAL_NOT_MODIFIED: Origin returned 304 Not Modified
+	 * - Cache.STATUS_ORIGINAL_ERROR: Error fetching from origin
+	 * - Cache.STATUS_CACHE_ERROR: Error reading from cache
+	 * - Cache.STATUS_FORCED: Cache update was forced
+	 * 
+	 * @returns {string} The source status string
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * console.log(`Data source: ${cache.getSourceStatus()}`);
 	 */
 	getSourceStatus() {
 		return this.#status;
 	};
 
 	/**
+	 * Get the ETag header value from the cached data. The ETag is used for
+	 * cache validation and conditional requests.
 	 * 
-	 * @returns {string}
+	 * @returns {string|null} The ETag value, or null if not present
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const etag = cache.getETag();
+	 * console.log(`ETag: ${etag}`);
 	 */
 	getETag() {
 		return this.getHeader("etag");
 	};
 
 	/**
+	 * Get the Last-Modified header value from the cached data. This timestamp
+	 * indicates when the cached content was last modified at the origin.
 	 * 
-	 * @returns {string} The falue of the cached header field last-modified
+	 * @returns {string|null} The Last-Modified header value in HTTP date format, or null if not present
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const lastModified = cache.getLastModified();
+	 * console.log(`Last modified: ${lastModified}`);
 	 */
 	getLastModified() {
 		return this.getHeader("last-modified");
 	};
 
 	/**
+	 * Get the expiration timestamp of the cached data. Returns the Unix timestamp
+	 * (in seconds) when the cached data will expire.
 	 * 
-	 * @returns {number} Expiration timestamp in seconds
+	 * @returns {number} Expiration timestamp in seconds since Unix epoch, or 0 if no cache data
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const expires = cache.getExpires();
+	 * console.log(`Expires at: ${new Date(expires * 1000)}`);
 	 */
 	getExpires() {
 		let exp = (this.#store !== null) ? this.#store.cache.expires : 0;
@@ -1947,14 +2300,26 @@ class Cache {
 	 * Example: "Wed, 28 Jul 2021 12:24:11 GMT"
 	 * 
 	 * @returns {string} The expiration formated for use in headers. Same as expires header.
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const expiresGMT = cache.getExpiresGMT();
+	 * console.log(expiresGMT); // "Wed, 28 Jul 2021 12:24:11 GMT"
 	 */
 	getExpiresGMT() {
 		return this.getHeader("expires");
 	};
 
 	/**
+	 * Calculate the number of seconds remaining until the cached data expires.
+	 * Returns 0 if the cache is already expired or if there is no cached data.
 	 * 
-	 * @returns {number} The calculated number of seconds from now until expires
+	 * @returns {number} The number of seconds until expiration, or 0 if expired
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const secondsLeft = cache.calculateSecondsLeftUntilExpires();
+	 * console.log(`Cache expires in ${secondsLeft} seconds`);
 	 */
 	calculateSecondsLeftUntilExpires() {
 		let secondsLeftUntilExpires = this.getExpires() - CacheData.convertTimestampFromMilliToSeconds( Date.now() );
@@ -1964,59 +2329,120 @@ class Cache {
 	};
 
 	/**
-	 * Example: public, max-age=123456
-	 * @returns {string} The value for cache-control header
+	 * Generate the value for the Cache-Control HTTP header. Returns a string
+	 * containing the classification (public or private) and the max-age directive
+	 * based on the time remaining until expiration.
+	 * 
+	 * Example output: "public, max-age=3600" or "private, max-age=300"
+	 * 
+	 * @returns {string} The Cache-Control header value
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const cacheControl = cache.getCacheControlHeaderValue();
+	 * console.log(cacheControl); // "public, max-age=3600"
 	 */
 	getCacheControlHeaderValue() {
 		return this.getClassification() +", max-age="+this.calculateSecondsLeftUntilExpires();
 	};
 
 	/**
+	 * Get all HTTP headers from the cached data. Returns an object containing
+	 * all header key-value pairs that were stored with the cached content.
 	 * 
-	 * @returns {object|null} All the header key/value pairs for the cached object
+	 * @returns {Object|null} Object containing all cached headers, or null if no cache data
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const headers = cache.getHeaders();
+	 * console.log(headers['content-type']);
+	 * console.log(headers['etag']);
 	 */
 	getHeaders() {
 		return (this.#store !== null && "headers" in this.#store.cache) ? this.#store.cache.headers : null;
 	};
 
 	/**
+	 * Get the HTTP status code from the cached data. Returns the status code
+	 * that was stored when the data was originally cached.
 	 * 
-	 * @returns {string|null} The status code of the cache object
+	 * @returns {string|null} The HTTP status code (e.g., "200", "404"), or null if no cache data
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const statusCode = cache.getStatusCode();
+	 * console.log(`Status: ${statusCode}`); // "200"
 	 */
 	getStatusCode() {
 		return (this.#store !== null && "statusCode" in this.#store.cache) ? this.#store.cache.statusCode : null;
 	};
 
 	/**
+	 * Get the current error code for this cache instance. Returns a non-zero
+	 * error code if an error occurred during cache operations, or 0 if no error.
 	 * 
-	 * @returns {number} Current error code for this cache
+	 * Error codes are typically HTTP status codes (400+) that were encountered
+	 * when trying to refresh the cache from the origin.
+	 * 
+	 * @returns {number} The error code, or 0 if no error
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const errorCode = cache.getErrorCode();
+	 * if (errorCode >= 400) {
+	 *   console.log(`Error occurred: ${errorCode}`);
+	 * }
 	 */
 	getErrorCode() {
 		return this.#errorCode;
 	};
 
 	/**
-	 * Classification is used in the cache header to note how the data returned
-	 * should be treated in the cache. If it is private then it should be 
-	 * protected.
-	 * @returns {string} Based on whether the cache is stored as encrypted, returns "private" (encrypted) or "public" (not encrypted)
+	 * Get the classification of the cached data. Returns "private" if the data
+	 * is encrypted, or "public" if not encrypted.
+	 * 
+	 * This classification is used in the Cache-Control header to indicate how
+	 * the data should be treated by intermediate caches and proxies.
+	 * 
+	 * @returns {string} Either "private" (encrypted) or "public" (not encrypted)
+	 * @example
+	 * const cache = new Cache(connection, { encrypt: true });
+	 * console.log(cache.getClassification()); // "private"
+	 * 
+	 * const publicCache = new Cache(connection, { encrypt: false });
+	 * console.log(publicCache.getClassification()); // "public"
 	 */
 	getClassification() {
 		return (this.#encrypt ? Cache.PRIVATE : Cache.PUBLIC );
 	};
 
 	/**
+	 * Get the synchronized "now" timestamp in seconds. This timestamp is set when
+	 * the Cache object is created and remains constant throughout the cache operation,
+	 * providing a consistent time base for expiration calculations.
 	 * 
-	 * @returns {number} The timestamp in seconds of when the object was created and used for currency logic of the cache. (used as comparasion against expiration and for creating new expirations)
+	 * @returns {number} The timestamp in seconds when this Cache object was created
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * const now = cache.getSyncedNowTimestampInSeconds();
+	 * console.log(`Cache created at: ${new Date(now * 1000)}`);
 	 */
 	getSyncedNowTimestampInSeconds() {
 		return this.#syncedNowTimestampInSeconds;
 	};
 
 	/**
+	 * Get a specific header value from the cached data by key. Header keys are
+	 * case-insensitive (stored as lowercase).
 	 * 
-	 * @param {string} key The header key to access
-	 * @returns {string|number|null} The value assigned to the provided header key. null if it doesn't exist
+	 * @param {string} key The header key to retrieve (case-insensitive)
+	 * @returns {string|number|null} The header value, or null if the header doesn't exist
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const contentType = cache.getHeader('content-type');
+	 * const etag = cache.getHeader('ETag'); // Case-insensitive
+	 * console.log(`Content-Type: ${contentType}`);
 	 */
 	getHeader(key) {
 		let headers = this.getHeaders();
@@ -2024,9 +2450,25 @@ class Cache {
 	};
 
 	/**
+	 * Get the cached body content. Optionally parses JSON content into an object.
 	 * 
-	 * @param {boolean} parseBody If set to true then JSON decode will be used on the body before returning.
-	 * @returns {string|object|null} A string (as is) which could be encoded JSON but we want to leave it that way, an object if parseBody is set to true and it is parsable by JSON, or null if body is null
+	 * By default, returns the body as a string (which may be JSON-encoded). If
+	 * parseBody is true, attempts to parse the body as JSON and return an object.
+	 * If parsing fails, returns the original string.
+	 * 
+	 * @param {boolean} [parseBody=false] If true, parse JSON body into an object
+	 * @returns {string|Object|null} The body as a string, parsed object, or null if no cache data
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * 
+	 * // Get body as string
+	 * const bodyStr = cache.getBody();
+	 * console.log(bodyStr); // '{"data":"value"}'
+	 * 
+	 * // Get body as parsed object
+	 * const bodyObj = cache.getBody(true);
+	 * console.log(bodyObj.data); // 'value'
 	 */
 	getBody(parseBody = false) {
 		let body = (this.#store !== null) ? this.#store.cache.body : null;
@@ -2043,10 +2485,20 @@ class Cache {
 	};
 
 	/**
-	 * Returns a plain data response in the form of an object. If a full HTTP
-	 * response is needed use generateResponseForAPIGateway()
-	 * @param {boolean} parseBody If true we'll return body as object
-	 * @returns {{statusCode: string, headers: object, body: string|object}} a plain data response in the form of an object
+	 * Get a plain data response object containing the status code, headers, and body.
+	 * This is a simplified response format suitable for internal use.
+	 * 
+	 * For a full HTTP response suitable for API Gateway, use generateResponseForAPIGateway() instead.
+	 * 
+	 * @param {boolean} [parseBody=false] If true, parse JSON body into an object
+	 * @returns {{statusCode: string, headers: Object, body: string|Object}|null} Response object, or null if no cache data
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * const response = cache.getResponse();
+	 * console.log(response.statusCode); // "200"
+	 * console.log(response.headers['content-type']);
+	 * console.log(response.body);
 	 */
 	getResponse(parseBody = false) {
 		let response = null;
@@ -2063,9 +2515,28 @@ class Cache {
 	};
 
 	/**
+	 * Generate a complete HTTP response suitable for AWS API Gateway. This method
+	 * adds standard headers (CORS, Cache-Control, data source), handles conditional
+	 * requests (If-None-Match, If-Modified-Since), and formats the response according
+	 * to API Gateway requirements.
 	 * 
-	 * @param {object} parameters
-	 * @returns {{statusCode: string, headers: object, body: string}}
+	 * If the client's ETag or Last-Modified matches the cached data, returns a
+	 * 304 Not Modified response with no body.
+	 * 
+	 * @param {Object} parameters Configuration parameters for the response
+	 * @param {string} [parameters.ifNoneMatch] The If-None-Match header value from the client request
+	 * @param {string} [parameters.ifModifiedSince] The If-Modified-Since header value from the client request
+	 * @returns {{statusCode: string, headers: Object, body: string|null}} Complete HTTP response for API Gateway
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * 
+	 * const response = cache.generateResponseForAPIGateway({
+	 *   ifNoneMatch: event.headers['if-none-match'],
+	 *   ifModifiedSince: event.headers['if-modified-since']
+	 * });
+	 * 
+	 * return response; // Return to API Gateway
 	 */
 	generateResponseForAPIGateway( parameters ) {
 
@@ -2109,59 +2580,121 @@ class Cache {
 	};
 
 	/**
+	 * Get the unique identifier hash for this cache entry. This hash is generated
+	 * from the connection, data, and cache policy parameters and uniquely identifies
+	 * this specific cache entry.
 	 * 
-	 * @returns {string}
+	 * @returns {string} The unique cache identifier hash
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * const idHash = cache.getIdHash();
+	 * console.log(`Cache ID: ${idHash}`);
 	 */
 	getIdHash() {
 		return this.#idHash;
 	};
 
 	/**
+	 * Check if the cache needs to be refreshed. Returns true if the cache is
+	 * expired or empty, indicating that fresh data should be fetched from the origin.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if cache needs refresh, false otherwise
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * if (cache.needsRefresh()) {
+	 *   console.log('Fetching fresh data from origin');
+	 *   // Fetch and update cache
+	 * }
 	 */
 	needsRefresh() {
 		return (this.isExpired() || this.isEmpty());
 	};
 
 	/**
+	 * Check if the cached data has expired. Compares the expiration timestamp
+	 * with the current time to determine if the cache is still valid.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if cache is expired, false if still valid
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * if (cache.isExpired()) {
+	 *   console.log('Cache has expired');
+	 * }
 	 */
 	isExpired() {
 		return ( CacheData.convertTimestampFromSecondsToMilli(this.getExpires()) <= Date.now());
 	};
 
 	/**
+	 * Check if the cache is empty (no cached data exists). Returns true if there
+	 * is no cached data, indicating this is a cache miss.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if cache is empty, false if data exists
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * if (cache.isEmpty()) {
+	 *   console.log('Cache miss - no data found');
+	 * }
 	 */
 	isEmpty() {
 		return (this.#store.cache.statusCode === null);
 	};
 
 	/**
+	 * Check if the cache is configured for private (encrypted) storage.
+	 * Private caches encrypt data at rest for sensitive content.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if cache is private/encrypted, false otherwise
+	 * @example
+	 * const cache = new Cache(connection, { encrypt: true });
+	 * if (cache.isPrivate()) {
+	 *   console.log('Cache data is encrypted');
+	 * }
 	 */
 	isPrivate() {
 		return this.#encrypt;
 	};
 
 	/**
+	 * Check if the cache is configured for public (non-encrypted) storage.
+	 * Public caches do not encrypt data at rest.
 	 * 
-	 * @returns {boolean}
+	 * @returns {boolean} True if cache is public/non-encrypted, false otherwise
+	 * @example
+	 * const cache = new Cache(connection, { encrypt: false });
+	 * if (cache.isPublic()) {
+	 *   console.log('Cache data is not encrypted');
+	 * }
 	 */
 	isPublic() {
 		return !this.#encrypt;
 	};
 
 	/**
+	 * Extend the expiration time of the cached data. This method is used when
+	 * the origin returns a 304 Not Modified response or when an error occurs
+	 * fetching fresh data.
 	 * 
-	 * @param {string} reason Reason for extending, either Cache.STATUS_ORIGINAL_ERROR or Cache.STATUS_ORIGINAL_NOT_MODIFIED
-	 * @param {number} seconds 
-	 * @param {number} errorCode
-	 * @returns {Promise<boolean>}
+	 * If an error occurred (reason is STATUS_ORIGINAL_ERROR), the cache is extended
+	 * by defaultExpirationExtensionOnErrorInSeconds. Otherwise, it's extended by
+	 * the specified seconds or the default expiration time.
+	 * 
+	 * @param {string} reason Reason for extending: Cache.STATUS_ORIGINAL_ERROR or Cache.STATUS_ORIGINAL_NOT_MODIFIED
+	 * @param {number} [seconds=0] Number of seconds to extend (0 = use default)
+	 * @param {number} [errorCode=0] HTTP error code if extending due to error
+	 * @returns {Promise<boolean>} True if extension was successful, false otherwise
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * 
+	 * // Extend due to 304 Not Modified
+	 * await cache.extendExpires(Cache.STATUS_ORIGINAL_NOT_MODIFIED);
+	 * 
+	 * // Extend due to error
+	 * await cache.extendExpires(Cache.STATUS_ORIGINAL_ERROR, 0, 500);
 	 */
 	async extendExpires(reason, seconds = 0, errorCode = 0) {
 
@@ -2215,28 +2748,65 @@ class Cache {
 	};
 
 	/**
+	 * Calculate the default expiration timestamp for cached data. If expiration
+	 * is configured to use intervals, calculates the next interval boundary.
+	 * Otherwise, returns the synced later timestamp (now + default expiration).
 	 * 
-	 * @returns {number}
+	 * @returns {number} The default expiration timestamp in seconds
+	 * @example
+	 * const cache = new Cache(connection, { expirationIsOnInterval: true, defaultExpirationInSeconds: 3600 });
+	 * const expires = cache.calculateDefaultExpires();
+	 * console.log(`Default expiration: ${new Date(expires * 1000)}`);
 	 */
 	calculateDefaultExpires() {
 		return (this.#expirationIsOnInterval) ? Cache.nextIntervalInSeconds(this.#defaultExpirationInSeconds, this.#syncedNowTimestampInSeconds) : this.#syncedLaterTimestampInSeconds;
 	};
 
 	/**
+	 * Get the current status of the cache. Returns a status string indicating
+	 * the source and state of the cached data.
 	 * 
-	 * @returns {string}
+	 * This is an alias for getSourceStatus().
+	 * 
+	 * @returns {string} The cache status string
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * console.log(`Status: ${cache.getStatus()}`);
 	 */
 	getStatus() {
 		return this.#status;
 	};
 
 	/**
-	 * Store data in cache. Returns a representation of data stored in the cache
-	 * @param {object} body 
-	 * @param {object} headers Any headers you want to pass along, including last-modified, etag, and expires. Note that if expires is included as a header here, then it will override the expires paramter passed to .update()
-	 * @param {number} statusCode Status code of original request
-	 * @param {number} expires Expiration unix timestamp in seconds
+	 * Store data in cache. Updates the cache with new content, headers, status code,
+	 * and expiration time. This method handles header normalization, expiration
+	 * calculation, and writes the data to both DynamoDB and S3 (if needed).
+	 * 
+	 * The method automatically:
+	 * - Lowercases all header keys for consistency
+	 * - Retains specified headers from the origin response
+	 * - Generates ETag and Last-Modified headers if not present
+	 * - Calculates expiration based on origin headers or default settings
+	 * - Encrypts data if configured as private
+	 * - Routes large items to S3 storage
+	 * 
+	 * @param {string|Object} body The content body to cache (will be stringified if object)
+	 * @param {Object} headers HTTP headers from the origin response
+	 * @param {string|number} [statusCode=200] HTTP status code from the origin
+	 * @param {number} [expires=0] Expiration Unix timestamp in seconds (0 = calculate default)
+	 * @param {string|null} [status=null] Optional status override (e.g., Cache.STATUS_FORCED)
 	 * @returns {Promise<CacheDataFormat>} Representation of data stored in cache
+	 * @example
+	 * const cache = new Cache(connection, cacheProfile);
+	 * await cache.read();
+	 * 
+	 * // Update cache with fresh data
+	 * const body = JSON.stringify({ data: 'value' });
+	 * const headers = { 'content-type': 'application/json' };
+	 * await cache.update(body, headers, 200);
+	 * 
+	 * console.log(`Cache updated: ${cache.getStatus()}`);
 	 */
 	async update (body, headers, statusCode = 200, expires = 0, status = null) {
 
@@ -2379,11 +2949,33 @@ class CacheableDataAccess {
 
 	static #prevId = -1;
 
+	/**
+	 * Internal method to generate sequential IDs for logging and tracking cache requests.
+	 * Each call increments and returns the next ID in the sequence.
+	 * 
+	 * @private
+	 * @returns {string} The next sequential ID as a string
+	 * @example
+	 * // Called internally by CacheableDataAccess.getData()
+	 * const id = CacheableDataAccess.#getNextId(); // "0", "1", "2", etc.
+	 */
 	static #getNextId() {
 		this.#prevId++;
 		return ""+this.#prevId;
 	};
 
+	/**
+	 * Prime (refresh) runtime environment variables and cached secrets. This method
+	 * can be called to update values that may have changed since initialization.
+	 * 
+	 * This is a convenience wrapper around CacheData.prime().
+	 * 
+	 * @returns {Promise<boolean>} True if priming was successful, false if an error occurred
+	 * @example
+	 * // Prime before making cache requests
+	 * await CacheableDataAccess.prime();
+	 * const cache = await CacheableDataAccess.getData(cachePolicy, fetchFn, connection, data);
+	 */
 	static async prime() {
 		return CacheData.prime();
 	};
@@ -2392,49 +2984,40 @@ class CacheableDataAccess {
 	 * Data access object that will evaluate the cache and make a request to 
 	 * an endpoint to refresh.
 	 * 
-	 * @example
-	 * cachePolicy = {
-	 *		overrideOriginHeaderExpiration: true, 
-	 *		defaultExpirationInSeconds: 60,
-	 *		expirationIsOnInterval: true,
-	 *		headersToRetain: [],
-	 *		host: vars.policy.host,
-	 *		path: vars.policy.endpoint.path,
-	 *		encrypt: true
-	 *	}
-	 *
-	 *	connection = {
-	 *		method: vars.method,
-	 *		protocol: vars.protocol,
-	 *		host: vars.host,
-	 *		path: vars.path,
-	 *		parameters: vars.parameters,
-	 *		headers: vars.requestHeaders,
-	 *      options: {timeout: vars.timeout}
-	 *	}
-	 *
-	 * @param {object} cachePolicy A cache policy object.
-	 * @param {boolean} cachePolicy.overrideOriginHeaderExpiration
-	 * @param {number} cachePolicy.defaultExpirationInSeconds
-	 * @param {boolean} cachePolicy.expirationIsOnInterval
-	 * @param {Array|string} cachePolicy.headersToRetain
-	 * @param {string} cachePolicy.hostId
-	 * @param {string} cachePolicy.pathId
-	 * @param {boolean} cachePolicy.encrypt
-	 * @param {object} apiCallFunction The function to call in order to make the request. This function can call ANY datasource (file, http endpoint, etc) as long as it returns a DAO object
-	 * @param {object} connection A connection object that specifies an id, location, and connection details for the apiCallFunction to access data. If you have a Connection object pass conn.toObject()
-	 * @param {string} connection.method
-	 * @param {string} connection.protocol
-	 * @param {string} connection.host
-	 * @param {string} connection.path
-	 * @param {object} connection.parameters
-	 * @param {object} connection.headers
-	 * @param {string} connection.body For POST requests a body with data may be sent.
-	 * @param {object} connection.options
-	 * @param {number} connection.options.timeout Number in ms for request to time out
-	 * @param {object} data An object passed to the apiCallFunction as a parameter. Set to null if the apiCallFunction does not require a data param
-	 * @param {object} tags For logging. Do not include sensitive information.
+	 * @param {object} cachePolicy A cache policy object with properties: overrideOriginHeaderExpiration (boolean), defaultExpirationInSeconds (number), expirationIsOnInterval (boolean), headersToRetain (Array|string), hostId (string), pathId (string), encrypt (boolean)
+	 * @param {Function} apiCallFunction The function to call in order to make the request. This function can call ANY datasource (file, http endpoint, etc) as long as it returns a DAO object
+	 * @param {object} connection A connection object that specifies an id, location, and connection details for the apiCallFunction to access data. If you have a Connection object pass conn.toObject(). Properties: method (string), protocol (string), host (string), path (string), parameters (object), headers (object), body (string, for POST requests), options (object with timeout in ms)
+	 * @param {object} [data=null] An object passed to the apiCallFunction as a parameter. Set to null if the apiCallFunction does not require a data param
+	 * @param {object} [tags={}] For logging. Do not include sensitive information.
 	 * @returns {Promise<Cache>} A Cache object with either cached or fresh data.
+	 * @example
+	 * const cachePolicy = {
+	 *   overrideOriginHeaderExpiration: true, 
+	 *   defaultExpirationInSeconds: 60,
+	 *   expirationIsOnInterval: true,
+	 *   headersToRetain: [],
+	 *   hostId: 'api.example.com',
+	 *   pathId: '/users',
+	 *   encrypt: true
+	 * };
+	 *
+	 * const connection = {
+	 *   method: 'GET',
+	 *   protocol: 'https',
+	 *   host: 'api.example.com',
+	 *   path: '/users/123',
+	 *   parameters: {},
+	 *   headers: {},
+	 *   options: {timeout: 5000}
+	 * };
+	 *
+	 * const cache = await CacheableDataAccess.getData(
+	 *   cachePolicy,
+	 *   endpoint.get,
+	 *   connection,
+	 *   null,
+	 *   {path: 'users', id: '123'}
+	 * );
 	 */
 	static async getData(cachePolicy, apiCallFunction, connection, data = null, tags = {} ) {
 

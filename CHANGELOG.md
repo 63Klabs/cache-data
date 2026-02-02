@@ -8,30 +8,31 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break.
 
-## v1.3.6 (2025-02-xx)
+## v1.3.6 (unreleased)
 
 ### Enhancement
 
 - Added in-memory cache option for `Cache`. Even though concurrent functions will not be able to make use of another function's in memory cache, it will improve response time and lessen calls to DynamoDb.
 - Documentation has been enhanced and expanded
+- Added override for `"fast-xml-parser": ">=5.3.4"` to ensure no vulnerabilities during `npm install`.
 - Reduced internal use of JSON.parse() and JSON.stringify() to improve speed (1-2x improvement)
 - New `Config.getConnCacheProfile("myConnection", "myProfile")` method to get both `conn` and `cacheProfile` in one line rather than 3
 - New `Config.getConn("myConnection")` to get the connection object directly in one line rather than 2
 
 ```js
-// Config.getConnection('name') old:
+// OLD: Config.getConnection('name') object in 2 lines:
 const connection = Config.getConnection('myConnection');
 const conn = connection.toObject();
 
-// Config.getConn('name') new:
+// NEW: Config.getConn('name') in 1 line:
 const conn = Config.getConn('myConnection');
 
-// Get connection object and cache profile old:
+// OLD: Get connection object and cache profile in 3 lines:
 const connection = Config.getConnection('myConnection');
 const conn = connection.toObject();
 const cacheProfile = connection.getCacheProfile();
 
-// Get connection object and cache profile new:
+// NEW: Get connection object and cache profile in 1 line:
 const { conn, cacheProfile } = Config.getConnCacheProfile('myConnection', 'myProfile');
 ```
 

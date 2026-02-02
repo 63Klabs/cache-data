@@ -18,11 +18,24 @@ const Timer = require('./Timer.class');
  * https://aws.amazon.com/blogs/compute/using-the-aws-parameter-and-secrets-lambda-extension-to-cache-parameters-and-secrets/
  *************************************************************************** */
 
-/* ****************************************************************************
-	
-	
+/**
+ * @class CachedParameterSecrets - Container class for CachedParameterSecret objects
+ * @example
+ * // Create parameters and secrets
+ * const dbPassword = new CachedSSMParameter('/myapp/db/password');
+ * const apiKey = new CachedSecret('myapp-api-key');
+ * 
+ * // Prime all parameters and secrets before use
+ * await CachedParameterSecrets.prime();
+ * 
+ * // Get all names
+ * const names = CachedParameterSecrets.getNames();
+ * console.log(names); // ['/myapp/db/password', 'myapp-api-key']
+ * 
+ * // Get specific parameter
+ * const param = CachedParameterSecrets.get('/myapp/db/password');
+ * const value = await param.getValue();
  */
-
 class CachedParameterSecrets {
 	/** 
 	 * @typedef {Array<CachedParameterSecret>}
@@ -30,14 +43,14 @@ class CachedParameterSecrets {
 	static #cachedParameterSecrets = [];
 
 	/**
-	 * @param {CachedParameterSecret} The CachedParameterSecret object to add
+	 * @param {CachedParameterSecret} cachedParameterSecretObject - The CachedParameterSecret object to add
 	 */
 	static add (cachedParameterSecretObject) {
 		CachedParameterSecrets.#cachedParameterSecrets.push(cachedParameterSecretObject);
 	}
 
 	/**
-	 * @param {string} The Parameter name or Secret Id to locate
+	 * @param {string} name - The Parameter name or Secret Id to locate
 	 * @returns {CachedParameterSecret}
 	 */
 	static get (name) {
@@ -58,6 +71,9 @@ class CachedParameterSecrets {
 		return objects;
 	};
 
+	/**
+	 * @returns {object: Array<object>} An object containing an array of CachedParameterSecret.toObject()
+	 */
 	static toObject() {
 		// return an object of cachedParameterSecret.toObject()
 		return {objects: CachedParameterSecrets.toArray()};
@@ -124,7 +140,7 @@ class CachedParameterSecrets {
 }
 
 /**
- * Parent class to extend CachedSSMParameter and CachedSecret classes.
+ * @class CachedParameterSecret - Base class for CachedSSMParameter and CachedSecret
  * Accesses data through Systems Manager Parameter Store and Secrets Manager Lambda Extension
  * Since the Lambda Extension runs a localhost via http, it handles it's own http request. Also,
  * since the lambda extension needs time to boot during a cold start, it is not available during
@@ -355,6 +371,7 @@ class CachedParameterSecret {
 	 * The value comes back decrypted.
 	 * It will return the current, cached copy which may have expired.
 	 * @returns {string} The value of the Secret or Parameter
+	 * @throws {Error} If the secret is null or .get(), .getValue(), or .refresh() has not been called first
 	 */
 	sync_getValue() {
 		if (this.isValid()) {
@@ -455,7 +472,40 @@ class CachedParameterSecret {
 
 }
 
+/**
+ * CachedSSMParameter extends CachedParameterSecret and is used to retrieve parameters from AWS Systems Manager Parameter Store
+ * @extends CachedParameterSecret
+ * @example
+ * // Create a cached SSM parameter
+ * const dbPassword = new CachedSSMParameter('/myapp/db/password');
+ * 
+ * // Get the parameter value (async)
+ * const password = await dbPassword.getValue();
+ * console.log(password); // 'my-secret-password'
+ * 
+ * @example
+ * // Use with synchronous functions after priming
+ * const apiKey = new CachedSSMParameter('/myapp/api/key');
+ * 
+ * async function init() {
+ *   // Prime the parameter in the background
+ *   apiKey.prime();
+ *   
+ *   // Do other initialization work...
+ *   
+ *   // Ensure parameter is loaded before sync usage
+ *   await apiKey.prime();
+ *   
+ *   // Now safe to use in sync functions
+ *   const key = apiKey.sync_getValue();
+ *   return key;
+ * }
+ */
 class CachedSSMParameter extends CachedParameterSecret {
+	/**
+	 * Returns the URL path for the AWS Parameters and Secrets Lambda Extension to retrieve this SSM parameter
+	 * @returns {string} The URL path with encoded parameter name
+	 */
 	getPath() {
 		const uriEncodedSecret = encodeURIComponent(this.name);
 		return `/systemsmanager/parameters/get/?name=${uriEncodedSecret}&withDecryption=true`;
@@ -469,8 +519,49 @@ class CachedSSMParameter extends CachedParameterSecret {
 	}
 }
 
+/**
+ * CachedSecret extends CachedParameterSecret and is used to retrieve secrets from AWS Secrets Manager
+ * @extends CachedParameterSecret
+ * @example
+ * // Create a cached secret
+ * const dbCredentials = new CachedSecret('myapp-database-credentials');
+ * 
+ * // Get the secret value (async)
+ * const credentials = await dbCredentials.getValue();
+ * console.log(credentials); // '{"username":"admin","password":"secret"}'
+ * 
+ * @example
+ * // Use with JSON secrets
+ * const apiSecret = new CachedSecret('myapp-api-secret');
+ * 
+ * async function connectToAPI() {
+ *   const secretString = await apiSecret.getValue();
+ *   const secretData = JSON.parse(secretString);
+ *   
+ *   return {
+ *     apiKey: secretData.apiKey,
+ *     apiSecret: secretData.apiSecret
+ *   };
+ * }
+ * 
+ * @example
+ * // Prime multiple secrets at once
+ * const secret1 = new CachedSecret('secret-1');
+ * const secret2 = new CachedSecret('secret-2');
+ * 
+ * // Prime all secrets in parallel
+ * await CachedParameterSecrets.prime();
+ * 
+ * // Now all secrets are loaded and cached
+ * const value1 = secret1.sync_getValue();
+ * const value2 = secret2.sync_getValue();
+ */
 class CachedSecret extends CachedParameterSecret {
 
+	/**
+	 * Returns the URL path for the AWS Parameters and Secrets Lambda Extension to retrieve this secret
+	 * @returns {string} The URL path with encoded secret ID
+	 */
 	getPath() {
 		const uriEncodedSecret = encodeURIComponent(this.name);
 		return `/secretsmanager/get?secretId=${uriEncodedSecret}&withDecryption=true`;

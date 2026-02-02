@@ -90,19 +90,7 @@ class Response {
 	 * Initializes the Response class with custom settings and response templates.
 	 * Should be called once during application initialization, typically in Config.init() or at the top of index.js.
 	 * 
-	 * @param {Object} options - Configuration options
-	 * @param {Object} [options.settings] - General settings
-	 * @param {number} [options.settings.errorExpirationInSeconds] - Cache expiration time for error responses (default: 180)
-	 * @param {number} [options.settings.routeExpirationInSeconds] - Cache expiration time for successful responses (default: 0)
-	 * @param {string} [options.settings.contentType] - Default content type (use Response.CONTENT_TYPE values)
-	 * @param {Object} [options.jsonResponses] - Custom JSON response templates
-	 * @param {statusResponseObject} [options.jsonResponses.response200] - Template for 200 responses
-	 * @param {statusResponseObject} [options.jsonResponses.response404] - Template for 404 responses
-	 * @param {statusResponseObject} [options.jsonResponses.response500] - Template for 500 responses
-	 * @param {Object} [options.htmlResponses] - Custom HTML response templates
-	 * @param {Object} [options.xmlResponses] - Custom XML response templates
-	 * @param {Object} [options.rssResponses] - Custom RSS response templates
-	 * @param {Object} [options.textResponses] - Custom TEXT response templates
+	 * @param {Object} options - Configuration options with settings, jsonResponses, htmlResponses, xmlResponses, rssResponses, and textResponses properties
 	 * @returns {void}
 	 * @example
 	 * Response.init({
