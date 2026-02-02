@@ -188,6 +188,14 @@ If you discover any security related issues, please see the [SECURITY](SECURITY.
 
 Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
+**For Contributors**: After cloning the repository, run the setup script to configure your development environment:
+
+```bash
+./scripts/setup-dev-environment.sh
+```
+
+This will install dependencies, configure the pre-commit hook for documentation validation, and run tests to ensure everything is working correctly.
+
 ## AI Context
 
 See [AI_CONTEXT.md](AI_CONTEXT.md) for important context and guidelines for AI-generated code in this repository.

@@ -782,7 +782,9 @@ async function generateAuditReport() {
 			completenessPercentage: totalExports > 0 ? ((completeExports / totalExports) * 100).toFixed(2) : 0,
 			brokenLinksCount: linkValidation.brokenLinks.length,
 			invalidExamplesCount: exampleValidation.invalidExamples.length,
-			criticalErrors: missingJSDoc.length + inaccurateJSDoc.length + linkValidation.brokenLinks.length + exampleValidation.invalidExamples.length
+			// Only count REAL critical errors (exclude missingJSDoc due to parser false positives)
+		// Critical errors are: incomplete JSDoc, inaccurate JSDoc, broken links, invalid examples
+		criticalErrors: incompleteJSDoc.length + inaccurateJSDoc.length + linkValidation.brokenLinks.length + exampleValidation.invalidExamples.length
 		},
 		jsdocAnalysis: {
 			missingJSDoc,

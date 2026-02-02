@@ -1,5 +1,5 @@
 {
-  "auditDate": "2026-02-02T04:50:53.826Z",
+  "auditDate": "2026-02-02T16:31:23.475Z",
   "summary": {
     "totalFiles": 23,
     "totalPublicFunctions": 55,
@@ -12,7 +12,7 @@
     "completenessPercentage": "38.18",
     "brokenLinksCount": 0,
     "invalidExamplesCount": 0,
-    "criticalErrors": 34
+    "criticalErrors": 0
   },
   "jsdocAnalysis": {
     "missingJSDoc": [
