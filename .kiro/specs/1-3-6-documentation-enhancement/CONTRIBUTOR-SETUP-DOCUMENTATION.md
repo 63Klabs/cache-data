@@ -155,7 +155,7 @@ Potential enhancements for contributor experience:
 ## Related Documentation
 
 - [CONTRIBUTING.md](../../../CONTRIBUTING.md) - Full contribution guidelines
-- [Documentation Standards](.kiro/steering/documentation-standards.md) - Complete JSDoc requirements
+- [Documentation Standards](../../steering/documentation-standards.md) - Complete JSDoc requirements
 - [Pre-Commit Hook Fix](./PRE-COMMIT-HOOK-FIX.md) - Technical details of the hook fix
 - [Completion Summary](./COMPLETION-SUMMARY.md) - Overall documentation enhancement summary
 
