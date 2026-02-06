@@ -8,7 +8,11 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
-## v1.3.7 (unreleased)
+## v1.3.8 (unreleased)
+
+- Nothing yet
+
+## v1.3.7 (2026-02-06)
 
 ### Fixed
 - **Cache DAO Undefined Header Bug** [Spec: 1-3-7-cache-dao-fix](.kiro/specs/1-3-7-cache-dao-fix/) - Fixed production bug where undefined values were passed to HTTP headers, causing request failures with "Invalid value 'undefined' for header" errors
