@@ -15,23 +15,48 @@ const __dirname = path.dirname(__filename);
  */
 
 // CloudFormation YAML schema with custom tags
-const CF_SCHEMA = yaml.DEFAULT_SCHEMA.extend([
-	new yaml.Type('!Ref', { kind: 'scalar' }),
-	new yaml.Type('!GetAtt', { kind: 'scalar' }),
-	new yaml.Type('!Sub', { kind: 'scalar' }),
-	new yaml.Type('!Join', { kind: 'sequence' }),
-	new yaml.Type('!Select', { kind: 'sequence' }),
-	new yaml.Type('!Split', { kind: 'sequence' }),
-	new yaml.Type('!If', { kind: 'sequence' }),
-	new yaml.Type('!Equals', { kind: 'sequence' }),
-	new yaml.Type('!Not', { kind: 'sequence' }),
-	new yaml.Type('!And', { kind: 'sequence' }),
-	new yaml.Type('!Or', { kind: 'sequence' }),
-	new yaml.Type('!FindInMap', { kind: 'sequence' }),
-	new yaml.Type('!GetAZs', { kind: 'scalar' }),
-	new yaml.Type('!ImportValue', { kind: 'scalar' }),
-	new yaml.Type('!Base64', { kind: 'scalar' })
-]);
+// Compatible with both js-yaml v3 and v4
+let CF_SCHEMA;
+try {
+	// Try js-yaml v4 syntax first
+	const baseSchema = yaml.CORE_SCHEMA || yaml.DEFAULT_SCHEMA;
+	CF_SCHEMA = yaml.Schema.create([
+		new yaml.Type('!Ref', { kind: 'scalar' }),
+		new yaml.Type('!GetAtt', { kind: 'scalar' }),
+		new yaml.Type('!Sub', { kind: 'scalar' }),
+		new yaml.Type('!Join', { kind: 'sequence' }),
+		new yaml.Type('!Select', { kind: 'sequence' }),
+		new yaml.Type('!Split', { kind: 'sequence' }),
+		new yaml.Type('!If', { kind: 'sequence' }),
+		new yaml.Type('!Equals', { kind: 'sequence' }),
+		new yaml.Type('!Not', { kind: 'sequence' }),
+		new yaml.Type('!And', { kind: 'sequence' }),
+		new yaml.Type('!Or', { kind: 'sequence' }),
+		new yaml.Type('!FindInMap', { kind: 'sequence' }),
+		new yaml.Type('!GetAZs', { kind: 'scalar' }),
+		new yaml.Type('!ImportValue', { kind: 'scalar' }),
+		new yaml.Type('!Base64', { kind: 'scalar' })
+	]);
+} catch (e) {
+	// Fallback for js-yaml v3 syntax
+	CF_SCHEMA = yaml.DEFAULT_SCHEMA.extend([
+		new yaml.Type('!Ref', { kind: 'scalar' }),
+		new yaml.Type('!GetAtt', { kind: 'scalar' }),
+		new yaml.Type('!Sub', { kind: 'scalar' }),
+		new yaml.Type('!Join', { kind: 'sequence' }),
+		new yaml.Type('!Select', { kind: 'sequence' }),
+		new yaml.Type('!Split', { kind: 'sequence' }),
+		new yaml.Type('!If', { kind: 'sequence' }),
+		new yaml.Type('!Equals', { kind: 'sequence' }),
+		new yaml.Type('!Not', { kind: 'sequence' }),
+		new yaml.Type('!And', { kind: 'sequence' }),
+		new yaml.Type('!Or', { kind: 'sequence' }),
+		new yaml.Type('!FindInMap', { kind: 'sequence' }),
+		new yaml.Type('!GetAZs', { kind: 'scalar' }),
+		new yaml.Type('!ImportValue', { kind: 'scalar' }),
+		new yaml.Type('!Base64', { kind: 'scalar' })
+	]);
+}
 
 /**
  * Get all JavaScript example files
