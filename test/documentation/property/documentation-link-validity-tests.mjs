@@ -108,13 +108,13 @@ function resolveRelativePath(markdownFilePath, relativePath, repoRoot) {
 }
 
 /**
- * Check if a file exists
+ * Check if a file or directory exists
  * @param {string} filePath Path to check
- * @returns {boolean} True if file exists
+ * @returns {boolean} True if file or directory exists
  */
 function fileExists(filePath) {
   try {
-    return fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+    return fs.existsSync(filePath);
   } catch (e) {
     return false;
   }
@@ -134,8 +134,9 @@ function findMarkdownFiles(dir, fileList = []) {
     const stat = fs.statSync(filePath);
     
     if (stat.isDirectory()) {
-      // Skip node_modules and .git directories
-      if (file !== 'node_modules' && file !== '.git') {
+      // Skip node_modules, .git, and .kiro/steering directories
+      // Steering documents may contain example links that don't exist
+      if (file !== 'node_modules' && file !== '.git' && !filePath.includes('.kiro/steering')) {
         findMarkdownFiles(filePath, fileList);
       }
     } else if (file.endsWith('.md')) {

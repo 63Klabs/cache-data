@@ -2,13 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
-Proposed and upcoming changes may be found on [63Klabs/cache-data Issues](https://github.com/63Klabs/cache-data/issues).
+> **Note:** This project is still in beta. While every effort is made to prevent breaking changes, they may still occur. If after upgrading to a new version you experience any issue, please report the issue and go back to a previous version until a fix is released.
+
+To report an issue, or to see proposed and upcoming enhancements, check out [63Klabs/cache-data Issues](https://github.com/63Klabs/cache-data/issues) page on GitHub.
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
 ## v1.3.7 (unreleased)
 
-- Next release
+### Fixed
+- **Cache DAO Undefined Header Bug** [Spec: 1-3-7-cache-dao-fix](.kiro/specs/1-3-7-cache-dao-fix/) - Fixed production bug where undefined values were passed to HTTP headers, causing request failures with "Invalid value 'undefined' for header" errors
+  - Cache.getHeader() now normalizes undefined to null for consistent behavior
+  - Added defensive validation at header assignment points in CacheableDataAccess.getData()
+  - Added Cache._isValidHeaderValue() helper method for header validation
+  - **Most likely cause:** The move from over-use of JSON Stringify/parse cycles in favor of cloning in v1.3.6. JSON stringify/parse removed undefined values from objects, covering an underlying issue that is now fixed.
+
+### Added
+- **Jest Testing Framework** [Spec: 1-3-7-cache-dao-fix](.kiro/specs/1-3-7-cache-dao-fix/) - Set up Jest alongside Mocha for better AWS integration testing
+  - Configured Jest with ES module support
+  - Added npm scripts: `test:jest`, `test:all`, `test:cache:jest`
+  - Jest tests use `*.jest.mjs` pattern to avoid conflicts with Mocha tests
 
 ## v1.3.6 (2025-02-02)
 

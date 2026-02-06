@@ -1683,6 +1683,45 @@ class Cache {
 		// Boolean("false") is true so we need to code for it. As long as it is not "false", trust Boolean()
 		return  (( value !== "false") ? Boolean(value) : false ); 
 	};
+
+	/**
+	 * Validate that a header value is suitable for HTTP header assignment.
+	 * Returns true if the value is a non-empty string (except "undefined") or number, false otherwise.
+	 * 
+	 * This method is used internally to validate header values before assignment
+	 * to prevent undefined, null, or invalid types from being used in HTTP headers.
+	 * The string "undefined" is explicitly rejected because it causes HTTP errors
+	 * when used as a header value.
+	 * 
+	 * @param {*} value The value to validate
+	 * @returns {boolean} True if value is valid for HTTP header, false otherwise
+	 * @private
+	 * @example
+	 * Cache._isValidHeaderValue('text');        // true
+	 * Cache._isValidHeaderValue(123);           // true
+	 * Cache._isValidHeaderValue('');            // false
+	 * Cache._isValidHeaderValue('undefined');   // false (string "undefined" is invalid)
+	 * Cache._isValidHeaderValue(null);          // false
+	 * Cache._isValidHeaderValue(undefined);     // false
+	 * Cache._isValidHeaderValue(NaN);           // false
+	 * Cache._isValidHeaderValue(true);          // false
+	 * Cache._isValidHeaderValue({});            // false
+	 * Cache._isValidHeaderValue([]);            // false
+	 */
+	static _isValidHeaderValue(value) {
+		if (value === null || value === undefined) {
+			return false;
+		}
+		const type = typeof value;
+		if (type === 'string') {
+			// Filter out empty strings and the string "undefined"
+			return value.length > 0 && value !== 'undefined';
+		}
+		if (type === 'number') {
+			return !isNaN(value);
+		}
+		return false;
+	}
 	
 	/**
 	 * Generate an ETag hash for cache validation. Creates a unique hash by combining
@@ -2252,12 +2291,18 @@ class Cache {
 	 * Get the ETag header value from the cached data. The ETag is used for
 	 * cache validation and conditional requests.
 	 * 
-	 * @returns {string|null} The ETag value, or null if not present
+	 * Returns null if the ETag header is not present, is null, or is undefined.
+	 * This method uses getHeader() internally, which normalizes undefined values
+	 * to null for consistent behavior.
+	 * 
+	 * @returns {string|null} The ETag value, or null if not present, null, or undefined
 	 * @example
 	 * const cache = new Cache(connection, cacheProfile);
 	 * await cache.read();
 	 * const etag = cache.getETag();
-	 * console.log(`ETag: ${etag}`);
+	 * if (etag !== null) {
+	 *   console.log(`ETag: ${etag}`);
+	 * }
 	 */
 	getETag() {
 		return this.getHeader("etag");
@@ -2267,12 +2312,18 @@ class Cache {
 	 * Get the Last-Modified header value from the cached data. This timestamp
 	 * indicates when the cached content was last modified at the origin.
 	 * 
-	 * @returns {string|null} The Last-Modified header value in HTTP date format, or null if not present
+	 * Returns null if the Last-Modified header is not present, is null, or is undefined.
+	 * This method uses getHeader() internally, which normalizes undefined values
+	 * to null for consistent behavior.
+	 * 
+	 * @returns {string|null} The Last-Modified header value in HTTP date format, or null if not present, null, or undefined
 	 * @example
 	 * const cache = new Cache(connection, cacheProfile);
 	 * await cache.read();
 	 * const lastModified = cache.getLastModified();
-	 * console.log(`Last modified: ${lastModified}`);
+	 * if (lastModified !== null) {
+	 *   console.log(`Last modified: ${lastModified}`);
+	 * }
 	 */
 	getLastModified() {
 		return this.getHeader("last-modified");
@@ -2435,18 +2486,36 @@ class Cache {
 	 * Get a specific header value from the cached data by key. Header keys are
 	 * case-insensitive (stored as lowercase).
 	 * 
+	 * Returns null if the header doesn't exist, has a null value, or has an undefined value.
+	 * This normalization ensures consistent behavior for conditional checks and prevents
+	 * undefined values from being passed to HTTP headers.
+	 * 
+	 * Note: This method normalizes undefined to null. If a header key exists but has an
+	 * undefined value, this method returns null (never undefined). This ensures that
+	 * conditional checks like `!== null` work reliably.
+	 * 
 	 * @param {string} key The header key to retrieve (case-insensitive)
-	 * @returns {string|number|null} The header value, or null if the header doesn't exist
+	 * @returns {string|number|null} The header value, or null if the header doesn't exist, is null, or is undefined
 	 * @example
 	 * const cache = new Cache(connection, cacheProfile);
 	 * await cache.read();
 	 * const contentType = cache.getHeader('content-type');
 	 * const etag = cache.getHeader('ETag'); // Case-insensitive
 	 * console.log(`Content-Type: ${contentType}`);
+	 * 
+	 * @example
+	 * // Undefined values are normalized to null
+	 * const undefinedHeader = cache.getHeader('missing-header');
+	 * console.log(undefinedHeader === null); // true (never undefined)
 	 */
 	getHeader(key) {
 		let headers = this.getHeaders();
-		return ( headers !== null && key in headers) ? headers[key] : null
+		if (headers === null || !(key in headers)) {
+			return null;
+		}
+		// Normalize undefined to null for consistent behavior
+		const value = headers[key];
+		return (value === undefined || value === null) ? null : value;
 	};
 
 	/**
@@ -3047,11 +3116,23 @@ class CacheableDataAccess {
 
 					// add etag and last modified to connection
 					if ( !("headers" in connection)) { connection.headers = {}; }
-					if ( !("if-none-match" in connection.headers) && cache.getETag() !== null) { 
-						connection.headers['if-none-match'] = cache.getETag();
+					
+					// Sanitize existing headers to remove invalid values (including string "undefined")
+					for (const key in connection.headers) {
+						if (!Cache._isValidHeaderValue(connection.headers[key])) {
+							delete connection.headers[key];
+							tools.DebugAndLog.debug(`Removed invalid header value for "${key}": ${connection.headers[key]}`);
+						}
 					}
-					if (!("if-modified-since" in connection.headers) && cache.getLastModified() !== null) { 
-						connection.headers['if-modified-since'] = cache.getLastModified(); 
+					
+					const etag = cache.getETag();
+					if ( !("if-none-match" in connection.headers) && Cache._isValidHeaderValue(etag)) { 
+						connection.headers['if-none-match'] = etag;
+					}
+					
+					const lastModified = cache.getLastModified();
+					if (!("if-modified-since" in connection.headers) && Cache._isValidHeaderValue(lastModified)) { 
+						connection.headers['if-modified-since'] = lastModified; 
 					}
 
 					// request data from original source
@@ -3095,7 +3176,52 @@ class CacheableDataAccess {
 	};
 };
 
+/**
+ * TestHarness provides access to internal classes for testing purposes only.
+ * This class should NEVER be used in production code - it exists solely to
+ * enable proper testing of the cache-dao module without exposing internal
+ * implementation details to end users.
+ * 
+ * @private
+ * @example
+ * // In tests only - DO NOT use in production
+ * import { TestHarness } from '../../src/lib/dao-cache.js';
+ * const { CacheData } = TestHarness.getInternals();
+ * 
+ * // Mock CacheData.read for testing
+ * const originalRead = CacheData.read;
+ * CacheData.read = async () => ({ cache: { body: 'test', headers: {} } });
+ * // ... run tests ...
+ * CacheData.read = originalRead; // Restore
+ */
+class TestHarness {
+	/**
+	 * Get access to internal classes for testing purposes.
+	 * WARNING: This method is for testing only and should never be used in production.
+	 * 
+	 * @returns {{CacheData: typeof CacheData, S3Cache: typeof S3Cache, DynamoDbCache: typeof DynamoDbCache}} Object containing internal classes
+	 * @private
+	 * @example
+	 * // In tests only - DO NOT use in production
+	 * const { CacheData, S3Cache, DynamoDbCache } = TestHarness.getInternals();
+	 * 
+	 * // Mock CacheData.read for property-based testing
+	 * const originalRead = CacheData.read;
+	 * CacheData.read = async () => ({
+	 *   cache: { body: 'test', headers: { 'content-type': 'application/json' }, expires: 1234567890, statusCode: '200' }
+	 * });
+	 */
+	static getInternals() {
+		return {
+			CacheData,
+			S3Cache,
+			DynamoDbCache
+		};
+	}
+}
+
 module.exports = {
 	Cache,
-	CacheableDataAccess
+	CacheableDataAccess,
+	TestHarness
 };

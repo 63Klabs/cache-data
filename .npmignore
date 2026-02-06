@@ -1,8 +1,11 @@
 node_modules
 test
 docs
+scripts
 .github
 .gitignore
 .kiro
 package-lock.json
+jest.config.mjs
 sample-implementations
+AI_CONTEXT.md

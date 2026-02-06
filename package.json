@@ -1,6 +1,6 @@
 {
   "name": "@63klabs/cache-data",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "Cache data from an API endpoint or application process using AWS S3 and DynamoDb",
   "author": "Chad Leigh Kluck (https://chadkluck.me)",
   "license": "MIT",
@@ -28,6 +28,7 @@
     "chai": "^6.x",
     "chai-http": "^5.x",
     "fast-check": "^4.x",
+    "jest": "^30.2.0",
     "mocha": "^11.x",
     "sinon": "^21.x"
   },
@@ -36,7 +37,10 @@
   },
   "scripts": {
     "test": "mocha 'test/**/*-tests.mjs'",
+    "test:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:all": "npm test && npm run test:jest",
     "test:cache": "mocha 'test/cache/**/*-tests.mjs'",
+    "test:cache:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/cache",
     "test:config": "mocha 'test/config/**/*-tests.mjs'",
     "test:endpoint": "mocha 'test/endpoint/**/*-tests.mjs'",
     "test:logging": "mocha 'test/logging/**/*-tests.mjs'",

@@ -302,20 +302,23 @@ describe("JSDoc Return Type Format - Property-Based Tests", () => {
 			// Property: For any return type string, if it contains Promise/Array/Object,
 			// it should follow the proper notation rules
 
+			// Generate valid type names (alphanumeric, no special chars that break syntax)
+			const validTypeName = fc.string({ minLength: 1 })
+				.filter(s => s.trim().length > 0)
+				.filter(s => !/[<>{}:,]/.test(s))
+				.map(s => s.trim());
+
 			fc.assert(
 				fc.property(
 					fc.oneof(
 						// Valid Promise types
-						fc.string({ minLength: 1 }).map(t => `Promise<${t}>`),
+						validTypeName.map(t => `Promise<${t}>`),
 						// Valid Array types
-						fc.string({ minLength: 1 }).map(t => `Array.<${t}>`),
+						validTypeName.map(t => `Array.<${t}>`),
 						// Valid Object types with structure
-						fc.string({ minLength: 1 }).map(t => `{${t}: string}`),
+						validTypeName.map(t => `{${t}: string}`),
 						// Valid generic Object types
-						fc.tuple(
-							fc.string({ minLength: 1 }), 
-							fc.string({ minLength: 1 })
-						).map(([k, v]) => `Object.<${k}, ${v}>`)
+						fc.tuple(validTypeName, validTypeName).map(([k, v]) => `Object.<${k}, ${v}>`)
 					),
 					(returnType) => {
 						// These should all pass the validation
