@@ -7,45 +7,40 @@
  */
 
 import { jest } from '@jest/globals';
+import { randomBytes } from 'crypto';
+
+// Import tools first so we can spy on it
+const tools = await import('../../src/lib/tools/index.js');
+
+// Initialize cache once before all tests
+const testKey = randomBytes(32).toString('hex');
+const dataKey = Buffer.from(testKey, 'hex');
+
+const cacheInit = {
+	dynamoDbTable: "test-table-jest",
+	s3Bucket: "test-bucket-jest",
+	secureDataKey: dataKey,
+	idHashAlgorithm: "sha256"
+};
+
+// Import cache module
+const cache = await import('../../src/lib/dao-cache.js');
+cache.Cache.init(cacheInit);
 
 describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
-	let cache;
-	let DynamoDbCache;
-	let S3Cache;
-	let CacheData;
-	let originalDynamoGet;
-	let originalS3Get;
-
-	beforeEach(async () => {
-		// Clear module cache to get fresh instances
-		jest.resetModules();
-		
-		// Import the cache module
-		cache = await import('../../src/lib/dao-cache.js');
-		
-		// Get references to the classes
-		const daoCache = await import('../../src/lib/dao-cache.js');
-		
-		// Store original methods for restoration
-		const tools = await import('../../src/lib/tools/index.js');
-		originalDynamoGet = tools.default.AWS.dynamo.get;
-		originalS3Get = tools.default.AWS.s3.get;
-	});
 
 	afterEach(() => {
-		// Restore original methods
+		// Restore all mocks after each test
 		jest.restoreAllMocks();
 	});
 
 	describe('DynamoDbCache with undefined headers', () => {
 		
 		it('should not assign if-modified-since when DynamoDbCache returns undefined last-modified', async () => {
-			// Mock DynamoDbCache.read() to return headers with undefined last-modified
-			const tools = await import('../../src/lib/tools/index.js');
-			
-			tools.default.AWS.dynamo.get = jest.fn().mockResolvedValue({
+			// Mock the entire dynamo getter to return our mocked functions
+			const mockGet = jest.fn().mockResolvedValue({
 				Item: {
-					id_hash: 'test-hash',
+					id_hash: 'test-hash-unique-1',
 					expires: Math.floor(Date.now() / 1000) - 1, // Expired to force refresh
 					data: {
 						body: '{"test":"data"}',
@@ -61,8 +56,19 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 					}
 				}
 			});
+			
+			// Spy on the dynamo getter and return our mocked get function
+			jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+				client: {},
+				get: mockGet,
+				put: jest.fn(),
+				scan: jest.fn(),
+				delete: jest.fn(),
+				update: jest.fn(),
+				sdk: {}
+			});
 
-			// Initialize cache
+			// Use the imported cache module
 			const { Cache, CacheableDataAccess } = cache;
 			
 			// Create a mock API function that returns 304 Not Modified
@@ -73,17 +79,17 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 				headers: {}
 			});
 
-			// Create connection object
+			// Create connection object with unique path to avoid cache collision
 			const connection = {
 				host: 'api.example.com',
-				path: '/test',
+				path: '/test-unique-1',
 				headers: {}
 			};
 
 			// Create cache policy
 			const cachePolicy = {
 				hostId: 'api.example.com',
-				pathId: '/test',
+				pathId: '/test-unique-1',
 				profile: 'default',
 				overrideOriginHeaderExpiration: false,
 				defaultExpirationInSeconds: 300,
@@ -98,9 +104,12 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 				mockApiFunction,
 				connection,
 				null,
-				{ path: 'test', id: 'jest-test-1' }
+				{ path: 'test-unique-1', id: 'jest-test-1' }
 			);
 
+			// Verify the mock was called
+			expect(mockGet).toHaveBeenCalled();
+			
 			// Verify that if-modified-since was NOT assigned (should be undefined)
 			expect(connection.headers['if-modified-since']).toBeUndefined();
 			
@@ -109,11 +118,10 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 		});
 
 		it('should not assign if-none-match when DynamoDbCache returns undefined etag', async () => {
-			const tools = await import('../../src/lib/tools/index.js');
-			
-			tools.default.AWS.dynamo.get = jest.fn().mockResolvedValue({
+			// Mock the entire dynamo getter to return our mocked functions
+			const mockGet = jest.fn().mockResolvedValue({
 				Item: {
-					id_hash: 'test-hash',
+					id_hash: 'test-hash-unique-2',
 					expires: Math.floor(Date.now() / 1000) - 1, // Expired to force refresh
 					data: {
 						body: '{"test":"data"}',
@@ -129,6 +137,17 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 					}
 				}
 			});
+			
+			// Spy on the dynamo getter and return our mocked get function
+			jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+				client: {},
+				get: mockGet,
+				put: jest.fn(),
+				scan: jest.fn(),
+				delete: jest.fn(),
+				update: jest.fn(),
+				sdk: {}
+			});
 
 			const { Cache, CacheableDataAccess } = cache;
 			
@@ -141,13 +160,13 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			const connection = {
 				host: 'api.example.com',
-				path: '/test',
+				path: '/test-unique-2',
 				headers: {}
 			};
 
 			const cachePolicy = {
 				hostId: 'api.example.com',
-				pathId: '/test',
+				pathId: '/test-unique-2',
 				profile: 'default',
 				overrideOriginHeaderExpiration: false,
 				defaultExpirationInSeconds: 300,
@@ -161,9 +180,12 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 				mockApiFunction,
 				connection,
 				null,
-				{ path: 'test', id: 'jest-test-2' }
+				{ path: 'test-unique-2', id: 'jest-test-2' }
 			);
 
+			// Verify the mock was called
+			expect(mockGet).toHaveBeenCalled();
+			
 			// Verify that if-none-match was NOT assigned (should be undefined)
 			expect(connection.headers['if-none-match']).toBeUndefined();
 			
@@ -172,11 +194,10 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 		});
 
 		it('should not assign either header when both are undefined', async () => {
-			const tools = await import('../../src/lib/tools/index.js');
-			
-			tools.default.AWS.dynamo.get = jest.fn().mockResolvedValue({
+			// Mock the entire dynamo getter to return our mocked functions
+			const mockGet = jest.fn().mockResolvedValue({
 				Item: {
-					id_hash: 'test-hash',
+					id_hash: 'test-hash-unique-3',
 					expires: Math.floor(Date.now() / 1000) - 1, // Expired to force refresh
 					data: {
 						body: '{"test":"data"}',
@@ -192,6 +213,17 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 					}
 				}
 			});
+			
+			// Spy on the dynamo getter and return our mocked get function
+			jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+				client: {},
+				get: mockGet,
+				put: jest.fn(),
+				scan: jest.fn(),
+				delete: jest.fn(),
+				update: jest.fn(),
+				sdk: {}
+			});
 
 			const { Cache, CacheableDataAccess } = cache;
 			
@@ -204,13 +236,13 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			const connection = {
 				host: 'api.example.com',
-				path: '/test',
+				path: '/test-unique-3',
 				headers: {}
 			};
 
 			const cachePolicy = {
 				hostId: 'api.example.com',
-				pathId: '/test',
+				pathId: '/test-unique-3',
 				profile: 'default',
 				overrideOriginHeaderExpiration: false,
 				defaultExpirationInSeconds: 300,
@@ -224,20 +256,22 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 				mockApiFunction,
 				connection,
 				null,
-				{ path: 'test', id: 'jest-test-3' }
+				{ path: 'test-unique-3', id: 'jest-test-3' }
 			);
 
+			// Verify the mock was called
+			expect(mockGet).toHaveBeenCalled();
+			
 			// Verify that neither header was assigned
 			expect(connection.headers['if-modified-since']).toBeUndefined();
 			expect(connection.headers['if-none-match']).toBeUndefined();
 		});
 
 		it('should assign both headers when both are valid', async () => {
-			const tools = await import('../../src/lib/tools/index.js');
-			
-			tools.default.AWS.dynamo.get = jest.fn().mockResolvedValue({
+			// Mock the entire dynamo getter to return our mocked functions
+			const mockGet = jest.fn().mockResolvedValue({
 				Item: {
-					id_hash: 'test-hash',
+					id_hash: 'test-hash-unique-4',
 					expires: Math.floor(Date.now() / 1000) - 1, // Expired to force refresh
 					data: {
 						body: '{"test":"data"}',
@@ -253,6 +287,17 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 					}
 				}
 			});
+			
+			// Spy on the dynamo getter and return our mocked get function
+			jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+				client: {},
+				get: mockGet,
+				put: jest.fn(),
+				scan: jest.fn(),
+				delete: jest.fn(),
+				update: jest.fn(),
+				sdk: {}
+			});
 
 			const { Cache, CacheableDataAccess } = cache;
 			
@@ -265,13 +310,13 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			const connection = {
 				host: 'api.example.com',
-				path: '/test',
+				path: '/test-unique-4',
 				headers: {}
 			};
 
 			const cachePolicy = {
 				hostId: 'api.example.com',
-				pathId: '/test',
+				pathId: '/test-unique-4',
 				profile: 'default',
 				overrideOriginHeaderExpiration: false,
 				defaultExpirationInSeconds: 300,
@@ -285,20 +330,22 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 				mockApiFunction,
 				connection,
 				null,
-				{ path: 'test', id: 'jest-test-4' }
+				{ path: 'test-unique-4', id: 'jest-test-4' }
 			);
 
+			// Verify the mock was called
+			expect(mockGet).toHaveBeenCalled();
+			
 			// Verify that both headers were assigned correctly
 			expect(connection.headers['if-modified-since']).toBe('Wed, 21 Oct 2015 07:28:00 GMT');
 			expect(connection.headers['if-none-match']).toBe('"valid-etag"');
 		});
 
 		it('should not assign headers when values are null', async () => {
-			const tools = await import('../../src/lib/tools/index.js');
-			
-			tools.default.AWS.dynamo.get = jest.fn().mockResolvedValue({
+			// Mock the entire dynamo getter to return our mocked functions
+			const mockGet = jest.fn().mockResolvedValue({
 				Item: {
-					id_hash: 'test-hash',
+					id_hash: 'test-hash-unique-5',
 					expires: Math.floor(Date.now() / 1000) - 1, // Expired to force refresh
 					data: {
 						body: '{"test":"data"}',
@@ -314,6 +361,17 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 					}
 				}
 			});
+			
+			// Spy on the dynamo getter and return our mocked get function
+			jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+				client: {},
+				get: mockGet,
+				put: jest.fn(),
+				scan: jest.fn(),
+				delete: jest.fn(),
+				update: jest.fn(),
+				sdk: {}
+			});
 
 			const { Cache, CacheableDataAccess } = cache;
 			
@@ -326,13 +384,13 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			const connection = {
 				host: 'api.example.com',
-				path: '/test',
+				path: '/test-unique-5',
 				headers: {}
 			};
 
 			const cachePolicy = {
 				hostId: 'api.example.com',
-				pathId: '/test',
+				pathId: '/test-unique-5',
 				profile: 'default',
 				overrideOriginHeaderExpiration: false,
 				defaultExpirationInSeconds: 300,
@@ -346,9 +404,12 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 				mockApiFunction,
 				connection,
 				null,
-				{ path: 'test', id: 'jest-test-5' }
+				{ path: 'test-unique-5', id: 'jest-test-5' }
 			);
 
+			// Verify the mock was called
+			expect(mockGet).toHaveBeenCalled();
+			
 			// Verify that neither header was assigned
 			expect(connection.headers['if-modified-since']).toBeUndefined();
 			expect(connection.headers['if-none-match']).toBeUndefined();

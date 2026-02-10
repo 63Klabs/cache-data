@@ -15,12 +15,18 @@ audit-report.json
 # If you need to remove .DS_Store
 # find . -name .DS_Store -print0 | xargs -0 git rm -f --ignore-unmatch
 
-# Ignore 
+# Ignore dependencies and build artifacts
 node_modules/
 __pycache__/
 *.py[cod]
 package-lock.json
 
+# Test coverage directories
+coverage/
+coverage-jest/
+.nyc_output/
+
+# Keep important dotfiles
 !.gitignore
 !.github
 !.kiro

@@ -36,13 +36,16 @@
     "fast-xml-parser": ">=5.3.4"
   },
   "scripts": {
-    "test": "mocha 'test/**/*-tests.mjs'",
+    "test": "mocha 'test/**/*-tests.mjs' --exclude 'test/migration/property/test-execution-equivalence-property-tests.mjs'",
     "test:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:all": "npm test && npm run test:jest",
+    "test:migration:validation": "mocha test/migration/property/test-execution-equivalence-property-tests.mjs",
     "test:cache": "mocha 'test/cache/**/*-tests.mjs'",
     "test:cache:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/cache",
     "test:config": "mocha 'test/config/**/*-tests.mjs'",
     "test:endpoint": "mocha 'test/endpoint/**/*-tests.mjs'",
+    "test:endpoint:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/endpoint",
+    "test:tools:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/tools",
     "test:logging": "mocha 'test/logging/**/*-tests.mjs'",
     "test:request": "mocha 'test/request/**/*-tests.mjs'",
     "test:response": "mocha 'test/response/**/*-tests.mjs'",

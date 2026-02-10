@@ -246,6 +246,283 @@ it('should work correctly', () => {
 });
 ```
 
+## Mocking Getter Properties in Jest
+
+### The Getter Problem
+
+Some classes use getter properties that return new objects on each access. A common example is `AWS.dynamo`, which is implemented as a getter:
+
+```javascript
+class AWS {
+  static get dynamo() {
+    return {
+      client: dynamoClient,
+      get: async (params) => { /* ... */ },
+      put: async (params) => { /* ... */ },
+      // ... other methods
+    };
+  }
+}
+```
+
+**The Problem**: You cannot directly mock methods on the returned object because each access to the getter returns a NEW object:
+
+```javascript
+// ❌ WRONG - This doesn't work!
+const tools = await import('../../src/lib/tools/index.js');
+tools.default.AWS.dynamo.get = jest.fn(); // This mocks a NEW object, not the one used by the code
+```
+
+### Solution: Spy on the Getter Itself
+
+To mock getter properties in Jest, you must spy on the getter and return a mocked object:
+
+```javascript
+// ✅ CORRECT - Spy on the getter
+import { jest } from '@jest/globals';
+
+const tools = await import('../../src/lib/tools/index.js');
+
+// Create your mock function
+const mockGet = jest.fn().mockResolvedValue({
+  Item: { /* your test data */ }
+});
+
+// Spy on the getter and return a complete mock object
+jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+  client: {},
+  get: mockGet,
+  put: jest.fn(),
+  scan: jest.fn(),
+  delete: jest.fn(),
+  update: jest.fn(),
+  sdk: {}
+});
+
+// Now when code accesses AWS.dynamo, it gets your mocked object
+// You can verify the mock was called
+expect(mockGet).toHaveBeenCalled();
+```
+
+### Complete Example: Mocking AWS.dynamo in Cache Tests
+
+Here's a complete example from `test/cache/cache-header-assignment.jest.mjs`:
+
+```javascript
+import { jest } from '@jest/globals';
+import { randomBytes } from 'crypto';
+
+// Import tools first so we can spy on it
+const tools = await import('../../src/lib/tools/index.js');
+
+// Initialize cache
+const testKey = randomBytes(32).toString('hex');
+const dataKey = Buffer.from(testKey, 'hex');
+
+const cacheInit = {
+  dynamoDbTable: "test-table-jest",
+  s3Bucket: "test-bucket-jest",
+  secureDataKey: dataKey,
+  idHashAlgorithm: "sha256"
+};
+
+const cache = await import('../../src/lib/dao-cache.js');
+cache.Cache.init(cacheInit);
+
+describe('CacheableDataAccess - Header Assignment', () => {
+  afterEach(() => {
+    // CRITICAL: Restore all mocks after each test
+    jest.restoreAllMocks();
+  });
+
+  it('should handle undefined headers correctly', async () => {
+    // Step 1: Create mock function with desired behavior
+    const mockGet = jest.fn().mockResolvedValue({
+      Item: {
+        id_hash: 'test-hash-unique-1',
+        expires: Math.floor(Date.now() / 1000) - 1, // Expired
+        data: {
+          body: '{"test":"data"}',
+          headers: {
+            'last-modified': undefined, // Test undefined header
+            'etag': '"valid-etag"'
+          },
+          statusCode: '200',
+          info: {
+            classification: 'public',
+            objInS3: false
+          }
+        }
+      }
+    });
+    
+    // Step 2: Spy on the dynamo getter and return mock object
+    jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+      client: {},
+      get: mockGet,
+      put: jest.fn(),
+      scan: jest.fn(),
+      delete: jest.fn(),
+      update: jest.fn(),
+      sdk: {}
+    });
+
+    // Step 3: Use the cache module (it will use your mocked dynamo)
+    const { Cache, CacheableDataAccess } = cache;
+    
+    const mockApiFunction = jest.fn().mockResolvedValue({
+      success: true,
+      statusCode: 304,
+      body: '',
+      headers: {}
+    });
+
+    const connection = {
+      host: 'api.example.com',
+      path: '/test-unique-1',
+      headers: {}
+    };
+
+    const cachePolicy = {
+      hostId: 'api.example.com',
+      pathId: '/test-unique-1',
+      profile: 'default',
+      overrideOriginHeaderExpiration: false,
+      defaultExpirationInSeconds: 300,
+      expirationIsOnInterval: false,
+      headersToRetain: '',
+      hostEncryption: 'public'
+    };
+
+    // Step 4: Call the function under test
+    await CacheableDataAccess.getData(
+      cachePolicy,
+      mockApiFunction,
+      connection,
+      null,
+      { path: 'test-unique-1', id: 'jest-test-1' }
+    );
+
+    // Step 5: Verify mock was called and assert results
+    expect(mockGet).toHaveBeenCalled();
+    expect(connection.headers['if-modified-since']).toBeUndefined();
+    expect(connection.headers['if-none-match']).toBe('"valid-etag"');
+  });
+});
+```
+
+### Key Points for Mocking Getters
+
+1. **Import the module first**: Import the module containing the getter before importing modules that use it
+2. **Spy on the getter**: Use `jest.spyOn(object, 'propertyName', 'get')`
+3. **Return complete object**: The mocked return value must include ALL properties/methods that code might access
+4. **Create named mock functions**: Create `const mockGet = jest.fn()` so you can verify calls
+5. **Restore after each test**: Always call `jest.restoreAllMocks()` in `afterEach()`
+6. **Use unique identifiers**: Use unique paths/IDs in tests to avoid cache collisions
+
+### Common Getter Properties to Mock
+
+In this codebase, the following getter properties may need mocking:
+
+- `tools.default.AWS.dynamo` - Returns DynamoDB client wrapper
+- `tools.default.AWS.s3` - Returns S3 client wrapper
+- `tools.default.AWS.ssm` - Returns SSM client wrapper
+- `tools.default.AWS.REGION` - Returns AWS region string
+- `tools.default.AWS.SDK_VER` - Returns SDK version string
+
+### Anti-Patterns for Getter Mocking
+
+#### ❌ DON'T: Try to mock the returned object directly
+
+```javascript
+// BAD - This creates a mock on a NEW object that won't be used
+const tools = await import('../../src/lib/tools/index.js');
+tools.default.AWS.dynamo.get = jest.fn(); // Wrong!
+```
+
+#### ❌ DON'T: Forget to include all required properties
+
+```javascript
+// BAD - Missing required properties
+jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+  get: mockGet
+  // Missing: client, put, scan, delete, update, sdk
+});
+```
+
+#### ❌ DON'T: Forget to restore mocks
+
+```javascript
+// BAD - Mocks leak into other tests
+describe('My tests', () => {
+  it('test 1', () => {
+    jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({...});
+    // ... test code ...
+  });
+  // Missing afterEach with jest.restoreAllMocks()
+});
+```
+
+#### ✅ DO: Follow the complete pattern
+
+```javascript
+// GOOD - Complete pattern with all best practices
+import { jest } from '@jest/globals';
+
+const tools = await import('../../src/lib/tools/index.js');
+
+describe('My tests', () => {
+  afterEach(() => {
+    jest.restoreAllMocks(); // Always restore
+  });
+
+  it('test with mocked getter', () => {
+    const mockGet = jest.fn().mockResolvedValue({ Item: {...} });
+    
+    jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockReturnValue({
+      client: {},
+      get: mockGet,
+      put: jest.fn(),
+      scan: jest.fn(),
+      delete: jest.fn(),
+      update: jest.fn(),
+      sdk: {}
+    });
+
+    // ... test code ...
+    
+    expect(mockGet).toHaveBeenCalled();
+  });
+});
+```
+
+### Debugging Getter Mocks
+
+If your getter mock isn't working:
+
+1. **Verify import order**: Import the module with the getter BEFORE modules that use it
+2. **Check the spy syntax**: Use `jest.spyOn(object, 'propertyName', 'get')` with the third parameter
+3. **Verify complete object**: Ensure your mock return value includes all properties the code accesses
+4. **Check for multiple getters**: If code accesses the getter multiple times, each access gets your mock
+5. **Use console.log**: Temporarily log the getter return value to see what's being accessed
+
+```javascript
+// Debugging: See what the getter returns
+jest.spyOn(tools.default.AWS, 'dynamo', 'get').mockImplementation(() => {
+  const mockObj = {
+    client: {},
+    get: mockGet,
+    put: jest.fn(),
+    scan: jest.fn(),
+    delete: jest.fn(),
+    update: jest.fn(),
+    sdk: {}
+  };
+  console.log('dynamo getter called, returning:', mockObj);
+  return mockObj;
+});
+```
+
 ## Summary
 
 The TestHarness pattern provides a clean separation between:
@@ -258,3 +535,5 @@ This pattern ensures:
 2. Testable private implementation
 3. Clear documentation of testing-only interfaces
 4. No accidental production use of internal classes
+
+**For getter properties**: Use `jest.spyOn(object, 'propertyName', 'get')` to mock getters that return new objects on each access. Always restore mocks in `afterEach()` to prevent test pollution.

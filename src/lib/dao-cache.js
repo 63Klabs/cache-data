@@ -3200,7 +3200,6 @@ class TestHarness {
 	 * WARNING: This method is for testing only and should never be used in production.
 	 * 
 	 * @returns {{CacheData: typeof CacheData, S3Cache: typeof S3Cache, DynamoDbCache: typeof DynamoDbCache}} Object containing internal classes
-	 * @private
 	 * @example
 	 * // In tests only - DO NOT use in production
 	 * const { CacheData, S3Cache, DynamoDbCache } = TestHarness.getInternals();
