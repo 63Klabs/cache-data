@@ -1,5 +1,7 @@
 # Security Fixes
 
+> NOTE: Install commit hooks on PC
+
 Potential security issues were discovered by GitHub code scanner in the scripts used to generate and validate documentation.
 
 While these do not pose a risk in production code, we should use best practices when implementing any solution, even if it is for maintaining the documentation and tests.
