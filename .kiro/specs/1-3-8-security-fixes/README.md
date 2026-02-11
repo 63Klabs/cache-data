@@ -10,8 +10,10 @@ While these do not pose a risk in production code, we should use best practices 
 
 The analysis from the GitHub automated code reviews follow. Please review and propose solutions for resolving these with the following notes:
 
-1. These are maintainance scripts ran locally and not part of a production function
-2. These are analysis reports from a third party, Kiro may have different solutions
+1. These are maintenance scripts ran locally and not part of a production function
+2. These are analysis reports from a third party, Kiro may have different solutions. What are they?
+
+We will also need a steering document for ensuring that tests, as well as code, follow standard secure code practices. This steering document should follow both Python and Node.js, and the Jest and Hypothesis framework. This steering document should be focused on backend development including Lambda and CI/CD scripts used in CodeBuild Projects. It should also require the use of SSM parameter store or Secrets Manager for secret storage and not allow hard coding of credentials.
 
 Come up with recommendations and ask any clarifying questions for the user in SPEC-QUESTIONS.md and the user will answer them there before starting the spec driven workflow.
 
