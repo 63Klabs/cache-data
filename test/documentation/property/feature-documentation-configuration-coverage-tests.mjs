@@ -3,6 +3,8 @@ import fc from 'fast-check';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+// >! Import secure JSDoc parsing to prevent string escaping vulnerabilities
+import { parseParamTag } from '../../helpers/jsdoc-parser.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,13 +55,16 @@ function extractConfigurationOptions(moduleName) {
 		const cachePath = path.join(__dirname, '../../../src/lib/dao-cache.js');
 		const content = fs.readFileSync(cachePath, 'utf-8');
 		
-		// Extract parameter names from JSDoc @param tags
-		const paramMatches = content.matchAll(/@param\s+\{[^}]+\}\s+(?:\[)?(?:parameters\.)?(\w+)/g);
-		for (const match of paramMatches) {
-			const paramName = match[1];
-			// Filter for configuration-related parameters
-			if (paramName && !['parameters', 'item', 'idHash', 'data', 'body', 'headers'].includes(paramName)) {
-				options.push(paramName);
+		// >! Extract parameter names using secure bracket counting
+		const lines = content.split('\n');
+		for (const line of lines) {
+			const paramData = parseParamTag(line.trim());
+			if (paramData) {
+				const paramName = paramData.name.replace(/^parameters\./, '');
+				// Filter for configuration-related parameters
+				if (paramName && !['parameters', 'item', 'idHash', 'data', 'body', 'headers'].includes(paramName)) {
+					options.push(paramName);
+				}
 			}
 		}
 		

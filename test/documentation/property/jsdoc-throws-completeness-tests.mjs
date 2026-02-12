@@ -2,6 +2,8 @@ import { expect } from 'chai';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+// >! Import secure JSDoc parsing functions to prevent string escaping vulnerabilities
+import { parseThrowsTag } from '../../helpers/jsdoc-parser.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,10 +46,11 @@ function parseJSDoc(jsdocComment) {
 			currentTag = 'returns';
 		} else if (cleanLine.startsWith('@example')) {
 			currentTag = 'example';
+		// >! Use secure bracket counting for @throws parsing
 		} else if (cleanLine.startsWith('@throws')) {
-			const match = cleanLine.match(/@throws\s+\{([^}]+)\}/);
-			if (match) {
-				result.throws.push({ type: match[1] });
+			const throwsData = parseThrowsTag(cleanLine);
+			if (throwsData) {
+				result.throws.push({ type: throwsData.type });
 			}
 			currentTag = 'throws';
 		} else if (cleanLine.startsWith('@deprecated')) {

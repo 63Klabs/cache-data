@@ -3,10 +3,10 @@ import fc from 'fast-check';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -101,7 +101,9 @@ async function validateCodeSyntax(code) {
 		}
 		
 		fs.writeFileSync(tempFile, codeToValidate);
-		await execAsync(`node --check ${tempFile}`);
+		// >! Use execFile to prevent shell interpretation
+		// >! Arguments passed as array are not interpreted by shell
+		await execFileAsync('node', ['--check', tempFile]);
 		return { valid: true };
 	} catch (error) {
 		return {

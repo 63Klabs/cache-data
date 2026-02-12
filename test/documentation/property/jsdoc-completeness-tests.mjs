@@ -3,6 +3,8 @@ import fc from 'fast-check';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+// >! Import secure JSDoc parsing functions to prevent string escaping vulnerabilities
+import { parseParamTag, parseReturnsTag, parseThrowsTag } from '../../helpers/jsdoc-parser.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,38 +42,31 @@ function parseJSDoc(jsdocComment) {
 		
 		if (!cleanLine) continue;
 
-		// Check for tags
+		// >! Use secure bracket counting for JSDoc tag parsing
 		if (cleanLine.startsWith('@param')) {
-			const match = cleanLine.match(/@param\s+\{([^}]+)\}\s+(\[?[\w.]+\]?)/);
-			if (match) {
-				result.params.push({ type: match[1], name: match[2] });
+			const paramData = parseParamTag(cleanLine);
+			if (paramData) {
+				result.params.push({ type: paramData.type, name: paramData.name });
 			}
 			currentTag = 'param';
 		} else if (cleanLine.startsWith('@returns')) {
-			// Start collecting @returns content (may span multiple lines with nested braces)
-			currentTag = 'returns';
-			returnsBuffer = cleanLine;
-			// Count braces to handle nested types like {{key: value}}
-			braceCount = (cleanLine.match(/\{/g) || []).length - (cleanLine.match(/\}/g) || []).length;
-			
-			// If braces are balanced on this line, parse immediately
-			if (braceCount === 0) {
-				const match = returnsBuffer.match(/@returns\s+\{([^}]+)\}/);
-				if (match) {
-					result.returns = { type: match[1] };
-				} else {
-					// No type annotation, just description
-					result.returns = { type: 'any' };
-				}
-				returnsBuffer = '';
+			// >! Use secure bracket counting for @returns parsing
+			const returnsData = parseReturnsTag(cleanLine);
+			if (returnsData) {
+				result.returns = { type: returnsData.type };
+			} else {
+				// No type annotation, just description
+				result.returns = { type: 'any' };
 			}
+			currentTag = 'returns';
 		} else if (cleanLine.startsWith('@example')) {
 			currentTag = 'example';
 			result.examples.push('');
 		} else if (cleanLine.startsWith('@throws')) {
-			const match = cleanLine.match(/@throws\s+\{([^}]+)\}/);
-			if (match) {
-				result.throws.push({ type: match[1] });
+			// >! Use secure bracket counting for @throws parsing
+			const throwsData = parseThrowsTag(cleanLine);
+			if (throwsData) {
+				result.throws.push({ type: throwsData.type });
 			}
 			currentTag = 'throws';
 		} else if (!cleanLine.startsWith('@')) {

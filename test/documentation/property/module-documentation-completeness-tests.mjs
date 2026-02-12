@@ -3,6 +3,8 @@ import fc from 'fast-check';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+// >! Import secure module.exports parsing to prevent string escaping vulnerabilities
+import { parseModuleExports } from '../../helpers/jsdoc-parser.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,18 +24,15 @@ function getExportedModules() {
 	const indexPath = path.join(__dirname, '../../../src/index.js');
 	const content = fs.readFileSync(indexPath, 'utf-8');
 	
-	// Parse module.exports to find exported modules
-	const modules = [];
-	const exportMatch = content.match(/module\.exports\s*=\s*\{([^}]+)\}/);
+	// >! Use secure bracket counting to parse module.exports
+	const exportedNames = parseModuleExports(content);
 	
-	if (exportMatch) {
-		const exports = exportMatch[1].split(',').map(e => e.trim()).filter(e => e);
-		for (const exp of exports) {
-			modules.push({
-				name: exp,
-				path: `docs/features/${exp}/README.md`
-			});
-		}
+	const modules = [];
+	for (const exp of exportedNames) {
+		modules.push({
+			name: exp,
+			path: `docs/features/${exp}/README.md`
+		});
 	}
 	
 	return modules;
@@ -51,12 +50,9 @@ function getModuleExports(moduleName) {
 		const toolsIndexPath = path.join(__dirname, '../../../src/lib/tools/index.js');
 		const content = fs.readFileSync(toolsIndexPath, 'utf-8');
 		
-		// Extract module.exports
-		const exportMatch = content.match(/module\.exports\s*=\s*\{([^}]+)\}/s);
-		if (exportMatch) {
-			const exportItems = exportMatch[1].split(',').map(e => e.trim()).filter(e => e);
-			exports.push(...exportItems);
-		}
+		// >! Use secure bracket counting to parse module.exports
+		const exportItems = parseModuleExports(content);
+		exports.push(...exportItems);
 	} else if (moduleName === 'cache') {
 		const cachePath = path.join(__dirname, '../../../src/lib/dao-cache.js');
 		const content = fs.readFileSync(cachePath, 'utf-8');
@@ -70,12 +66,9 @@ function getModuleExports(moduleName) {
 		const endpointPath = path.join(__dirname, '../../../src/lib/dao-endpoint.js');
 		const content = fs.readFileSync(endpointPath, 'utf-8');
 		
-		// Look for exported functions
-		const exportMatch = content.match(/module\.exports\s*=\s*\{([^}]+)\}/);
-		if (exportMatch) {
-			const exportItems = exportMatch[1].split(',').map(e => e.trim()).filter(e => e);
-			exports.push(...exportItems);
-		}
+		// >! Use secure bracket counting to parse module.exports
+		const exportItems = parseModuleExports(content);
+		exports.push(...exportItems);
 	}
 	
 	return exports;

@@ -18,10 +18,10 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,6 +83,297 @@ function extractJSDocBefore(content, position) {
 }
 
 /**
+ * Parse JSDoc @param tag with proper bracket matching
+ * 
+ * Handles nested brackets, escaped brackets, and malformed input gracefully.
+ * Uses bracket depth counting instead of regex to correctly parse complex types.
+ * 
+ * @param {string} line - JSDoc line to parse
+ * @returns {Object|null} Parsed param data with {name, type, description, optional, defaultValue} or null if unparseable
+ * @example
+ * // Simple type
+ * parseParamTag('@param {string} name - User name')
+ * // Returns: { name: 'name', type: 'string', description: 'User name', optional: false, defaultValue: null }
+ * 
+ * @example
+ * // Nested brackets
+ * parseParamTag('@param {Array<{id: string, name: string}>} users - User array')
+ * // Returns: { name: 'users', type: 'Array<{id: string, name: string}>', description: 'User array', optional: false, defaultValue: null }
+ */
+function parseParamTag(line) {
+	try {
+		// >! Match @param with proper bracket counting for nested types
+		const paramStart = line.match(/^@param\s+\{/);
+		if (!paramStart) return null;
+		
+		// >! Find the closing bracket by counting bracket depth
+		// >! This handles nested brackets like {Array<{id: string}>} correctly
+		let depth = 0;
+		let typeEnd = -1;
+		const startPos = paramStart.index + paramStart[0].length;
+		
+		for (let i = startPos; i < line.length; i++) {
+			const char = line[i];
+			
+			// >! Handle escaped brackets - skip the next character
+			if (char === '\\' && i + 1 < line.length) {
+				i++; // Skip next character
+				continue;
+			}
+			
+			if (char === '{') {
+				depth++;
+			} else if (char === '}') {
+				if (depth === 0) {
+					// Found the closing bracket for the type
+					typeEnd = i;
+					break;
+				}
+				depth--;
+			}
+		}
+		
+		// >! Unmatched brackets - handle gracefully by returning null
+		if (typeEnd === -1) {
+			console.warn(`Warning: Unparseable JSDoc @param tag (unmatched brackets): ${line}`);
+			return null;
+		}
+		
+		const type = line.substring(startPos, typeEnd);
+		const remainder = line.substring(typeEnd + 1).trim();
+		
+		// Parse parameter name and description
+		const nameMatch = remainder.match(/^(\[?[\w.]+\]?)\s*-?\s*(.*)/);
+		if (!nameMatch) {
+			console.warn(`Warning: Unparseable JSDoc @param tag (invalid format): ${line}`);
+			return null;
+		}
+		
+		const [, name, description] = nameMatch;
+		const isOptional = name.startsWith('[') && name.endsWith(']');
+		const cleanName = name.replace(/[\[\]]/g, '').split('=')[0];
+		const defaultValue = name.includes('=') ? name.split('=')[1].replace(']', '') : null;
+		
+		return {
+			name: cleanName,
+			type,
+			description: description || '',
+			optional: isOptional,
+			defaultValue
+		};
+	} catch (error) {
+		// >! Catch any unexpected errors and continue processing
+		console.warn(`Warning: Error parsing JSDoc @param tag: ${line}`, error.message);
+		return null;
+	}
+}
+
+/**
+ * Parse JSDoc @returns tag with proper bracket matching
+ * 
+ * Handles nested brackets, escaped brackets, and malformed input gracefully.
+ * Uses bracket depth counting instead of regex to correctly parse complex types.
+ * 
+ * @param {string} line - JSDoc line to parse
+ * @returns {Object|null} Parsed returns data with {type, description} or null if unparseable
+ * @example
+ * // Simple type
+ * parseReturnsTag('@returns {string} User name')
+ * // Returns: { type: 'string', description: 'User name' }
+ * 
+ * @example
+ * // Nested brackets
+ * parseReturnsTag('@returns {Promise<{success: boolean, data: Object}>} Result object')
+ * // Returns: { type: 'Promise<{success: boolean, data: Object}>', description: 'Result object' }
+ */
+function parseReturnsTag(line) {
+	try {
+		// >! Match @returns with proper bracket counting for nested types
+		const returnsStart = line.match(/^@returns?\s+\{/);
+		if (!returnsStart) return null;
+		
+		// >! Find the closing bracket by counting bracket depth
+		let depth = 0;
+		let typeEnd = -1;
+		const startPos = returnsStart.index + returnsStart[0].length;
+		
+		for (let i = startPos; i < line.length; i++) {
+			const char = line[i];
+			
+			// >! Handle escaped brackets - skip the next character
+			if (char === '\\' && i + 1 < line.length) {
+				i++; // Skip next character
+				continue;
+			}
+			
+			if (char === '{') {
+				depth++;
+			} else if (char === '}') {
+				if (depth === 0) {
+					// Found the closing bracket for the type
+					typeEnd = i;
+					break;
+				}
+				depth--;
+			}
+		}
+		
+		// >! Unmatched brackets - handle gracefully by returning null
+		if (typeEnd === -1) {
+			console.warn(`Warning: Unparseable JSDoc @returns tag (unmatched brackets): ${line}`);
+			return null;
+		}
+		
+		const type = line.substring(startPos, typeEnd);
+		const description = line.substring(typeEnd + 1).trim();
+		
+		return {
+			type,
+			description: description || ''
+		};
+	} catch (error) {
+		// >! Catch any unexpected errors and continue processing
+		console.warn(`Warning: Error parsing JSDoc @returns tag: ${line}`, error.message);
+		return null;
+	}
+}
+
+/**
+ * Parse JSDoc @throws tag with proper bracket matching
+ * 
+ * Handles nested brackets, escaped brackets, and malformed input gracefully.
+ * Uses bracket depth counting instead of regex to correctly parse complex types.
+ * 
+ * @param {string} line - JSDoc line to parse
+ * @returns {Object|null} Parsed throws data with {type, description} or null if unparseable
+ * @example
+ * // Simple type
+ * parseThrowsTag('@throws {Error} When validation fails')
+ * // Returns: { type: 'Error', description: 'When validation fails' }
+ * 
+ * @example
+ * // Nested brackets
+ * parseThrowsTag('@throws {ValidationError<{field: string}>} When field validation fails')
+ * // Returns: { type: 'ValidationError<{field: string}>', description: 'When field validation fails' }
+ */
+function parseThrowsTag(line) {
+	try {
+		// >! Match @throws with proper bracket counting for nested types
+		const throwsStart = line.match(/^@throws?\s+\{/);
+		if (!throwsStart) return null;
+		
+		// >! Find the closing bracket by counting bracket depth
+		let depth = 0;
+		let typeEnd = -1;
+		const startPos = throwsStart.index + throwsStart[0].length;
+		
+		for (let i = startPos; i < line.length; i++) {
+			const char = line[i];
+			
+			// >! Handle escaped brackets - skip the next character
+			if (char === '\\' && i + 1 < line.length) {
+				i++; // Skip next character
+				continue;
+			}
+			
+			if (char === '{') {
+				depth++;
+			} else if (char === '}') {
+				if (depth === 0) {
+					// Found the closing bracket for the type
+					typeEnd = i;
+					break;
+				}
+				depth--;
+			}
+		}
+		
+		// >! Unmatched brackets - handle gracefully by returning null
+		if (typeEnd === -1) {
+			console.warn(`Warning: Unparseable JSDoc @throws tag (unmatched brackets): ${line}`);
+			return null;
+		}
+		
+		const type = line.substring(startPos, typeEnd);
+		const description = line.substring(typeEnd + 1).trim();
+		
+		return {
+			type,
+			description: description || ''
+		};
+	} catch (error) {
+		// >! Catch any unexpected errors and continue processing
+		console.warn(`Warning: Error parsing JSDoc @throws tag: ${line}`, error.message);
+		return null;
+	}
+}
+
+/**
+ * Parse module.exports with proper bracket matching
+ * 
+ * Handles nested objects in exports using bracket depth counting.
+ * 
+ * @param {string} content - File content to parse
+ * @returns {Array<string>} Array of exported names
+ * @example
+ * // Simple exports
+ * parseModuleExports('module.exports = { Cache, Endpoint }')
+ * // Returns: ['Cache', 'Endpoint']
+ * 
+ * @example
+ * // Nested exports (though rare)
+ * parseModuleExports('module.exports = { Cache, utils: { helper1, helper2 } }')
+ * // Returns: ['Cache', 'utils']
+ */
+function parseModuleExports(content) {
+	try {
+		// >! Find module.exports = { with proper bracket counting
+		const exportsStart = content.match(/module\.exports\s*=\s*\{/);
+		if (!exportsStart) return [];
+		
+		// >! Find the closing bracket by counting bracket depth
+		let depth = 0;
+		let exportsEnd = -1;
+		const startPos = exportsStart.index + exportsStart[0].length;
+		
+		for (let i = startPos; i < content.length; i++) {
+			const char = content[i];
+			
+			if (char === '{') {
+				depth++;
+			} else if (char === '}') {
+				if (depth === 0) {
+					// Found the closing bracket for module.exports
+					exportsEnd = i;
+					break;
+				}
+				depth--;
+			}
+		}
+		
+		// >! Unmatched brackets - handle gracefully by returning empty array
+		if (exportsEnd === -1) {
+			console.warn('Warning: Unparseable module.exports (unmatched brackets)');
+			return [];
+		}
+		
+		const exportsContent = content.substring(startPos, exportsEnd);
+		
+		// Parse exported names (simple approach - split by comma and extract names)
+		const exportedNames = exportsContent
+			.split(',')
+			.map(e => e.trim().split(':')[0].trim())
+			.filter(e => e.length > 0);
+		
+		return exportedNames;
+	} catch (error) {
+		// >! Catch any unexpected errors and continue processing
+		console.warn('Warning: Error parsing module.exports:', error.message);
+		return [];
+	}
+}
+
+/**
  * Parse JSDoc comment to extract tags
  * @param {string} jsdoc JSDoc comment block
  * @returns {Object} Parsed JSDoc data
@@ -112,39 +403,25 @@ function parseJSDoc(jsdoc) {
 	let currentContent = '';
 	
 	lines.forEach(line => {
-		// Check for tags
-		const paramMatch = line.match(/^@param\s+\{([^}]+)\}\s+(\[?[\w.]+\]?)\s*-?\s*(.*)/);
-		const returnsMatch = line.match(/^@returns?\s+\{([^}]+)\}\s*(.*)/);
+		// >! Use secure bracket counting for all JSDoc tags to handle nested types
+		const paramMatch = parseParamTag(line);
+		const returnsMatch = parseReturnsTag(line);
 		const exampleMatch = line.match(/^@example/);
-		const throwsMatch = line.match(/^@throws?\s+\{([^}]+)\}\s*(.*)/);
+		const throwsMatch = parseThrowsTag(line);
 		
 		if (paramMatch) {
 			if (currentTag === 'description' && currentContent.trim()) {
 				parsed.description = currentContent.trim();
 			}
 			currentTag = 'param';
-			const [, type, name, description] = paramMatch;
-			const isOptional = name.startsWith('[') && name.endsWith(']');
-			const cleanName = name.replace(/[\[\]]/g, '').split('=')[0];
-			const defaultValue = name.includes('=') ? name.split('=')[1].replace(']', '') : null;
 			
-			parsed.params.push({
-				name: cleanName,
-				type,
-				description: description || '',
-				optional: isOptional,
-				defaultValue
-			});
+			parsed.params.push(paramMatch);
 		} else if (returnsMatch) {
 			if (currentTag === 'description' && currentContent.trim()) {
 				parsed.description = currentContent.trim();
 			}
 			currentTag = 'returns';
-			const [, type, description] = returnsMatch;
-			parsed.returns = {
-				type,
-				description: description || ''
-			};
+			parsed.returns = returnsMatch;
 		} else if (exampleMatch) {
 			if (currentTag === 'description' && currentContent.trim()) {
 				parsed.description = currentContent.trim();
@@ -156,11 +433,7 @@ function parseJSDoc(jsdoc) {
 				parsed.description = currentContent.trim();
 			}
 			currentTag = 'throws';
-			const [, type, description] = throwsMatch;
-			parsed.throws.push({
-				type,
-				description: description || ''
-			});
+			parsed.throws.push(throwsMatch);
 		} else if (line && !line.startsWith('/**') && !line.startsWith('*/')) {
 			// Content line
 			if (currentTag === 'example') {
@@ -322,17 +595,8 @@ function analyzeFile(filePath) {
 		});
 	}
 	
-	// Check module.exports to determine what's actually exported
-	const moduleExportsPattern = /module\.exports\s*=\s*\{([^}]+)\}/;
-	const exportsMatch = content.match(moduleExportsPattern);
-	let exportedNames = [];
-	
-	if (exportsMatch) {
-		exportedNames = exportsMatch[1]
-			.split(',')
-			.map(e => e.trim().split(':')[0].trim())
-			.filter(e => e.length > 0);
-	}
+	// >! Use secure bracket counting to parse module.exports
+	const exportedNames = parseModuleExports(content);
 	
 	// Filter to only exported items
 	const exportedItems = exports.filter(item => {
@@ -637,8 +901,9 @@ async function validateCodeSyntax(code) {
 	try {
 		fs.writeFileSync(tempFile, code);
 		
-		// Try to parse with Node.js
-		await execAsync(`node --check ${tempFile}`);
+		// >! Use execFile to prevent shell interpretation
+		// >! Arguments passed as array are not interpreted by shell
+		await execFileAsync('node', ['--check', tempFile]);
 		
 		return { valid: true };
 	} catch (error) {

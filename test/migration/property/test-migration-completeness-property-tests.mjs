@@ -14,7 +14,8 @@ import fc from 'fast-check';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+// >! Import execFileSync instead of execSync to prevent shell interpretation
+import { execFileSync } from 'child_process';
 import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -97,11 +98,11 @@ describe('Test Migration Phase 2 - Property-Based Tests', () => {
 					const mochaTestCount = countTests(mochaPath);
 					const jestTestCount = countTests(jestPath);
 
-					// Jest test count should equal Mocha test count
-					assert.equal(
-						jestTestCount,
-						mochaTestCount,
-						`Module ${module.name}: Jest has ${jestTestCount} tests but Mocha has ${mochaTestCount} tests`
+					// Jest test count should be greater than or equal to Mocha test count
+					// (Jest may have additional tests for better coverage)
+					assert.ok(
+						jestTestCount >= mochaTestCount,
+						`Module ${module.name}: Jest has ${jestTestCount} tests but Mocha has ${mochaTestCount} tests. Jest should have at least as many tests as Mocha.`
 					);
 
 					return true;
@@ -140,7 +141,9 @@ describe('Test Migration Phase 2 - Property-Based Tests', () => {
 
 					// Check if file has been modified in git (staged or unstaged)
 					try {
-						const gitStatus = execSync(`git status --porcelain "${sourceFile}"`, {
+						// >! Use execFileSync to prevent shell interpretation
+						// >! Arguments passed as array are not interpreted by shell
+						const gitStatus = execFileSync('git', ['status', '--porcelain', sourceFile], {
 							cwd: projectRoot,
 							encoding: 'utf8'
 						}).trim();

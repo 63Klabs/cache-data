@@ -2,6 +2,8 @@ import { expect } from 'chai';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+// >! Import secure JSDoc parsing functions to prevent string escaping vulnerabilities
+import { parseParamTag } from '../../helpers/jsdoc-parser.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,18 +39,11 @@ function parseJSDoc(jsdocComment) {
 		
 		if (!cleanLine) continue;
 
-		// Check for tags
+		// >! Use secure bracket counting for @param parsing
 		if (cleanLine.startsWith('@param')) {
-			const match = cleanLine.match(/@param\s+\{([^}]+)\}\s+(\[?[\w.]+\]?)/);
-			if (match) {
-				let paramName = match[2];
-				// Remove optional brackets
-				paramName = paramName.replace(/[\[\]]/g, '');
-				// Handle default values
-				if (paramName.includes('=')) {
-					paramName = paramName.split('=')[0].trim();
-				}
-				result.params.push({ type: match[1], name: paramName });
+			const paramData = parseParamTag(cleanLine);
+			if (paramData) {
+				result.params.push({ type: paramData.type, name: paramData.name });
 			}
 			currentTag = 'param';
 		} else if (cleanLine.startsWith('@returns')) {

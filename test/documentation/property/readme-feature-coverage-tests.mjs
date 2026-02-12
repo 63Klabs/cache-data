@@ -15,6 +15,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fc from 'fast-check';
+// >! Import secure module.exports parsing to prevent string escaping vulnerabilities
+import { parseModuleExports } from '../../helpers/jsdoc-parser.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,17 +34,9 @@ describe('Property 7: README Feature Coverage', function() {
     const indexPath = path.join(__dirname, '../../../src/index.js');
     const indexContent = fs.readFileSync(indexPath, 'utf8');
     
-    // Extract module exports from index.js
-    // Looking for patterns like: tools, cache, endpoint in module.exports
-    const exportsMatch = indexContent.match(/module\.exports\s*=\s*\{([^}]+)\}/);
-    if (exportsMatch) {
-      indexExports = exportsMatch[1]
-        .split(',')
-        .map(exp => exp.trim())
-        .filter(exp => exp.length > 0);
-    } else {
-      indexExports = [];
-    }
+    // >! Use secure bracket counting to parse module.exports
+    indexExports = parseModuleExports(indexContent);
+
   });
 
   it('should mention all exported modules in README', function() {
