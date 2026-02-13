@@ -10,7 +10,33 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.8 (unreleased)
 
-- Nothing yet
+### Added
+- **APIRequest Pagination, Retry, and X-Ray Enhancements** [Spec: 1-3-8-api-request-pagination-retries-xray](.kiro/specs/1-3-8-api-request-pagination-retries-xray/) addresses [#171](https://github.com/63Klabs/cache-data/issues/171), [#172](https://github.com/63Klabs/cache-data/issues/172), [#173](https://github.com/63Klabs/cache-data/issues/173)
+  - **Automatic Pagination**: APIRequest now supports automatic pagination for APIs that return paginated results
+    - Configurable pagination labels for different API response structures
+    - Batch processing for concurrent page requests
+    - Support for both offset-based and token-based pagination
+    - Automatic result combination into single response
+    - Pagination metadata in response (total pages, total items, incomplete status)
+  - **Automatic Retry Logic**: APIRequest now includes built-in retry functionality for transient failures
+    - Configurable retry attempts (default: 1 retry after initial attempt)
+    - Automatic retry on network errors, empty responses, parse errors, and 5xx status codes
+    - Optional retry on 4xx status codes (disabled by default)
+    - Retry metadata in response (attempts made, final attempt number)
+  - **Enhanced X-Ray Subsegments**: Improved AWS X-Ray tracing for better observability
+    - Unique subsegment names for each request using timestamps
+    - Retry and pagination metadata included in X-Ray traces
+    - Separate subsegments for each paginated request
+    - Detailed annotations and metadata for debugging
+  - **Response Metadata**: New optional metadata field in responses
+    - Retry information (occurred, attempts, final attempt)
+    - Pagination information (occurred, total pages, total items, incomplete status)
+    - Only present when retries or pagination occur
+  - **Backwards Compatibility Maintained**: All new features are opt-in via configuration
+    - Existing code continues to work without modification
+    - No breaking changes to public API
+    - Default behavior unchanged when new features not configured
+  - See documentation: [Pagination Guide](docs/features/tools/api-request-pagination.md), [Retry Guide](docs/features/tools/api-request-retry.md), [X-Ray Guide](docs/features/tools/api-request-xray.md)
 
 ## v1.3.7 (2026-02-06)
 

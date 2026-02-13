@@ -36,9 +36,14 @@ The tools module provides utility classes and functions for logging, timing, AWS
 - **Logging and debugging**: Configurable log levels with environment-based controls
 - **Performance timing**: Track execution time for operations
 - **AWS SDK integration**: Simplified access to DynamoDB, S3, and SSM Parameter Store
-- **Request/Response handling**: Classes for managing HTTP requests and responses
+- **Request/Response handling**: Classes for managing HTTP requests and responses with automatic pagination, retry logic, and X-Ray tracing
 - **Data utilities**: Sanitization, obfuscation, hashing, and immutable objects
 - **Connection management**: Configuration and authentication for external services
+
+**New APIRequest Features:**
+- **Automatic Pagination**: Fetch all pages from paginated APIs automatically
+- **Automatic Retry**: Retry failed requests with configurable conditions
+- **Enhanced X-Ray Tracing**: Detailed monitoring and debugging with AWS X-Ray
 
 [View Tools Documentation →](./tools/README.md)
 

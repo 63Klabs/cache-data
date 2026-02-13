@@ -391,14 +391,91 @@ This package is used in high-traffic Lambda functions. Performance matters.
 
 ## 5. Testing Strategy
 
-### 5.1 Test Organization
+### 5.1 Test Framework Migration
+
+**CRITICAL: Mocha to Jest Migration in Progress**
+
+This project is actively migrating from Mocha to Jest. During this transition period:
+
+**Migration Status:**
+- **Phase**: Active migration - both frameworks supported
+- **Legacy**: Mocha tests (`*-tests.mjs`) - maintain but don't create new
+- **Current**: Jest tests (`*.jest.mjs`) - all new tests must use this
+- **Goal**: Complete migration to Jest, remove Mocha dependency
+
+**File Naming Conventions:**
+- Mocha (legacy): `cache-tests.mjs`, `endpoint-tests.mjs`, `*-property-tests.mjs`
+- Jest (current): `cache-tests.jest.mjs`, `endpoint-tests.jest.mjs`, `*-property-tests.jest.mjs`
+
+**Test Execution Commands:**
+```bash
+# Run Mocha tests only (legacy)
+npm test
+
+# Run Jest tests only (current)
+npm run test:jest
+
+# Run both test suites (REQUIRED for CI/CD)
+npm run test:all
+
+# Run specific test suites
+npm run test:cache        # Mocha cache tests
+npm run test:cache:jest   # Jest cache tests
+npm run test:endpoint     # Mocha endpoint tests
+npm run test:endpoint:jest # Jest endpoint tests
+```
+
+**Migration Guidelines:**
+
+1. **Creating New Tests:**
+   - ALWAYS use Jest (`*.jest.mjs` files)
+   - Follow Jest patterns and assertions
+   - Use Jest mocking (not Sinon)
+   - Place in same directory as Mocha tests
+
+2. **Modifying Existing Tests:**
+   - If minor change: Update Mocha test
+   - If major change: Consider migrating to Jest
+   - If time permits: Migrate to Jest and delete Mocha version
+
+3. **Test Coverage:**
+   - Both test suites must pass in CI/CD
+   - Jest coverage: `coverage-jest/` directory
+   - Mocha coverage: `coverage/` directory (if generated)
+
+4. **Property-Based Tests:**
+   - Use fast-check in both Mocha and Jest
+   - Same property definitions work in both frameworks
+   - Migrate property tests to Jest when possible
+
+**Why Jest?**
+- Better ESM support
+- Built-in mocking (no Sinon needed)
+- Better async/await handling
+- More modern and actively maintained
+- Better IDE integration
+- Simpler configuration
+
+**Migration Checklist for Converting Tests:**
+- [ ] Create new `*.jest.mjs` file
+- [ ] Import from `@jest/globals` instead of `chai`
+- [ ] Change `expect().to.equal()` to `expect().toBe()`
+- [ ] Change `expect().to.not.equal()` to `expect().not.toBe()`
+- [ ] Replace Sinon mocks with Jest mocks
+- [ ] Update async test patterns if needed
+- [ ] Run Jest tests to verify: `npm run test:jest`
+- [ ] Delete old Mocha test file
+- [ ] Update any references in documentation
+
+### 5.2 Test Organization
 
 Tests mirror source structure:
 
 ```
 test/
 ├── cache/                  # Cache module tests
-│   ├── cache-tests.mjs
+│   ├── cache-tests.mjs (Mocha - legacy)
+│   ├── cache-tests.jest.mjs (Jest - new)
 │   ├── in-memory-cache/
 │   │   ├── unit/
 │   │   ├── integration/
@@ -407,6 +484,8 @@ test/
 ├── documentation/          # Documentation validation
 │   └── property/
 ├── endpoint/               # Endpoint module tests
+│   ├── endpoint-tests.mjs (Mocha - legacy)
+│   ├── endpoint-tests.jest.mjs (Jest - new)
 ├── logging/                # Logging tests
 ├── request/                # Request handling tests
 ├── response/               # Response tests
@@ -414,22 +493,72 @@ test/
 └── helpers/                # Test utilities
 ```
 
-### 5.2 Test Naming Conventions
+**Note**: During migration, both `.mjs` (Mocha) and `.jest.mjs` (Jest) files coexist in the same directories.
 
+### 5.3 Test Naming Conventions
+
+**Mocha (Legacy):**
 - Test files: `*-tests.mjs`
 - Property tests: `*-property-tests.mjs`
 - Integration tests: `*-integration-tests.mjs`
 - Unit tests: `*-unit-tests.mjs` or `*-tests.mjs`
 
-### 5.3 Test Framework
+**Jest (Current - Use for All New Tests):**
+- Test files: `*.jest.mjs`
+- Property tests: `*-property-tests.jest.mjs`
+- Integration tests: `*-integration-tests.jest.mjs`
+- Unit tests: `*-unit-tests.jest.mjs` or `*.jest.mjs`
 
-- **Test Runner**: Mocha
-- **Assertions**: Chai (expect style)
-- **Property Testing**: fast-check
-- **Mocking**: Sinon (when necessary)
-- **HTTP Testing**: chai-http
+### 5.4 Test Framework
 
-### 5.4 Writing Good Tests
+**CRITICAL: Test Framework Migration in Progress**
+
+This project is currently migrating from Mocha to Jest. Both frameworks are supported during the transition period.
+
+**Current Status:**
+- **Legacy Tests**: Mocha tests (files ending in `-tests.mjs`)
+- **New Tests**: Jest tests (files ending in `.jest.mjs`)
+- **Migration Goal**: All tests will eventually be in Jest
+
+**Test Framework by Type:**
+
+**Mocha (Legacy - Being Phased Out):**
+- Test Runner: Mocha
+- Assertions: Chai (expect style)
+- Property Testing: fast-check
+- Mocking: Sinon
+- HTTP Testing: chai-http
+- File Pattern: `*-tests.mjs`
+
+**Jest (Current - All New Tests):**
+- Test Runner: Jest
+- Assertions: Jest built-in (expect)
+- Property Testing: fast-check (same as Mocha)
+- Mocking: Jest built-in
+- HTTP Testing: Jest with mocks
+- File Pattern: `*.jest.mjs`
+
+**Rules for Test Development:**
+
+1. **ALL NEW TESTS MUST BE WRITTEN IN JEST** using the `*.jest.mjs` file pattern
+2. **DO NOT create new Mocha tests** - only maintain existing ones
+3. **When modifying existing tests**, consider migrating to Jest if time permits
+4. **Both test suites must pass** before merging (`npm run test:all`)
+5. **Jest tests coexist with Mocha tests** in the same directories
+
+**Test Execution:**
+```bash
+# Run Mocha tests (legacy)
+npm test
+
+# Run Jest tests (new)
+npm run test:jest
+
+# Run both test suites (required for CI/CD)
+npm run test:all
+```
+
+### 5.5 Writing Good Tests
 
 **DO**:
 - Test one thing per test
@@ -438,6 +567,7 @@ test/
 - Make tests deterministic
 - Keep tests fast
 - Use property-based testing for core logic
+- **Write all new tests in Jest** (not Mocha)
 
 **DON'T**:
 - Test implementation details
@@ -445,8 +575,39 @@ test/
 - Use real AWS services (mock them)
 - Make tests dependent on each other
 - Skip tests without good reason
+- **Create new Mocha tests** (migration in progress)
 
-**Example Test Structure:**
+**Example Test Structure (Jest - Use This for New Tests):**
+
+```javascript
+import { describe, it, expect } from '@jest/globals';
+import { Cache } from '../src/lib/dao-cache.js';
+
+describe('Cache', () => {
+    describe('generateIdHash()', () => {
+        it('should generate consistent hash for same input', () => {
+            const conn = { host: 'example.com', path: '/api' };
+            const hash1 = Cache.generateIdHash(conn);
+            const hash2 = Cache.generateIdHash(conn);
+            expect(hash1).toBe(hash2);
+        });
+
+        it('should generate different hashes for different inputs', () => {
+            const conn1 = { host: 'example.com', path: '/api' };
+            const conn2 = { host: 'example.com', path: '/api2' };
+            const hash1 = Cache.generateIdHash(conn1);
+            const hash2 = Cache.generateIdHash(conn2);
+            expect(hash1).not.toBe(hash2);
+        });
+
+        it('should handle null input gracefully', () => {
+            expect(() => Cache.generateIdHash(null)).not.toThrow();
+        });
+    });
+});
+```
+
+**Legacy Test Structure (Mocha - Maintain Only, Don't Create New):**
 
 ```javascript
 import { expect } from 'chai';
@@ -459,18 +620,6 @@ describe('Cache', () => {
             const hash1 = Cache.generateIdHash(conn);
             const hash2 = Cache.generateIdHash(conn);
             expect(hash1).to.equal(hash2);
-        });
-
-        it('should generate different hashes for different inputs', () => {
-            const conn1 = { host: 'example.com', path: '/api' };
-            const conn2 = { host: 'example.com', path: '/api2' };
-            const hash1 = Cache.generateIdHash(conn1);
-            const hash2 = Cache.generateIdHash(conn2);
-            expect(hash1).to.not.equal(hash2);
-        });
-
-        it('should handle null input gracefully', () => {
-            expect(() => Cache.generateIdHash(null)).to.not.throw();
         });
     });
 });

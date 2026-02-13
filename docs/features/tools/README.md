@@ -796,7 +796,9 @@ delete config.timeout; // Error!
 
 ### APIRequest Class
 
-Handle HTTP requests to external APIs:
+Handle HTTP requests to external APIs with automatic pagination, retry logic, and X-Ray tracing.
+
+#### Basic Usage
 
 ```javascript
 const { tools } = require('@63klabs/cache-data');
@@ -810,6 +812,290 @@ const request = new tools.APIRequest({
 const response = await request.send();
 console.log(response.statusCode, response.body);
 ```
+
+#### Automatic Pagination
+
+Automatically fetch all pages from paginated APIs:
+
+```javascript
+const request = new tools.APIRequest({
+  host: 'api.example.com',
+  path: '/users',
+  parameters: {
+    limit: 100  // Items per page
+  },
+  pagination: {
+    enabled: true  // Enable automatic pagination
+  }
+});
+
+const response = await request.send();
+
+// Response contains all users from all pages combined
+const allUsers = JSON.parse(response.body).items;
+console.log(`Retrieved ${allUsers.length} total users`);
+
+// Check pagination metadata
+if (response.metadata?.pagination?.occurred) {
+  console.log(`Fetched ${response.metadata.pagination.totalPages} pages`);
+}
+```
+
+**Pagination Features:**
+- Automatic page fetching with configurable batch size
+- Custom field labels for different API structures
+- Error handling with partial results
+- Metadata about pages retrieved and total items
+
+[View Pagination Guide →](./api-request-pagination.md)
+
+#### Automatic Retry
+
+Automatically retry failed requests with configurable conditions:
+
+```javascript
+const request = new tools.APIRequest({
+  host: 'api.example.com',
+  path: '/data',
+  retry: {
+    enabled: true,
+    maxRetries: 2  // 3 total attempts (1 initial + 2 retries)
+  }
+});
+
+const response = await request.send();
+
+// Check if retries occurred
+if (response.metadata?.retries?.occurred) {
+  console.log(`Succeeded after ${response.metadata.retries.attempts} attempts`);
+}
+```
+
+**Retry Features:**
+- Retry on network errors, server errors (5xx), empty responses
+- Configurable retry conditions
+- Metadata about retry attempts
+- Automatic logging of retry attempts
+
+[View Retry Guide →](./api-request-retry.md)
+
+#### X-Ray Tracing
+
+Automatic AWS X-Ray tracing for monitoring and debugging:
+
+```javascript
+const request = new tools.APIRequest({
+  host: 'api.example.com',
+  path: '/data',
+  note: 'Fetch analytics data',  // Appears in X-Ray
+  retry: {
+    enabled: true
+  },
+  pagination: {
+    enabled: true
+  }
+});
+
+const response = await request.send();
+
+// X-Ray subsegment automatically created with:
+// - Unique name for each request
+// - Request/response annotations
+// - Retry and pagination metadata
+// - Timing information
+```
+
+**X-Ray Features:**
+- Unique subsegment names for each request
+- Annotations for filtering and searching
+- Detailed metadata about retries and pagination
+- Subsegments for paginated page requests
+
+[View X-Ray Guide →](./api-request-xray.md)
+
+#### Combining Features
+
+Use pagination, retry, and X-Ray together:
+
+```javascript
+const request = new tools.APIRequest({
+  host: 'api.example.com',
+  path: '/orders',
+  parameters: {
+    status: 'completed',
+    limit: 200
+  },
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  },
+  retry: {
+    enabled: true,
+    maxRetries: 2
+  },
+  pagination: {
+    enabled: true,
+    batchSize: 5
+  }
+});
+
+const response = await request.send();
+
+// Response includes metadata about both retries and pagination
+console.log('Retry attempts:', response.metadata?.retries?.attempts);
+console.log('Pages fetched:', response.metadata?.pagination?.totalPages);
+console.log('Total items:', response.metadata?.pagination?.totalItems);
+```
+
+#### Configuration Options
+
+**Request Configuration:**
+```javascript
+{
+  method: 'GET',                    // HTTP method
+  uri: 'https://...',               // Full URI (alternative to host/path)
+  protocol: 'https',                // Protocol (if using host/path)
+  host: 'api.example.com',          // API host
+  path: '/data',                    // API path
+  parameters: {},                   // Query parameters
+  headers: {},                      // Request headers
+  body: null,                       // Request body
+  note: '',                         // Note for logging/X-Ray
+  options: {
+    timeout: 8000,                  // Timeout in milliseconds
+    // ... other options
+  }
+}
+```
+
+**Pagination Configuration:**
+```javascript
+const paginationConfig = {
+  enabled: false,                   // Must be explicitly enabled
+  totalItemsLabel: 'totalItems',    // Field name for total count
+  itemsLabel: 'items',              // Field name for items array
+  offsetLabel: 'offset',            // Parameter name for offset
+  limitLabel: 'limit',              // Parameter name for limit
+  defaultLimit: 200,                // Default items per page
+  batchSize: 5                      // Concurrent requests per batch
+};
+```
+
+**Retry Configuration:**
+```javascript
+const retryConfig = {
+  enabled: false,                   // Must be explicitly enabled
+  maxRetries: 1,                    // Retry attempts (1 = 2 total attempts)
+  retryOn: {
+    networkError: true,             // Retry on network errors
+    emptyResponse: true,            // Retry on empty responses
+    parseError: true,               // Retry on JSON parse errors
+    serverError: true,              // Retry on 5xx status codes
+    clientError: false              // Don't retry on 4xx (default)
+  }
+};
+```
+
+#### Response Format
+
+**Standard Response:**
+```javascript
+{
+  success: boolean,
+  statusCode: number,
+  headers: object,
+  body: string,
+  message: string
+}
+```
+
+**Response with Metadata (when retry or pagination occurs):**
+```javascript
+{
+  success: boolean,
+  statusCode: number,
+  headers: object,
+  body: string,
+  message: string,
+  metadata: {
+    retries: {
+      occurred: boolean,
+      attempts: number,
+      finalAttempt: number
+    },
+    pagination: {
+      occurred: boolean,
+      totalPages: number,
+      totalItems: number,
+      incomplete: boolean,
+      error: string|null
+    }
+  }
+}
+```
+
+#### Migration from DAO-Level Logic
+
+If you have pagination or retry logic in your DAO classes, you can migrate to APIRequest:
+
+**Before (DAO-level pagination):**
+```javascript
+class MyDAO {
+  async getAllData() {
+    let allItems = [];
+    let offset = 0;
+    const limit = 200;
+    
+    while (offset < totalItems) {
+      const request = new APIRequest({
+        host: 'api.example.com',
+        path: '/data',
+        parameters: { offset, limit }
+      });
+      
+      const response = await request.send();
+      const body = JSON.parse(response.body);
+      allItems = allItems.concat(body.items);
+      offset += limit;
+    }
+    
+    return allItems;
+  }
+}
+```
+
+**After (APIRequest pagination):**
+```javascript
+class MyDAO {
+  async getAllData() {
+    const request = new APIRequest({
+      host: 'api.example.com',
+      path: '/data',
+      parameters: { limit: 200 },
+      pagination: { enabled: true }
+    });
+    
+    const response = await request.send();
+    return JSON.parse(response.body).items;
+  }
+}
+```
+
+#### Detailed Documentation
+
+For comprehensive guides on each feature:
+
+- **[Pagination Guide](./api-request-pagination.md)** - Complete pagination documentation with examples
+- **[Retry Guide](./api-request-retry.md)** - Complete retry documentation with examples
+- **[X-Ray Guide](./api-request-xray.md)** - Complete X-Ray tracing documentation
+
+#### Backwards Compatibility
+
+All new features are opt-in and fully backwards compatible:
+
+- Existing code continues to work without modification
+- No breaking changes to the public API
+- Metadata is only added when new features are used
+- Default behavior remains unchanged
 
 ### ClientRequest Class
 
