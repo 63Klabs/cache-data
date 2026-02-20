@@ -38,6 +38,12 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
     - Default behavior unchanged when new features not configured
   - See documentation: [Pagination Guide](docs/features/tools/api-request-pagination.md), [Retry Guide](docs/features/tools/api-request-retry.md), [X-Ray Guide](docs/features/tools/api-request-xray.md)
 
+### Enhancement
+
+- **Expanded Generic Responses** - Additional responses for status codes
+  - Added responses for 408 and 418
+  - Ensured all generic responses have the same statuses
+
 ## v1.3.7 (2026-02-06)
 
 ### Fixed
