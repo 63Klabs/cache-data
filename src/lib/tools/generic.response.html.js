@@ -44,6 +44,18 @@ response405 = {
 	body: html("405 Method Not Allowed", "<p>Method Not Allowed</p>")
 };
 
+response408 = {
+	statusCode: 408,
+	headers: headers,
+	body: html("408 Request Timeout", "<p>Request Timeout</p>")
+};
+
+response418 = {
+	statusCode: 418,
+	headers: headers,
+	body: html("418 I'm a teapot", "<p>I'm a teapot</p>")
+};
+
 response500 = {
 	statusCode: 500,
 	headers: headers,
@@ -70,6 +82,12 @@ response = function (statusCode) {
 			return this.response403;
 		case 404:
 			return this.response404;
+		case 405:
+			return this.response405;
+		case 408:
+			return this.response408;
+		case 418:
+			return this.response418;
 		case 500:
 			return this.response500;
 		default:
@@ -82,7 +100,13 @@ module.exports = {
 	headers,
 	html,
 	response200,
+	response400,
+	response401,
+	response403,
 	response404,
+	response405,
+	response408,
+	response418,
 	response500,
 	response
 }

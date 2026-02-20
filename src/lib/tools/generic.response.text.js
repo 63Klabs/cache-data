@@ -1,3 +1,5 @@
+const { response } = require("./generic.response.html");
+
 contentType = "text/plain";
 
 headers = {
@@ -42,6 +44,18 @@ response405 = {
 	body: text("Method Not Allowed")
 };
 
+response408 = {
+	statusCode: 408,
+	headers: headers,
+	body: text("Request Timeout")
+};
+
+response418 = {
+	statusCode: 418,
+	headers: headers,
+	body: text("I'm a teapot")
+};
+
 response500 = {
 	statusCode: 500,
 	headers: headers,
@@ -68,6 +82,12 @@ response = function (statusCode) {
 			return this.response403;
 		case 404:
 			return this.response404;
+		case 405:
+			return this.response405;
+		case 408:
+			return this.response408;
+		case 418:
+			return this.response418;
 		case 500:
 			return this.response500;
 		default:
@@ -80,7 +100,13 @@ module.exports = {
 	headers,
 	text,
 	response200,
+	response400,
+	response401,
+	response403,
 	response404,
+	response405,
+	response408,
+	response418,
 	response500,
 	response
 }
