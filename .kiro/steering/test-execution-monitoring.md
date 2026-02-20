@@ -8,6 +8,14 @@ This steering document establishes critical rules and monitoring practices to pr
 
 **NEVER create tests that recursively execute the full test suite.** Tests that spawn child processes to run other tests MUST be carefully designed to avoid infinite loops and exponential process growth.
 
+**CRITICAL: Test Framework Migration in Progress**
+
+This project is migrating from Mocha to Jest:
+- **Mocha tests** (legacy): `*-tests.mjs` files
+- **Jest tests** (current): `*.jest.mjs` files
+- **ALL NEW TESTS MUST BE WRITTEN IN JEST**
+- Both test suites must pass in CI/CD
+
 ## Critical Rules for Test Execution
 
 ### Rule 1: No Recursive Test Suite Execution

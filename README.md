@@ -29,7 +29,10 @@ The @63klabs/cache-data package provides three main modules:
 - **Cache Profiles**: Configure multiple cache profiles with different expiration policies
 
 ### Endpoint Module
-- **HTTP/HTTPS Requests**: Make requests to external APIs and endpoints with built-in retry logic
+- **HTTP/HTTPS Requests**: Make requests to external APIs and endpoints with automatic pagination, retry logic, and X-Ray tracing
+- **Automatic Pagination**: Fetch all pages from paginated APIs automatically with configurable batch processing
+- **Automatic Retry**: Retry failed requests with configurable conditions (network errors, server errors, empty responses)
+- **Enhanced X-Ray Tracing**: Detailed monitoring and debugging with AWS X-Ray subsegments
 - **Connection Management**: Define and manage multiple endpoint connections with authentication
 - **Request Caching**: Automatically cache endpoint responses to reduce API calls and improve performance
 - **Flexible Configuration**: Support for custom headers, query parameters, request bodies, and timeouts
@@ -134,6 +137,42 @@ const response = await endpoint.get(
 
 console.log("API Response:", response.body);
 console.log("Status Code:", response.statusCode);
+```
+
+### Using APIRequest with Pagination and Retry
+
+```javascript
+const { tools } = require("@63klabs/cache-data");
+
+// Make a request with automatic pagination and retry
+const request = new tools.APIRequest({
+  host: "api.example.com",
+  path: "/users",
+  parameters: {
+    limit: 100  // Items per page
+  },
+  pagination: {
+    enabled: true  // Automatically fetch all pages
+  },
+  retry: {
+    enabled: true,
+    maxRetries: 2  // Retry failed requests up to 2 times
+  }
+});
+
+const response = await request.send();
+
+// Response contains all users from all pages
+const allUsers = JSON.parse(response.body).items;
+console.log(`Retrieved ${allUsers.length} total users`);
+
+// Check metadata
+if (response.metadata?.pagination?.occurred) {
+  console.log(`Fetched ${response.metadata.pagination.totalPages} pages`);
+}
+if (response.metadata?.retries?.occurred) {
+  console.log(`Succeeded after ${response.metadata.retries.attempts} attempts`);
+}
 ```
 
 ### Using Utility Tools

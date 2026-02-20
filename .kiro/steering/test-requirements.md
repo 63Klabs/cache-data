@@ -10,6 +10,14 @@ This steering document establishes critical requirements for test execution to e
 
 GitHub Actions will run the full test suite on every push and pull request. If any test fails, the deployment to NPM will be blocked. This is a critical safeguard to prevent broken code from reaching production.
 
+**CRITICAL: Test Framework Migration in Progress**
+
+This project is migrating from Mocha to Jest. During this transition:
+- **ALL NEW TESTS MUST BE WRITTEN IN JEST** (files ending in `.jest.mjs`)
+- Both Mocha and Jest test suites must pass (`npm run test:all`)
+- Mocha tests are legacy - maintain but don't create new ones
+- Jest tests are current - all new tests use this framework
+
 ## Pre-Commit Checklist
 
 Before committing any code changes, you MUST:
@@ -115,57 +123,83 @@ If you encounter pre-existing test failures that are NOT caused by your changes:
 
 ## Test Categories
 
+### Test Framework Migration
+
+**IMPORTANT**: This project is migrating from Mocha to Jest.
+
+- **Mocha Tests** (legacy): Files ending in `-tests.mjs`
+- **Jest Tests** (current): Files ending in `.jest.mjs`
+- **Rule**: ALL NEW TESTS MUST BE WRITTEN IN JEST
+
 ### Unit Tests
 - Test individual functions and methods in isolation
 - Should not depend on external state or other tests
 - Should be fast and deterministic
+- **Write new unit tests in Jest** (`*.jest.mjs`)
 
 ### Property-Based Tests
 - Test universal properties across many generated inputs
-- Use fast-check for randomized testing
+- Use fast-check for randomized testing (works with both Mocha and Jest)
 - Should run with minimum 100 iterations
 - May take longer to execute
+- **Write new property tests in Jest** (`*-property-tests.jest.mjs`)
 
 ### Integration Tests
 - Test interactions between modules
 - May use mocked AWS services
 - Should clean up resources after execution
+- **Write new integration tests in Jest** (`*-integration-tests.jest.mjs`)
 
 ### End-to-End Tests
 - Test complete workflows
 - May make real HTTP requests to test endpoints
 - Should be idempotent and not affect production
+- **Write new E2E tests in Jest** (`*.jest.mjs`)
 
 ## Test Execution Commands
 
-### Run All Mocha Tests
+### Run All Mocha Tests (Legacy)
 ```bash
 npm test
 ```
 
-### Run All Jest Tests
+### Run All Jest Tests (Current)
 ```bash
 npm run test:jest
 ```
 
-### Run All Tests (Mocha + Jest)
+### Run All Tests (Mocha + Jest) - REQUIRED FOR CI/CD
 ```bash
 npm run test:all
 ```
 
+**CRITICAL**: Both Mocha and Jest test suites must pass before merging. The CI/CD pipeline runs `npm run test:all`.
+
 ### Run Specific Test File
 ```bash
+# Mocha test
 npm test -- test/cache/cache-tests.mjs
+
+# Jest test
+npm run test:jest -- test/cache/cache-tests.jest.mjs
 ```
 
 ### Run Tests Matching Pattern
 ```bash
+# Mocha tests
 npm test -- 'test/cache/**/*-property-tests.mjs'
+
+# Jest tests
+npm run test:jest -- 'test/cache/**/*-property-tests.jest.mjs'
 ```
 
 ### Run Tests with Debugging
 ```bash
+# Mocha
 NODE_ENV=development npm test
+
+# Jest
+NODE_ENV=development npm run test:jest
 ```
 
 ## GitHub Actions Integration
@@ -229,12 +263,34 @@ If ANY test fails in GitHub Actions:
 
 ### Writing New Tests
 
-1. **Ensure tests are isolated**: Each test should be independent
-2. **Clean up after tests**: Restore mocks, clear timers, close connections
-3. **Use descriptive test names**: Clearly describe what is being tested
-4. **Test both success and failure cases**: Don't just test the happy path
-5. **Use property-based testing for core logic**: Validate universal properties
-6. **Mock external dependencies**: Don't make real API calls or database queries in unit tests
+**CRITICAL**: ALL NEW TESTS MUST BE WRITTEN IN JEST (`.jest.mjs` files).
+
+1. **Use Jest for all new tests**: Create files ending in `.jest.mjs`
+2. **Ensure tests are isolated**: Each test should be independent
+3. **Clean up after tests**: Restore mocks, clear timers, close connections
+4. **Use descriptive test names**: Clearly describe what is being tested
+5. **Test both success and failure cases**: Don't just test the happy path
+6. **Use property-based testing for core logic**: Validate universal properties (fast-check works with Jest)
+7. **Mock external dependencies**: Don't make real API calls or database queries in unit tests
+
+**Jest Test Example:**
+```javascript
+import { describe, it, expect, jest, afterEach } from '@jest/globals';
+import { Cache } from '../src/lib/dao-cache.js';
+
+describe('Cache', () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('should generate consistent hash for same input', () => {
+        const conn = { host: 'example.com', path: '/api' };
+        const hash1 = Cache.generateIdHash(conn);
+        const hash2 = Cache.generateIdHash(conn);
+        expect(hash1).toBe(hash2);
+    });
+});
+```
 
 ### Maintaining Existing Tests
 
@@ -243,6 +299,7 @@ If ANY test fails in GitHub Actions:
 3. **Refactor brittle tests**: Fix tests that fail intermittently
 4. **Document test dependencies**: Make implicit dependencies explicit
 5. **Remove obsolete tests**: Delete tests for removed functionality
+6. **Consider migrating to Jest**: When modifying Mocha tests, consider migrating to Jest
 
 ## Emergency Procedures
 
