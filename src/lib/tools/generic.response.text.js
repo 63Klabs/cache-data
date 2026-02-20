@@ -1,5 +1,3 @@
-const { response } = require("./generic.response.html");
-
 contentType = "text/plain";
 
 headers = {
@@ -67,7 +65,7 @@ response500 = {
  * @param {number|string} statusCode 
  * @returns {{statusCode: number, headers: object, body: Array|Object|string}}
  */
-response = function (statusCode) {
+const response = function (statusCode) {
 	// convert to int
 	statusCode = parseInt(statusCode, 10);
 
