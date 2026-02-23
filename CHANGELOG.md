@@ -11,7 +11,7 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 ## v1.3.8 (unreleased)
 
 ### Security
-- **Fixed 22 npm Security Vulnerabilities** [Spec: 1-3-8-npm-security-vulnerabilities-fix](.kiro/specs/1-3-8-npm-security-vulnerabilities-fix/)
+- **Updated the way dependencies are listed reduce npm Security Vulnerabilities** [Spec: 1-3-8-npm-security-vulnerabilities-fix](.kiro/specs/1-3-8-npm-security-vulnerabilities-fix/)
   - Fixed 1 low, 20 high, and 1 critical severity vulnerabilities in development dependencies
   - Updated devDependencies to specific secure versions:
     - `@aws-sdk/client-dynamodb`, `@aws-sdk/client-s3`, `@aws-sdk/client-ssm`, `@aws-sdk/lib-dynamodb`: Updated from `3.x` to `^3.995.0`
