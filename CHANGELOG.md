@@ -10,6 +10,24 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.8 (unreleased)
 
+### Security
+- **Fixed 22 npm Security Vulnerabilities** [Spec: 1-3-8-npm-security-vulnerabilities-fix](.kiro/specs/1-3-8-npm-security-vulnerabilities-fix/)
+  - Fixed 1 low, 20 high, and 1 critical severity vulnerabilities in development dependencies
+  - Updated devDependencies to specific secure versions:
+    - `@aws-sdk/client-dynamodb`, `@aws-sdk/client-s3`, `@aws-sdk/client-ssm`, `@aws-sdk/lib-dynamodb`: Updated from `3.x` to `^3.995.0`
+    - `mocha`: Updated from `^11.x` to `^11.7.5`
+    - `chai`: Updated from `^6.x` to `^6.2.2`
+    - `chai-http`: Updated from `^5.x` to `^5.1.2`
+    - `sinon`: Updated from `^21.x` to `^21.0.1`
+    - `fast-check`: Updated from `^4.x` to `^4.5.3`
+  - Added npm overrides for transitive dependencies:
+    - `diff`: `>=8.0.3` (fixes low severity DoS vulnerability)
+    - `minimatch`: `>=10.2.2` (fixes high severity ReDoS vulnerability)
+    - `glob`: `>=13.0.6` (fixes transitive vulnerabilities)
+  - No breaking changes to public APIs
+  - All existing tests pass
+  - Production dependencies remain secure (0 vulnerabilities)
+
 ### Added
 - **APIRequest Pagination, Retry, and X-Ray Enhancements** [Spec: 1-3-8-api-request-pagination-retries-xray](.kiro/specs/1-3-8-api-request-pagination-retries-xray/) addresses [#171](https://github.com/63Klabs/cache-data/issues/171), [#172](https://github.com/63Klabs/cache-data/issues/172), [#173](https://github.com/63Klabs/cache-data/issues/173)
   - **Automatic Pagination**: APIRequest now supports automatic pagination for APIs that return paginated results

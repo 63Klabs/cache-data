@@ -21,21 +21,24 @@
     "object-hash": "^3.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-dynamodb": "3.x",
-    "@aws-sdk/client-s3": "3.x",
-    "@aws-sdk/client-ssm": "3.x",
-    "@aws-sdk/lib-dynamodb": "3.x",
+    "@aws-sdk/client-dynamodb": "^3.995.0",
+    "@aws-sdk/client-s3": "^3.995.0",
+    "@aws-sdk/client-ssm": "^3.995.0",
+    "@aws-sdk/lib-dynamodb": "^3.995.0",
     "@eslint/js": "^10.0.1",
-    "chai": "^6.x",
-    "chai-http": "^5.x",
-    "eslint": "^10.0.0",
-    "fast-check": "^4.x",
+    "chai": "^6.2.2",
+    "chai-http": "^5.1.2",
+    "eslint": "^10.0.1",
+    "fast-check": "^4.5.3",
     "jest": "^30.2.0",
-    "mocha": "^11.x",
-    "sinon": "^21.x"
+    "mocha": "^11.7.5",
+    "sinon": "^21.0.1"
   },
   "overrides": {
-    "fast-xml-parser": ">=5.3.4"
+    "fast-xml-parser": ">=5.3.4",
+    "diff": ">=8.0.3",
+    "minimatch": ">=10.2.2",
+    "glob": ">=13.0.6"
   },
   "scripts": {
     "test": "mocha 'test/**/*-tests.mjs' --exclude 'test/migration/property/test-execution-equivalence-property-tests.mjs'",
