@@ -95,18 +95,12 @@ class _ConfigSuperClass {
 	/**
 	 * Get the application settings object
 	 * 
-	 * Returns the settings object that was initialized during Config.init(). 
-	 * This typically contains application-specific configuration values loaded 
-	 * from parameter store, environment variables, or other sources.
-	 * 
+	 * @deprecated Use getSettings() instead for immutable access
 	 * @returns {object|null} Settings object containing application configuration, or null if not initialized
 	 * @example
-	 * // Access application settings
-	 * const settings = Config.settings();
-	 * if (settings) {
-	 *   console.log('App version:', settings.version);
-	 *   console.log('Environment:', settings.environment);
-	 * }
+	 * // Legacy usage (backwards compatibility)
+	 * const { Config } = require("./config");
+	 * const limit = Config.settings().dataLimit;
 	 */
 	static settings() {
 		return _ConfigSuperClass._settings;
@@ -185,19 +179,21 @@ class _ConfigSuperClass {
 			return { conn: null, cacheProfile: null };
 		}
 
-		let cacheProfile = null;
+		let cacheProfile;
+		
 		try {
 			const profile = connection.getCacheProfile(cacheProfileName);
 			cacheProfile = (profile === undefined) ? null : profile;
-		} catch (error) {
+		} catch {
 			// getCacheProfile throws if _cacheProfiles is null
 			cacheProfile = null;
 		}
 
 		return {
 			conn: connection.toObject(),
-			cacheProfile: cacheProfile
-		};
+			cacheProfile
+		};	
+
 	}
 
 	/**
@@ -245,8 +241,6 @@ class _ConfigSuperClass {
 
 			return { names: names, paths: paths};
 		};
-
-		let request = [];
 
 		let pNames = paramNames();
 
@@ -359,13 +353,13 @@ class _ConfigSuperClass {
 		return await this._getParameters(parameters);        
 	};
 
-	static async _initS3File(paths) {
-		return {};
-	};
+	// static async _initS3File(paths) {
+	// 	return {};
+	// };
 
-	static async _initDynamoDbRecord(query) {
-		return {};
-	};
+	// static async _initDynamoDbRecord(query) {
+	// 	return {};
+	// };
 	
 };
 

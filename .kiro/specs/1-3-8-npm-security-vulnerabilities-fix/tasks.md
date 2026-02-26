@@ -112,7 +112,7 @@
     - Add entry under "Unreleased" section in "Security" category
     - Document that 22 npm security vulnerabilities were fixed (1 low, 20 high, 1 critical)
     - List major dependency updates (moment-timezone, aws-xray-sdk-core, object-hash, AWS SDK packages, testing frameworks)
-    - Reference this spec: [Spec: 1-3-8-npm-security-vulnerabilities-fix](../.kiro/specs/1-3-8-npm-security-vulnerabilities-fix/)
+    - Reference this spec: [Spec: 1-3-8-npm-security-vulnerabilities-fix](./bugfix.md)
     - Note that no breaking changes were introduced
     - Follow changelog convention from `.kiro/steering/changelog-convention.md`
     - _Requirements: All_

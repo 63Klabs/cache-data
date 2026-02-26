@@ -241,4 +241,4 @@ See [AGENTS.md](AGENTS.md) for important context and guidelines for AI-generated
 
 The context file is also helpful (and perhaps essential) for HUMANS developing within the application's structured platform as well.
 
-AI Assisted Engineering of this solution was provided by [Kiro](https://kiro.dev/). Steering documents are provided in the repository's [.kiro](.kiro/steering/ai-context-reference.md) directory. Because testing is tightly coupled with the implementation, it is suggested all documents, code, and tests are thoroughly reviewed before, and updated after, any changes.
+AI Assisted Engineering of this solution was provided by [Kiro](https://kiro.dev/). Steering documents are provided in the repository's `.kiro/steering/` directory. Because testing is tightly coupled with the implementation, it is suggested all documents, code, and tests are thoroughly reviewed before, and updated after, any changes.

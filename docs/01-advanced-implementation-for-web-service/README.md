@@ -543,6 +543,11 @@ async function handleRequest(clientRequest, results) {
 The Response class supports multiple content types:
 
 ```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+const response = new Response(clientRequest);
+
 // JSON (default)
 response.setBody({ data: 'value' });
 
@@ -567,6 +572,11 @@ response.set({
 ### Response Status Codes
 
 ```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+const response = new Response(clientRequest);
+
 // Success responses
 response.setStatusCode(200); // OK
 response.setStatusCode(201); // Created
@@ -615,6 +625,7 @@ async function buildUserResponse(users, response) {
 ### Response with Nested Data
 
 ```javascript
+const { tools } = require('@63klabs/cache-data');
 const { ResponseDataModel } = tools;
 
 // Create main response
@@ -637,7 +648,11 @@ response.setBody(responseData.toObject());
 ### Error Handling
 
 ```javascript
-async function handleRequest(clientRequest, response) {
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+async function handleRequest(clientRequest) {
+  const response = new Response(clientRequest);
   try {
     const data = await fetchData();
     response.setStatusCode(200);
@@ -657,6 +672,7 @@ async function handleRequest(clientRequest, response) {
 Initialize Response with custom templates for different status codes:
 
 ```javascript
+const { tools } = require('@63klabs/cache-data');
 const { Response } = tools;
 
 Response.init({

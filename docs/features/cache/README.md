@@ -83,7 +83,8 @@ The `expires` timestamp determines when cached data becomes stale. After expirat
 
 The connection object used for cache key generation can include:
 - `host`: The target host for the cached request
-- `path`: The URL path for the cached request  
+- `path`: The URL path for the cached request
+- `uri`: Can be used as a complete host, path, and query string instead of separating out (https://api.chadkluck.net/games?new=yes)
 - `method`: HTTP method (GET, POST, etc.)
 - `parameters`: Query parameters or request parameters
 - `headers`: Request headers
@@ -93,35 +94,56 @@ These connection parameters are hashed together to create a unique cache identif
 
 ### Cache Profile Parameters
 
-The cacheProfile object controls cache behavior and can include:
-- `expires`: Expiration time in seconds or as a timestamp
-- `interval`: Interval-based expiration (e.g., "1h", "1d")
-- `intervalInSeconds`: Interval duration specified in seconds
-- `syncedNow`: Synchronize expiration to current interval boundary
-- `syncedLater`: Synchronize expiration to next interval boundary
-- `encrypt`: Whether to encrypt the cached data
-- `key`: Custom cache key override
-- `tags`: Metadata tags for the cache entry
-- `cachePolicy`: Policy controlling cache behavior (read, write, bypass)
+The cache profile is used to specify cache behavior for a particular request.
 
-### Internal Data Handling
+- `profile`: Used when storing in a `Connections` class.
+- `overrideOriginHeaderExpiration`: If the origin provides an expiration, should we ignore and apply our own instead (set to true when the origin has a shorter expiration than you'd like)
+- `defaultExpirationInSeconds`: In seconds, how long is the default expiration? Default: 60 (60 seconds)
+- `defaultExpirationExtensionOnErrorInSeconds`: In seconds, if there is an error, how long until the error expires from cache? Default: 3600 (5 minutes)
+- `expirationIsOnInterval`: Does the cache expires timer reset on first request, or is the expires set to the clock? (ex. every 10 seconds, every hour, etc) Default: false
+- `headersToRetain`: Array or comma deliminated string of header keys to keep from the original source to cache and pass to client. 
+- `hostId`: Only used for logging, helps identify connection using a short id without sensitive info
+- `pathId`: Only used for logging, helps identify connection using a short id without sensitive info
+- `encrypt`: Encrypt the data in the cache (set to true, unless debugging in non-prod)
 
-The cache system handles various data types and formats internally:
-- `timestamp`: Unix timestamps for expiration tracking (in seconds or milliseconds)
-- `timestampInSeconds`: Timestamp values in seconds since epoch
-- `timestampInMillseconds`: Timestamp values in milliseconds since epoch  
-- `inMilliseconds`: Duration values specified in milliseconds
-- `seconds`: Duration values specified in seconds
-- `date`: Date objects for time-based operations
-- `content`: Raw content data before encoding
-- `encode`: Encoding format for cached data (utf-8, base64, etc.)
-- `parseBody`: Whether to parse response body as JSON
-- `value`: Generic value parameter for cache operations
-- `text`: Text content for string-based cache entries
-- `reason`: Reason code for cache status or errors
-- `errorCode`: Error code when cache operations fail
+```js
+const cacheProfile = {
+  profile: "default",
+	overrideOriginHeaderExpiration: true,
+	defaultExpirationInSeconds: (5 * 60), // 5 minutes
+	expirationIsOnInterval: true,
+	headersToRetain: "x-server",
+	hostId: "chadkluck", // log entry label - only used for logging
+	pathId: "games", // log entry label - only used for logging
+	encrypt: true, // encrypt the data in the cache
+}
+```
+
+### Use CacheableDataAccess to send requests
+
+The Connection, Cache Profile, and Getter function are sent through `CacheableDataAccess.getData()` which handles all the caching transparently.
+
+```js
+const {cache, endpoint} = require('@63klabs/cache-data');
+
+const conn = { uri: "https://api.chadkluck.net/games" };
+const cacheProfile = { defaultExpirationInSeconds: 60 };
+
+const cacheObj = await cache.CacheableDataAccess.getData(
+  cacheProfile, 
+	endpoint.get,
+	conn, 
+	null
+);
+
+const data = cacheObj.getBody(true); // data is returned in a wrapper from CacheableDataAccess
+```
 
 ## Configuration
+
+In order to use the cache functions you must first initialize it outside of your Lambda handler (This is done so that it is only initialized during a cold start and can be reused on subsequent invocations.)
+
+This is typically performed in an Configuration initialization function grouped with other init tasks.
 
 ### Configuration Options
 
@@ -149,38 +171,55 @@ The Cache system accepts the following configuration options via `Cache.init()`:
 #### Basic Configuration
 
 ```javascript
-const cache = require('@63klabs/cache-data');
+const { cache } = require('@63klabs/cache-data');
 
 cache.Cache.init({
-  dynamoDbTable: 'my-cache-table',
-  s3Bucket: 'my-cache-bucket',
   secureDataKey: Buffer.from('my-32-byte-encryption-key-here', 'hex')
+}); // Use SSM Parameter store or Secrets Manager to load the key! See tools.CachedParameterSecrets
+```
+
+Using `tools.CachedSSMParameter`:
+
+```javascript
+const { cache, tools } = require('@63klabs/cache-data');
+
+cache.Cache.init({
+  secureDataKey: new CachedSSMParameter('/param/store/path/CacheData_SecureDataKey')
 });
 ```
 
 #### Advanced Configuration
 
+Cache.init() allows many options, however most can use default settings or Cache.init() will automatically check Lambda Environment variables.
+
+Below are all the options. The environment variable Cache.init() automatically checks for is in the comment.
+
 ```javascript
 cache.Cache.init({
   // Required parameters
-  dynamoDbTable: process.env.CACHE_DATA_DYNAMO_DB_TABLE,
-  s3Bucket: process.env.CACHE_DATA_S3_BUCKET,
-  secureDataKey: Buffer.from(params.app.crypt_secureDataKey, cache.Cache.CRYPT_ENCODING),
+  secureDataKey: new CachedSSMParameter('/param/store/path/CacheData_SecureDataKey'), // no environment var
+
+  // Required parameters if no corresponding environment variable set
+  dynamoDbTable: 'some_table', // CACHE_DATA_DYNAMO_DB_TABLE
+  s3Bucket: 'somebucket', // CACHE_DATA_S3_BUCKET,
   
-  // Storage and encryption
-  secureDataAlgorithm: 'aes-256-cbc',
-  idHashAlgorithm: 'RSA-SHA256',
-  DynamoDbMaxCacheSize_kb: 10,
+  // Storage and encryption (default values listed)
+  secureDataAlgorithm: 'aes-256-cbc', // CACHE_DATA_SECURE_DATA_ALGORITHM
+  idHashAlgorithm: 'RSA-SHA256', // CACHE_DATA_ID_HASH_ALGORITHM
+  DynamoDbMaxCacheSize_kb: 10, // CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB
   
-  // Expiration and timezone
-  purgeExpiredCacheEntriesAfterXHours: 24,
-  timeZoneForInterval: 'America/Chicago',
+  // Expiration and timezone (default values listed)
+  purgeExpiredCacheEntriesAfterXHours: 24, // CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS
+  timeZoneForInterval: 'Etc/UTC', // CACHE_DATA_TIME_ZONE_FOR_INTERVAL
+
+  // hashing method
+  useToolsHash: false, // CACHE_DATA_USE_TOOLS_HASH_METHOD - default will switch to true in future
   
   // In-memory cache
-  useInMemoryCache: true,
-  inMemoryCacheMaxEntries: 8000,
-  inMemoryCacheEntriesPerGB: 4000,
-  inMemoryCacheDefaultMaxEntries: 1500
+  useInMemoryCache: true, // CACHE_USE_IN_MEMORY
+  inMemoryCacheMaxEntries: 8000, // no environment var
+  inMemoryCacheEntriesPerGB: 4000, // no environment var
+  inMemoryCacheDefaultMaxEntries: 1500 // no environment var
 });
 ```
 
@@ -203,9 +242,97 @@ CACHE_USE_IN_MEMORY=true
 CACHE_DATA_USE_TOOLS_HASH=false
 ```
 
-**Note**: Parameters passed to `Cache.init()` take precedence over environment variables.
+> **Note**: Parameters passed to `Cache.init()` take precedence over environment variables.
+
+## Usage
+
+### Basic Usage
+
+Once enabled, the in-memory cache works automatically with no code changes required:
+
+```javascript
+const {cache, endpoint} = require('@63klabs/cache-data');
+
+// Initialize with in-memory cache enabled
+cache.Cache.init({
+  secureDataKey: Buffer.from(params.app.crypt_secureDataKey, cache.Cache.CRYPT_ENCODING),
+  useInMemoryCache: true  // Enable in-memory cache
+});
+
+// Use cache as normal - in-memory cache is transparent
+const conn = { uri: "https://api.chadkluck.net/games" };
+const cacheProfile = { defaultExpirationInSeconds: 60 };
+
+const cacheObj = await cache.CacheableDataAccess.getData(
+  cacheProfile, 
+	endpoint.get,
+	conn, 
+	null
+);
+
+const data = cacheObj.getBody(true); // data is returned in a wrapper from CacheableDataAccess
+```
+
+### Checking Cache Status
+
+The cached object has a status code to identify where the data came from:
+
+```javascript
+// ... use CacheableDataAccess to get a cacheObj
+
+const status = cacheObj.getStatus();
+
+switch (status) {
+  case cache.Cache.STATUS_CACHE_IN_MEM:
+    console.log('Data from in-memory cache (microseconds)');
+    break;
+  case cache.Cache.STATUS_CACHE:
+    console.log('Data from DynamoDB/S3 (milliseconds)');
+    break;
+  case cache.Cache.STATUS_NO_CACHE:
+    console.log('No cached data available');
+    break;
+  case cache.Cache.STATUS_CACHE_ERROR:
+    console.log('Error occurred, stale data returned');
+    break;
+}
+```
+
+### Status Codes
+
+- **`STATUS_CACHE_IN_MEM`** (`"cache:memory"`): Data served from in-memory cache
+- **`STATUS_CACHE`** (`"cache"`): Data served from DynamoDB/S3
+- **`STATUS_NO_CACHE`** (`"original"`): No cached data available
+- **`STATUS_CACHE_ERROR`** (`"error:cache"`): Error occurred, stale data returned if available
+
+### Response Headers
+
+The cache status is also included in the response headers via `x-cprxy-data-source`:
+
+```javascript
+const response = cacheObj.getResponse();
+console.log(response.headers['x-cprxy-data-source']); // "cache:memory"
+```
+
+### Inspecting Cache State
+
+Use `Cache.info()` to inspect the cache configuration and state:
+
+```javascript
+const info = cache.Cache.info();
+
+console.log('In-memory cache enabled:', info.useInMemoryCache);
+
+if (info.useInMemoryCache && info.inMemoryCache) {
+  console.log('Current entries:', info.inMemoryCache.size);
+  console.log('Max entries:', info.inMemoryCache.maxEntries);
+  console.log('Lambda memory (MB):', info.inMemoryCache.memoryMB);
+}
+```
 
 ### Enabling the In-Memory Cache
+
+> In-memory cache is disabled by default.
 
 You can enable the in-memory cache in two ways:
 
@@ -217,15 +344,6 @@ const cache = require('@63klabs/cache-data');
 cache.Cache.init({
   // ... other parameters ...
   useInMemoryCache: true,  // Enable in-memory cache
-  
-  // Optional: Override automatic capacity calculation
-  inMemoryCacheMaxEntries: 5000,
-  
-  // Optional: Adjust entries-per-GB heuristic (default: 5000)
-  inMemoryCacheEntriesPerGB: 5000,
-  
-  // Optional: Set fallback capacity (default: 1000)
-  inMemoryCacheDefaultMaxEntries: 1000
 });
 ```
 
@@ -247,7 +365,7 @@ Environment:
 
 ### Default Behavior
 
-**The in-memory cache is disabled by default** to maintain backward compatibility. You must explicitly enable it using one of the methods above.
+> **The in-memory cache is disabled by default** to maintain backward compatibility. You must explicitly enable it using one of the methods above.
 
 ### Configuration Parameters
 
@@ -300,93 +418,11 @@ Sets the fallback capacity when Lambda memory allocation cannot be determined.
 inMemoryCacheDefaultMaxEntries: 1000
 ```
 
-## Usage
-
-### Basic Usage
-
-Once enabled, the in-memory cache works automatically with no code changes required:
-
-```javascript
-const cache = require('@63klabs/cache-data');
-
-// Initialize with in-memory cache enabled
-cache.Cache.init({
-  dynamoDbTable: process.env.CACHE_DATA_DYNAMO_DB_TABLE,
-  s3Bucket: process.env.CACHE_DATA_S3_BUCKET,
-  secureDataKey: Buffer.from(params.app.crypt_secureDataKey, cache.Cache.CRYPT_ENCODING),
-  useInMemoryCache: true  // Enable in-memory cache
-});
-
-// Use cache as normal - in-memory cache is transparent
-const cacheObj = new cache.Cache(connection, cacheProfile);
-const data = await cacheObj.read();
-
-// Check if data came from in-memory cache
-if (cacheObj.getStatus() === cache.Cache.STATUS_CACHE_IN_MEM) {
-  console.log('Data served from in-memory cache!');
-}
-```
-
-### Checking Cache Status
-
-The cache introduces a new status code to identify in-memory cache hits:
-
-```javascript
-const status = cacheObj.getStatus();
-
-switch (status) {
-  case cache.Cache.STATUS_CACHE_IN_MEM:
-    console.log('Data from in-memory cache (microseconds)');
-    break;
-  case cache.Cache.STATUS_CACHE:
-    console.log('Data from DynamoDB/S3 (milliseconds)');
-    break;
-  case cache.Cache.STATUS_NO_CACHE:
-    console.log('No cached data available');
-    break;
-  case cache.Cache.STATUS_CACHE_ERROR:
-    console.log('Error occurred, stale data returned');
-    break;
-}
-```
-
-### Status Codes
-
-- **`STATUS_CACHE_IN_MEM`** (`"cache:memory"`): Data served from in-memory cache
-- **`STATUS_CACHE`** (`"cache"`): Data served from DynamoDB/S3
-- **`STATUS_NO_CACHE`** (`"original"`): No cached data available
-- **`STATUS_CACHE_ERROR`** (`"error:cache"`): Error occurred, stale data returned if available
-
-### Response Headers
-
-The cache status is also included in the response headers via `x-cprxy-data-source`:
-
-```javascript
-const response = cacheObj.getResponse();
-console.log(response.headers['x-cprxy-data-source']); // "cache:memory"
-```
-
-### Inspecting Cache State
-
-Use `Cache.info()` to inspect the cache configuration and state:
-
-```javascript
-const info = cache.Cache.info();
-
-console.log('In-memory cache enabled:', info.useInMemoryCache);
-
-if (info.useInMemoryCache && info.inMemoryCache) {
-  console.log('Current entries:', info.inMemoryCache.size);
-  console.log('Max entries:', info.inMemoryCache.maxEntries);
-  console.log('Lambda memory (MB):', info.inMemoryCache.memoryMB);
-}
-```
-
-## How It Works
+## How It All Works
 
 ### Cache Flow
 
-When you call `cache.read()`:
+When you call `CacheableDataAccess.getData()`:
 
 1. **Check in-memory cache** (if enabled)
    - **Hit**: Return data immediately (microseconds)
@@ -397,19 +433,23 @@ When you call `cache.read()`:
    - **Success**: Store in in-memory cache, return data
    - **Error**: Use expired in-memory data if available (with extended expiration)
 
+3. **Fetch from Original Source**
+   - **Success**: Store in DynamoDB/S3 and in-memory cache, return data
+   - **Error**: Use expired cache data if available (with extended expiration)
+
 ### LRU Eviction
 
 The in-memory cache uses a Least Recently Used (LRU) eviction policy:
 
 - When the cache reaches maximum capacity, the least recently accessed entry is removed
-- Accessing an entry (via `read()`) updates its position to "most recently used"
+- Accessing an entry (via `CacheableDataAccess.getData()`) updates its position to "most recently used"
 - This ensures frequently accessed data stays in cache
 
 ### Expiration Handling
 
 - Expiration is checked on every cache read
-- Expired entries are immediately deleted from the cache
-- Expired data is retained temporarily for fallback if DynamoDB fails
+- Expired entries are deleted from the cache
+- Expired data is retained temporarily for fallback on upstream failures
 
 ### Error Handling
 
@@ -424,7 +464,7 @@ When DynamoDB is unavailable and expired cache data exists:
 
 ### Adjusting Cache Capacity
 
-If you're experiencing high memory usage or want to optimize cache size:
+If you're experiencing high memory usage or want to optimize in-memory cache size:
 
 **For smaller entries** (< 1 KB average):
 ```javascript
@@ -511,114 +551,6 @@ Monitor your Lambda function's memory usage in CloudWatch:
 2. Increase cache expiration times if appropriate
 3. Consider if in-memory cache is beneficial for your use case
 
-## Examples
-
-### Basic Configuration
-
-```javascript
-const cache = require('@63klabs/cache-data');
-
-cache.Cache.init({
-  dynamoDbTable: 'my-cache-table',
-  s3Bucket: 'my-cache-bucket',
-  secureDataKey: Buffer.from(mySecretKey, 'hex'),
-  useInMemoryCache: true
-});
-```
-
-### Advanced Configuration
-
-```javascript
-cache.Cache.init({
-  dynamoDbTable: process.env.CACHE_DATA_DYNAMO_DB_TABLE,
-  s3Bucket: process.env.CACHE_DATA_S3_BUCKET,
-  secureDataKey: Buffer.from(params.app.crypt_secureDataKey, cache.Cache.CRYPT_ENCODING),
-  
-  // In-memory cache configuration
-  useInMemoryCache: true,
-  inMemoryCacheMaxEntries: 8000,  // Explicit capacity for 2GB Lambda
-  inMemoryCacheEntriesPerGB: 4000,  // Conservative heuristic
-  inMemoryCacheDefaultMaxEntries: 1500,  // Higher fallback
-  
-  // Other cache settings
-  idHashAlgorithm: 'RSA-SHA256',
-  DynamoDbMaxCacheSize_kb: 10,
-  purgeExpiredCacheEntriesAfterXHours: 24,
-  timeZoneForInterval: 'America/Chicago'
-});
-```
-
-### Environment Variable Configuration
-
-```bash
-# Enable in-memory cache
-CACHE_USE_IN_MEMORY=true
-
-# Other cache settings
-CACHE_DATA_DYNAMO_DB_TABLE=my-cache-table
-CACHE_DATA_S3_BUCKET=my-cache-bucket
-CACHE_DATA_ID_HASH_ALGORITHM=RSA-SHA256
-```
-
-### Checking Cache Performance
-
-```javascript
-const cache = require('@63klabs/cache-data');
-
-// Get cache info
-const info = cache.Cache.info();
-console.log('Cache configuration:', JSON.stringify(info, null, 2));
-
-// Create cache instance
-const cacheObj = new cache.Cache(connection, cacheProfile);
-const data = await cacheObj.read();
-
-// Log cache performance
-const status = cacheObj.getStatus();
-console.log('Cache status:', status);
-
-if (status === cache.Cache.STATUS_CACHE_IN_MEM) {
-  console.log('✓ In-memory cache hit (microseconds)');
-} else if (status === cache.Cache.STATUS_CACHE) {
-  console.log('○ DynamoDB cache hit (milliseconds)');
-} else {
-  console.log('✗ Cache miss');
-}
-```
-
-## Migration Guide
-
-### Enabling for Existing Applications
-
-The in-memory cache is fully backward compatible. To enable it:
-
-1. **Update initialization** (add one line):
-   ```javascript
-   cache.Cache.init({
-     // ... existing parameters ...
-     useInMemoryCache: true  // Add this line
-   });
-   ```
-
-2. **Deploy**: No other code changes required
-
-3. **Monitor**: Watch CloudWatch metrics for memory usage and performance
-
-4. **Tune**: Adjust capacity if needed based on monitoring
-
-### Disabling the Feature
-
-To disable the in-memory cache:
-
-```javascript
-cache.Cache.init({
-  // ... other parameters ...
-  useInMemoryCache: false  // Explicitly disable
-});
-```
-
-Or remove the parameter entirely (defaults to `false`).
-
 ## Additional Resources
 
 - [Technical Documentation](../../technical/in-memory-cache.md) - Detailed implementation details for maintainers
@@ -667,41 +599,41 @@ Returns configuration information about the cache system.
 
 **Returns:** Object containing all cache configuration settings
 
-#### new Cache(connection, cacheProfile)
-
-Create a new cache instance for a specific connection and cache profile.
+#### CacheableDataAccess.getData(cacheProfile, endpoint.get, connection, options)
 
 **Parameters:**
-- `connection` (Object): Connection details that uniquely identify the cached resource
 - `cacheProfile` (Object): Cache behavior configuration including expiration, encryption, etc.
+- `endpoint.get` (Function): The function to use (that accepts connection and options) on a cache miss
+- `connection` (Object): Connection details that uniquely identify the cached resource
+- `options` (Object): Optional. Pass `null` or `{}` if not using. This will get passed to the getter function on a miss. Use can use this to pass settings that should not be part of the cache key (do not affect cache output or are always the same).
+
+The getter function `endpoint.get` is used in these examples, but you can wrap any data accessor in your own function to pass in.
+
+For example, if you have a function that queries the AWS SDK and filters a list of S3 objects based on tag values:
+
+```js
+const fetch = function(connection, options) {
+  myOtherFunctionThatQueriesS3(
+    {
+      bucket: connection.host,
+      key: connection.path,
+      tagValues: connection.parameters,
+      format: options.format
+    })
+}
+
+const cacheObj = await CacheableDataAccess.getData(
+	cacheProfile, 
+	fetch,
+	conn,
+	options // extra data that doesn't affect the request or never changes from request to request
+);
+
+data = cacheObj.getBody(true);
+```
+
+You can use CacheableDataAccess to cache ANY data, even data used internally to your application.
+
+For example, large dataset processing. Grab 1,000 records from the source, parse, heavily transform and filter, and cache the parsed data so you don't need to re-parse, filter, and transform on every request.
 
 See JSDoc for complete parameter details and examples.
-
-#### cache.read()
-
-Read data from cache. Checks in-memory cache first (if enabled), then DynamoDB/S3.
-
-**Returns:** Promise resolving to cached data or null if not found/expired
-
-#### cache.write(body, headers, statusCode)
-
-Write data to cache with automatic tier selection and encryption.
-
-**Parameters:**
-- `body` (string): Content to cache
-- `headers` (Object): HTTP headers to cache
-- `statusCode` (string|number): HTTP status code
-
-**Returns:** Promise resolving to true if successful
-
-#### cache.getStatus()
-
-Get the cache status indicating where data came from.
-
-**Returns:** One of:
-- `Cache.STATUS_CACHE_IN_MEM`: Data from in-memory cache
-- `Cache.STATUS_CACHE`: Data from DynamoDB/S3
-- `Cache.STATUS_NO_CACHE`: No cached data
-- `Cache.STATUS_CACHE_ERROR`: Error occurred, stale data returned
-
-See JSDoc in source files for complete method signatures, parameters, return types, and usage examples.

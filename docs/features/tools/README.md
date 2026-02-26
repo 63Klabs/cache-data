@@ -651,14 +651,17 @@ const response = await tools.AWS.s3.client.send(command);
 
 Cache SSM parameters and Secrets Manager secrets to reduce API calls and improve performance.
 
+These functions provide an interface to the [AWS Parameters and Secrets Lambda Extension](https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html) which must be installed as a layer to your Lambda function.
+
+You will want to set your secrets and parameters during an initialization phase outside of your Lambda handler. This is typically done during a configuration initialization.
+
 ### CachedSSMParameter
 
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
-const apiKey = new tools.CachedSSMParameter({
-  name: '/app/config/apiKey',
-  maxAge_ms: 300000  // Cache for 5 minutes
+const apiKey = new tools.CachedSSMParameter('/path/to/parameter/paramName', {
+  refreshAfter: 43200 // Cache for 12 hours
 });
 
 // First call fetches from SSM
@@ -666,9 +669,6 @@ const key1 = await apiKey.getValue();
 
 // Subsequent calls use cached value
 const key2 = await apiKey.getValue();
-
-// Force refresh
-await apiKey.prime();
 ```
 
 ### CachedSecret
@@ -676,15 +676,16 @@ await apiKey.prime();
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
-const dbPassword = new tools.CachedSecret({
-  name: 'prod/db/password',
-  maxAge_ms: 600000  // Cache for 10 minutes
+const dbPassword = new tools.CachedSecret('prod/db/password', {
+  refreshAfter: 43200 // Cache for 12 hours
 });
 
 const password = await dbPassword.getValue();
 ```
 
 ### CachedParameterSecrets
+
+When you create a `new CachedSecret` or `new CachedSSMParameter` they are automatically added to the CachedParameterSecrets. However, if you want to manage them as a group you can do so as well.
 
 Manage multiple cached parameters and secrets:
 
@@ -704,11 +705,11 @@ const apiKey = secrets.get('/app/apiKey').sync_getValue();
 const password = secrets.get('prod/db/password').sync_getValue();
 ```
 
----
-
 ## Data Utilities
 
 ### sanitize() Function
+
+> **Note**: Sanitize does a best effort at scrubbing and is used as a last resort, do not log sensitive data!
 
 Scrub sensitive data from objects for logging:
 
@@ -726,7 +727,7 @@ console.log(tools.sanitize(obj));
 // { username: 'john', password: '******123', apiKey: '******5678', data: 'public info' }
 ```
 
-**Note**: This attempts to sanitize but may miss sensitive information. Avoid logging sensitive data when possible.
+> **Note**: This attempts to sanitize but may miss sensitive information. Avoid logging sensitive data when possible.
 
 ### obfuscate() Function
 
@@ -768,8 +769,6 @@ tools.printMsg('Application started', 'INFO');
 tools.printMsg('Error occurred', 'ERROR', errorObject);
 ```
 
----
-
 ## ImmutableObject Class
 
 Create immutable objects that cannot be modified after creation:
@@ -789,8 +788,6 @@ config.apiUrl = 'https://other.com'; // Error!
 config.newProp = 'value'; // Error!
 delete config.timeout; // Error!
 ```
-
----
 
 ## Request and Response Classes
 
@@ -1033,53 +1030,6 @@ const retryConfig = {
 }
 ```
 
-#### Migration from DAO-Level Logic
-
-If you have pagination or retry logic in your DAO classes, you can migrate to APIRequest:
-
-**Before (DAO-level pagination):**
-```javascript
-class MyDAO {
-  async getAllData() {
-    let allItems = [];
-    let offset = 0;
-    const limit = 200;
-    
-    while (offset < totalItems) {
-      const request = new APIRequest({
-        host: 'api.example.com',
-        path: '/data',
-        parameters: { offset, limit }
-      });
-      
-      const response = await request.send();
-      const body = JSON.parse(response.body);
-      allItems = allItems.concat(body.items);
-      offset += limit;
-    }
-    
-    return allItems;
-  }
-}
-```
-
-**After (APIRequest pagination):**
-```javascript
-class MyDAO {
-  async getAllData() {
-    const request = new APIRequest({
-      host: 'api.example.com',
-      path: '/data',
-      parameters: { limit: 200 },
-      pagination: { enabled: true }
-    });
-    
-    const response = await request.send();
-    return JSON.parse(response.body).items;
-  }
-}
-```
-
 #### Detailed Documentation
 
 For comprehensive guides on each feature:
@@ -1087,15 +1037,6 @@ For comprehensive guides on each feature:
 - **[Pagination Guide](./api-request-pagination.md)** - Complete pagination documentation with examples
 - **[Retry Guide](./api-request-retry.md)** - Complete retry documentation with examples
 - **[X-Ray Guide](./api-request-xray.md)** - Complete X-Ray tracing documentation
-
-#### Backwards Compatibility
-
-All new features are opt-in and fully backwards compatible:
-
-- Existing code continues to work without modification
-- No breaking changes to the public API
-- Metadata is only added when new features are used
-- Default behavior remains unchanged
 
 ### ClientRequest Class
 
@@ -1148,8 +1089,6 @@ dataModel.setSuccess(true);
 const response = new tools.Response();
 response.setBody(dataModel.get());
 ```
-
----
 
 ## Generic Response Generators
 
@@ -1222,8 +1161,6 @@ async function textResponse() {
 }
 ```
 
----
-
 ## _ConfigSuperClass
 
 Base class for application configuration. Extend this to create your own Config class:
@@ -1231,8 +1168,14 @@ Base class for application configuration. Extend this to create your own Config 
 ```javascript
 const { tools } = require('@63klabs/cache-data');
 
+const settings = require("./settings.js");
+
 class Config extends tools._ConfigSuperClass {
   static async init() {
+
+    ClientRequest.init();
+		Response.init( { settings });
+
     // Initialize connections
     this._connections = new tools.Connections();
     
@@ -1242,8 +1185,10 @@ class Config extends tools._ConfigSuperClass {
       host: 'api.example.com',
       path: '/data'
     }));
+    // You can also maintain an array of connections, for example load in from another js or json file:
+    // _ConfigSuperClass._connections = new Connections(connections);
     
-    // Load parameters from SSM
+    // Load parameters from SSM (alternate to using CachedParameterSecrets)
     const params = await this._initParameters([
       {
         group: 'app',
@@ -1263,20 +1208,23 @@ class Config extends tools._ConfigSuperClass {
     });
   }
 }
+```
 
+```js
 // Initialize at application boot
 Config.init();
 
 // Access later
-const conn = Config.getConn('apiConnection');
+const {conn, cacheProfile} = Config.getConnCacheProfile('games', 'default'); // conn and profile
+const conn2 = Config.getConn('prediction'); // just conn
 const settings = Config.settings();
 ```
-
----
 
 ## Connections Classes
 
 Manage connection configurations and authentication.
+
+Below are examples of how to load connections manually, however, when using the `_ConfigSuperClass` you can load a whole bunch of connections at once.
 
 ### Connection Class
 
@@ -1349,7 +1297,53 @@ const connection = new tools.Connection({
 });
 ```
 
----
+### Loading a bunch of connections during Config.init()
+
+Connections file:
+
+```js
+// connections.js
+
+const connections = [
+	{
+		name: "games",
+		host: "api.chadkluck.net",
+		path: "/games",
+		cache: [
+			{
+				profile: "default",
+				overrideOriginHeaderExpiration: true,
+				defaultExpirationInSeconds: (5 * 60), // 5 minutes
+				expirationIsOnInterval: true,
+				headersToRetain: "",
+				hostId: "chadkluck", // log entry label - only used for logging
+				pathId: "games", // log entry label - only used for logging
+				encrypt: true, // encrypt the data in the cache
+			}
+		]        
+	}
+]
+
+module.exports = connections;
+```
+
+Configuration script:
+
+```js
+// config.js
+
+const {tools: {_ConfigSuperClass }} = require("@63klabs/cache-data");
+
+const connections = require("./connections.js");
+
+class Config extends _ConfigSuperClass {
+  static async init() {
+    // ...
+    _ConfigSuperClass._connections = new Connections(connections);
+    // ...
+  };
+};
+```
 
 ## API Reference
 

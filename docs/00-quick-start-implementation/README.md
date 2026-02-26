@@ -106,6 +106,8 @@ console.log(data.headers);    // response headers
 **Connection options:**
 
 ```javascript
+const {endpoint} = require("@63klabs/cache-data");
+
 const data = await endpoint.get({
   host: "api.example.com",
   path: "/data",
@@ -255,6 +257,8 @@ async function getData() {
 You can use Lambda environment variables instead of hardcoding values:
 
 ```javascript
+const {cache} = require("@63klabs/cache-data");
+
 cache.Cache.init({
   dynamoDbTable: process.env.CACHE_TABLE,
   s3Bucket: process.env.CACHE_BUCKET,

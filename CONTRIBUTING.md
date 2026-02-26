@@ -28,7 +28,7 @@ Code must be reviewed, understood, and tested by a human before being merged.
 
 Kiro is the required AI coding assistant for final integrations, documentation, and testing, as it is in the AWS Ecosystem and this project is deveoped to deploy on the AWS platform. Just like test suites, Kiro ensures the proper tests, documentation, and guardrails are in place. Kiro is as important as commit-hooks and tests as it is a tool that ensures quality checks and should not be bypassed.
 
-Ensure [AI Context](./AI_CONTEXT.md) and [Kiro steering documents](.kiro/steering/ai-context-reference.md) are reviewed, understood, and used by both humans and AI.
+Ensure [AGENTS](./AGENTS.md) and Kiro steering documents are reviewed, understood, and used by both humans and AI.
 
 ## Development Setup
 
@@ -162,6 +162,5 @@ Thank you to the following people who have contributed to this project:
 
 Chad Kluck\
 DevOps & Developer Experience Engineer\
-AWS Certified Cloud Practitioner | AWS Certified Developer - Associate | AWS
-Certified Solutions Architect - Associate\
+AWS Certified Developer and Solutions Architect\
 [Website](https://chadkluck.me)
