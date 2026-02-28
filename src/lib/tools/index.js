@@ -101,6 +101,7 @@ const { Connections, Connection, ConnectionRequest, ConnectionAuthentication } =
 class AppConfig {
 
 	static _promise = null;
+	static _promises = [];
 	static _connections = null;
 	static _settings = null;
 	static _ssmParameters = null;
@@ -189,6 +190,14 @@ class AppConfig {
 		return await AppConfig._promise;
 
 	};
+
+	/**
+	 * Add a promise to AppConfig. Use AppConfig.promise() to ensure all are resolved.
+	 * @param {Promise} promise 
+	 */
+	static addPromise(promise) {
+		AppConfig._promises.push(promise);
+	}
 
 	/**
 	 * Get the application settings object
@@ -297,7 +306,10 @@ class AppConfig {
 	 * @returns {Promise} A promise that resolves when the Config class has finished initializing
 	 */
 	static promise() {
-		return AppConfig._promise;
+		if (AppConfig._promise !== null ) { // Backwards compatibility
+			AppConfig._promises.push(AppConfig._promise);
+		}
+		return Promise.all[AppConfig._promises];
 	};
 
 	
