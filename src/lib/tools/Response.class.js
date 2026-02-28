@@ -152,6 +152,17 @@ class Response {
 	};
 
 	/**
+	 * Get information about response initialization
+	 * @returns {{isInitialized: boolean, settings: Object}
+	 */
+	static info = () => {
+		return {
+			isInitialized: Response.#isInitialized,
+			settings: Response.#settings,
+		};
+	};
+
+	/**
 	 * Resets all properties of the response to default values except those specified in the object.
 	 * ClientRequest cannot be reset. Uses generic response templates based on status code.
 	 * 
