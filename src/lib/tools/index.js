@@ -91,14 +91,84 @@ class _ConfigSuperClass {
 	static _promise = null;
 	static _connections = null;
 	static _settings = null;
+	static _ssmParameters = null;
+
+	/**
+	 * Initialize the Config class
+	 *
+	 * @param {object} options Configuration options
+	 * @param {object} options.settings Application settings retrieved by Config.settings()
+	 * @param {object} options.connections Application connections retrieved by Config.getConnection() or Config.getConnCacheProfile()
+	 * @param {object} options.validation ClientRequest.init() options
+	 * @param {object} options.response Response.init() options
+	 * @param {object} options.ssmParameters Parameter Store
+	 * @returns {Promise<void>}
+	 * @example
+	 * const { Config } = require("./config");
+	 * Config.init({
+	 *   settings: {
+	 *     dataLimit: 1000,
+	 *     cacheTTL: 300
+	 *   },
+	 *   connections: {
+	 *     myConnection: {
+	 *       method: "GET",
+	 *       host: "example.com",
+	 *       path: "/api/v1/data",
+	 *       parameters: {
+	 *         limit: 100
+	 *       }
+	 *     }
+	 *   }
+	 * });
+	 */
+	static async init(options = {}) {
+
+		_ConfigSuperClass._promise = new Promise(async (resolve, reject) => {
+
+			try {
+
+				if (options.settings) {
+					_ConfigSuperClass._settings = options.settings;
+					DebugAndLog.debug("Settings initialized", _ConfigSuperClass._settings);
+				}
+
+				if (options.connections) {
+					_ConfigSuperClass._connections = new Connections(options.connections);
+					DebugAndLog.debug("Connections initialized", _ConfigSuperClass._connections.info());
+				}
+
+				if (options.validation) {
+					ClientRequest.init(options.validation);
+					DebugAndLog.debug("ClientRequest initialized", ClientRequest.info());
+				}
+
+				if (options.response) {
+					Response.init(options.response);
+					DebugAndLog.debug("Response initialized", Response.info());
+				}
+
+				if (options.ssmParameters) {
+					_ConfigSuperClass._ssmParameters = await _ConfigSuperClass._initParameters(options.ssmParameters);
+				}
+
+			} catch (error) {
+				DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
+			} finally {
+				resolve();
+			}
+
+		});
+
+		return await _ConfigSuperClass._promise;
+
+	};
 
 	/**
 	 * Get the application settings object
 	 * 
-	 * @deprecated Use getSettings() instead for immutable access
 	 * @returns {object|null} Settings object containing application configuration, or null if not initialized
 	 * @example
-	 * // Legacy usage (backwards compatibility)
 	 * const { Config } = require("./config");
 	 * const limit = Config.settings().dataLimit;
 	 */
@@ -346,7 +416,7 @@ class _ConfigSuperClass {
 	 *  ]
 	 * );
 	 * @param {array} parameters An array of parameter locations
-	 * @returns {object} Parameters from the parameter store
+	 * @returns {Promise<object>} Parameters from the parameter store
 	 */
 	static async _initParameters(parameters) {
 		// make the call to get the parameters and wait before proceeding to the return
@@ -383,6 +453,7 @@ module.exports = {
 	ResponseDataModel,
 	Response,
 	_ConfigSuperClass,
+	AppConfig: _ConfigSuperClass, // Alias
 	CachedSSMParameter,
 	CachedSecret,
 	CachedParameterSecret,

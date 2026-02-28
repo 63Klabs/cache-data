@@ -73,7 +73,6 @@ class ClientRequest extends RequestInfo {
 		apiKey: null
 	}
 
-
 	/**
 	 * Initializes the request data based on the event. Also sets the 
 	 * validity of the request so it may be checked by .isValid()
@@ -141,10 +140,34 @@ class ClientRequest extends RequestInfo {
 
 	};
 
+	/**
+	 * Returns the current validation rules
+	 * @returns {{referrerWhiteList<Array>}} validations
+	 */
+	static info() {
+		return {
+			referrerWhiteList: ClientRequest.getReferrerWhiteList(),
+		};
+	};
+
+	/**
+	 * Allowed referrers
+	 * @returns {Array<string>} Allowed referrers
+	 */
 	static getReferrerWhiteList() {
 		return ClientRequest.#validations.referrers;
 	};
 
+	/**
+	 * Parameter validations
+	 * @returns {{
+	 * 	pathParameters?: object,
+	 * 	queryParameters?: object,
+	 * 	headerParameters?: object,
+	 * 	cookieParameters?: object,
+	 * 	bodyParameters?: object
+	 * }}
+	 */
 	static getParameterValidations() {
 		return ClientRequest.#validations.parameters;
 	};

@@ -54,7 +54,6 @@ class Connections {
 		};
 	};
 
-
 	/**
 	 * Given an object (associative array) or Connection instance, create a Connection object to add to
 	 * our collection of Connections.
@@ -88,10 +87,36 @@ class Connections {
 		return ( ( connectionName in this._connections ) ? this._connections[connectionName] : null );
 	};
 
+	/**
+	 *
+	 * @returns {Array<Connection>} An array of Connection objects
+	 */
 	toObject() {
-		return this._connections;
+		// iterate through connections and return .toObject() for each
+		const obj = {};
+		for (var key in this._connections) {
+			obj[key] = this._connections[key].toObject();
+		}
+		return obj;
 	};
 
+	/**
+	 * 
+	 * @returns {object}
+	 */
+	info() {
+		// iterate through connections and return .toObjectInfo for each
+		const obj = {};
+		for (var key in this._connections) {
+			obj[key] = this._connections[key].toInfoObject();
+		}
+		return obj;
+	}
+
+	/**
+	 * Used by JSON.stringify
+	 * @returns {string}
+	 */
 	toJSON() {
 		// loop through the Connection objects in Connections by key and use each of their .toInfoObject() methods to generate an object
 		var obj = {};
@@ -300,7 +325,7 @@ class Connection {
 
 	/**
 	 * 
-	 * @returns object (associative array) with connection details in key/pairs
+	 * @returns {object} (associative array) with connection details in key/pairs
 	 */
 	toObject() {
 		const obj = this._toObject();

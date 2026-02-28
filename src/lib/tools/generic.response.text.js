@@ -54,6 +54,12 @@ response418 = {
 	body: text("I'm a teapot")
 };
 
+response427 = {
+	statusCode: 427,
+	headers: headers,
+	body: text("Too Many Requests")
+};
+
 response500 = {
 	statusCode: 500,
 	headers: headers,
@@ -86,6 +92,8 @@ const response = function (statusCode) {
 			return this.response408;
 		case 418:
 			return this.response418;
+		case 427:
+			return this.response427;
 		case 500:
 			return this.response500;
 		default:
@@ -105,6 +113,7 @@ module.exports = {
 	response405,
 	response408,
 	response418,
+	response427,
 	response500,
 	response
 }

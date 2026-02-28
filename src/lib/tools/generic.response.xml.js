@@ -56,6 +56,12 @@ response418 = {
 	body: xml("<error>418 I'm a teapot</error>")
 };
 
+response427 = {
+	statusCode: 427,
+	headers: headers,
+	body: xml("<error>Too Many Requests</error>")
+};
+
 response500 = {
 	statusCode: 500,
 	headers: headers,
@@ -88,6 +94,8 @@ response = function (statusCode) {
 			return this.response408;
 		case 418:
 			return this.response418;
+		case 427:
+			return this.response427;
 		case 500:
 			return this.response500;
 		default:
@@ -107,6 +115,7 @@ module.exports = {
 	response405,
 	response408,
 	response418,
+	response427,
 	response500,
 	response
 }

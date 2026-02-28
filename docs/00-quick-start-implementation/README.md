@@ -19,7 +19,7 @@ npm install @63klabs/cache-data
 ```
 
 **Prerequisites:**
-- Node.js >= 20.0.0
+- Node.js >= 24.0.0
 - AWS account with access to S3, DynamoDB, and SSM Parameter Store (for caching features)
 - AWS SDK v3 packages (installed as peer dependencies)
 
