@@ -195,7 +195,7 @@ class AppConfig {
 	 * Add a promise to AppConfig. Use AppConfig.promise() to ensure all are resolved.
 	 * @param {Promise} promise 
 	 */
-	static addPromise(promise) {
+	static add(promise) {
 		AppConfig._promises.push(promise);
 	}
 
