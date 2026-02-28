@@ -120,10 +120,20 @@ class ClientRequest extends RequestInfo {
 	 * Add ClientRequest.init(options) to the Config.init process or at the
 	 * top of the main index.js file outside of the handler.
 	 * @param {object} options - Configuration options with validations property containing referrers and parameters
+	 * @param {Array<string>} options.referrers - Array of allowed referrers
+	 * @param {object} options.parameters - Object containing parameter validation functions
 	 * @throws {Error} If options is not an object
 	 */
 	static init(options) {
 		if (typeof options === 'object') {
+			if ('referrers' in options) {
+				ClientRequest.#validations.referrers = options.referrers;
+			}
+			if ('parameters' in options) {
+				ClientRequest.#validations.parameters = options.parameters;
+			}
+
+			// Backwards compatibility - deprecated
 			if ('validations' in options) {
 				if ('referrers' in options.validations) {
 					ClientRequest.#validations.referrers = options.validations.referrers;
