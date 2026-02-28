@@ -44,19 +44,31 @@ const { Connections, Connection, ConnectionRequest, ConnectionAuthentication } =
  */
 
 /**
- * @typedef ConnectionObject
- * @property {object} connection A connection object
- * @property {string} connection.method GET or POST
- * @property {string} connection.uri the full uri (overrides protocol, host, path, and parameters) ex https://example.com/api/v1/1004/?key=asdf&y=4
- * @property {string} connection.protocol https
- * @property {string} connection.host host/domain: example.com
- * @property {string} connection.path path of the request: /api/v1/1004
- * @property {object} connection.parameters parameters for the query string as an object in key/value pairs
- * @property {object} connection.headers headers for the request as an object in key/value pairs
- * @property {string} connection.body for POST requests, the body
- * @property {string} connection.note a note for logging
- * @property {object} connection.options https_get options
- * @property {number} connection.options.timeout timeout in milliseconds
+ * @typedef {Object} ConnectionObject
+ * @property {string} method GET or POST
+ * @property {string} uri the full uri (overrides protocol, host, path, and parameters) ex https://example.com/api/v1/1004/?key=asdf&y=4
+ * @property {string} protocol https
+ * @property {string} host host/domain: example.com
+ * @property {string} path path of the request: /api/v1/1004
+ * @property {object} parameters parameters for the query string as an object in key/value pairs
+ * @property {object} headers headers for the request as an object in key/value pairs
+ * @property {string} body for POST requests, the body
+ * @property {string} note a note for logging
+ * @property {object} options https_get options
+ * @property {number} options.timeout timeout in milliseconds
+ * @property {CacheProfileObject[]} cache
+ */
+
+/**
+ * @typedef {Object} CacheProfileObject
+ * @property {string} profile The name of the cache profile
+ * @property {boolean} overrideOriginHeaderExpiration If true, the cache expiration will be overridden by the origin header expiration
+ * @property {number} defaultExpirationInSeconds The default expiration time in seconds
+ * @property {boolean} expirationIsOnInterval If true, the cache expiration will be on an interval
+ * @property {array<string>} headersToRetain
+ * @property {string} hostId The host ID to use for the cache key
+ * @property {string} pathId The path ID to use for the cache key
+ * @property {boolean} encrypt If true, the cache data will be encrypted
  */
 
 /* ****************************************************************************
@@ -69,7 +81,7 @@ const { Connections, Connection, ConnectionRequest, ConnectionAuthentication } =
  *************************************************************************** */
 
 /**
- * _ConfigSuperClass needs to be extended by your own Config class definition.
+ * AppConfig needs to be extended by your own Config class definition.
  * 
  * This super class holds common variables and methods that can be used by any 
  * application. However, each application requires it's own methods and logic 
@@ -80,13 +92,13 @@ const { Connections, Connection, ConnectionRequest, ConnectionAuthentication } =
  * initialized.
  * 
  * @example
- * class Config extends tools._ConfigSuperClass {
+ * class Config extends tools.AppConfig {
  * 		// your custom class definition including your implementation of .init()
  * }
  * 
  * Config.init();
  */
-class _ConfigSuperClass {
+class AppConfig {
 
 	static _promise = null;
 	static _connections = null;
@@ -98,9 +110,18 @@ class _ConfigSuperClass {
 	 *
 	 * @param {object} options Configuration options
 	 * @param {object} options.settings Application settings retrieved by Config.settings()
-	 * @param {object} options.connections Application connections retrieved by Config.getConnection() or Config.getConnCacheProfile()
-	 * @param {object} options.validation ClientRequest.init() options
-	 * @param {object} options.response Response.init() options
+	 * @param {ConnectionObject[]} options.connections Application connections that can then be retrieved by Config.getConn() or Config.getConnCacheProfile()
+	 * @param {object} options.validations ClientRequest.init() options
+	 * @param {object} options.responses Response.init() options
+	 * @param {object} options.responses.settings
+	 * @param {number} options.responses.settings.errorExpirationInSeconds
+	 * @param {number} options.responses.settings.routeExpirationInSeconds
+	 * @param {number} options.responses.settings.externalRequestHeadroomInMs
+	 * @param {object} options.responses.jsonResponses
+	 * @param {object} options.responses.htmlResponses
+	 * @param {object} options.responses.xmlResponses
+	 * @param {object} options.responses.rssResponses
+	 * @param {object} options.responses.textResponses
 	 * @param {object} options.ssmParameters Parameter Store
 	 * @returns {Promise<void>}
 	 * @example
@@ -124,32 +145,37 @@ class _ConfigSuperClass {
 	 */
 	static async init(options = {}) {
 
-		_ConfigSuperClass._promise = new Promise(async (resolve, reject) => {
+		AppConfig._promise = new Promise(async (resolve) => {
 
 			try {
 
+				const debug = (options?.debug === true);
+				if (debug) {
+					DebugAndLog.debug("Config DebugAndLog enabled");
+				}
+
 				if (options.settings) {
-					_ConfigSuperClass._settings = options.settings;
-					DebugAndLog.debug("Settings initialized", _ConfigSuperClass._settings);
+					AppConfig._settings = options.settings;
+					if (debug) { DebugAndLog.debug("Settings initialized", AppConfig._settings); }
 				}
 
 				if (options.connections) {
-					_ConfigSuperClass._connections = new Connections(options.connections);
-					DebugAndLog.debug("Connections initialized", _ConfigSuperClass._connections.info());
+					AppConfig._connections = new Connections(options.connections);
+					if (debug) { DebugAndLog.debug("Connections initialized", AppConfig._connections.info()); }
 				}
 
-				if (options.validation) {
-					ClientRequest.init(options.validation);
-					DebugAndLog.debug("ClientRequest initialized", ClientRequest.info());
+				if (options.validations) {
+					ClientRequest.init(options.validations);
+					if (debug) { DebugAndLog.debug("ClientRequest initialized", ClientRequest.info()); }
 				}
 
-				if (options.response) {
-					Response.init(options.response);
-					DebugAndLog.debug("Response initialized", Response.info());
+				if (options.responses) {
+					Response.init(options.responses);
+					if (debug) { DebugAndLog.debug("Response initialized", Response.info()); }
 				}
 
 				if (options.ssmParameters) {
-					_ConfigSuperClass._ssmParameters = await _ConfigSuperClass._initParameters(options.ssmParameters);
+					AppConfig._ssmParameters = await AppConfig._initParameters(options.ssmParameters);
 				}
 
 			} catch (error) {
@@ -160,7 +186,7 @@ class _ConfigSuperClass {
 
 		});
 
-		return await _ConfigSuperClass._promise;
+		return await AppConfig._promise;
 
 	};
 
@@ -173,7 +199,7 @@ class _ConfigSuperClass {
 	 * const limit = Config.settings().dataLimit;
 	 */
 	static settings() {
-		return _ConfigSuperClass._settings;
+		return AppConfig._settings;
 	};
 
 	/**
@@ -181,7 +207,7 @@ class _ConfigSuperClass {
 	 * @returns {Connections}
 	 */
 	static connections() {
-		return _ConfigSuperClass._connections;
+		return AppConfig._connections;
 	};
 
 	/**
@@ -191,10 +217,10 @@ class _ConfigSuperClass {
 	 * @returns {Connection|null} Connection instance or null if not found
 	 */
 	static getConnection(name) {
-		if (_ConfigSuperClass._connections === null) {
+		if (AppConfig._connections === null) {
 			return null;
 		}
-		return _ConfigSuperClass._connections.get(name);
+		return AppConfig._connections.get(name);
 	}
 
 	/**
@@ -211,11 +237,11 @@ class _ConfigSuperClass {
 	 * )
 	 * */
 	static getConn(name) {
-		if (_ConfigSuperClass._connections === null) {
+		if (AppConfig._connections === null) {
 			return null;
 		}
 		
-		const connection = _ConfigSuperClass._connections.get(name);
+		const connection = AppConfig._connections.get(name);
 		
 		if (connection === null) {
 			return null;
@@ -239,11 +265,11 @@ class _ConfigSuperClass {
 	 */
 	static getConnCacheProfile(connectionName, cacheProfileName) {
 
-		if (_ConfigSuperClass._connections === null) {
+		if (AppConfig._connections === null) {
 			return { conn: null, cacheProfile: null };
 		}
 
-		const connection = _ConfigSuperClass._connections.get(connectionName);
+		const connection = AppConfig._connections.get(connectionName);
 
 		if (connection === null) {
 			return { conn: null, cacheProfile: null };
@@ -271,7 +297,7 @@ class _ConfigSuperClass {
 	 * @returns {Promise} A promise that resolves when the Config class has finished initializing
 	 */
 	static promise() {
-		return _ConfigSuperClass._promise;
+		return AppConfig._promise;
 	};
 
 	
@@ -452,8 +478,8 @@ module.exports = {
 	ClientRequest,
 	ResponseDataModel,
 	Response,
-	_ConfigSuperClass,
-	AppConfig: _ConfigSuperClass, // Alias
+	AppConfig,
+	_ConfigSuperClass: AppConfig, // Alias
 	CachedSSMParameter,
 	CachedSecret,
 	CachedParameterSecret,
