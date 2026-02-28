@@ -33,13 +33,19 @@ When data is stored in the cache, it uses a standardized JSON structure with the
 
 Example structure:
 
-```json
-{
-  "body": "cached content here (JSON Data is Stringified)",
-  "headers": { "content-type": "application/json" },
-  "statusCode": "200",
-  "expires": 1234567890
-}
+```javascript
+const {endpoint, cache: {CacheableDataAccess}} = require('@63klabs/cache-data');
+
+const cacheObj = await CacheableDataAccess( cacheProfile, endpoint.get, conn, null);
+const response = cacheObj.getResponse(true); // true = parse JSON
+
+console.log(response);
+// {
+//   "body": {user: "JaneDoe", id: 123445},
+//   "headers": { "content-type": "application/json" },
+//   "statusCode": "200",
+//   "expires": 1234567890
+// }
 ```
 
 The `cacheObject.cache.body` is what you expect to get back from the response, all the other data is just something you can use or ignore.
@@ -49,6 +55,10 @@ To access the body from `cacheObject` use `cacheObject.getBody(true);`
 By using the `true` option you will receive it as an object (parsed from a JSON string). If you are not receiving JSON (HTML, XML, etc), or you do not want the JSON string to be parsed at this time, then set it to `false`.
 
 ```javascript
+const {endpoint, cache: {CacheableDataObject}} = require('@63klabs/cache-data');
+
+const cacheObject = await CacheableDataObject(cacheProfile, endpoint.get, conn, null);
+
 const data = cacheObject.getBody(false); // leave data as string
 const data2 = cacheObject.getBody(true); // parse JSON data
 ```
@@ -58,12 +68,12 @@ const data2 = cacheObject.getBody(true); // parse JSON data
 The Connection, Cache Profile, and Getter function are sent through `CacheableDataAccess.getData()` which handles all the caching transparently.
 
 ```js
-const {cache, endpoint} = require('@63klabs/cache-data');
+const {cache: {CacheableDataAccess}, endpoint} = require('@63klabs/cache-data');
 
 const conn = { uri: "https://api.chadkluck.net/games" };
 const cacheProfile = { defaultExpirationInSeconds: 60 };
 
-const cacheObj = await cache.CacheableDataAccess.getData(
+const cacheObj = await CacheableDataAccess.getData(
   cacheProfile, 
 	endpoint.get, // this is a provided function for simple API requests
 	conn, 
@@ -102,7 +112,7 @@ const cacheProfile = {
 }
 ```
 
-##### Fetch Function parameter for `CacheableDataAccess.get()`
+##### Fetch Function parameter for `CacheableDataAccess.getData()`
 
 The cache-data package supplies a simple `endpoint.get` method for performing basic HTTP requests.
 
@@ -217,7 +227,9 @@ Cache.init() allows many options, however most can use default settings or Cache
 Below are all the options. The environment variable Cache.init() automatically checks for is in the comment.
 
 ```javascript
-cache.Cache.init({
+const {cache: {Cache}} = require('@63klabs/cache-data');
+
+Cache.init({
   // Required parameters
   secureDataKey: new CachedSSMParameter('/param/store/path/CacheData_SecureDataKey'), // no environment var
 
@@ -399,6 +411,9 @@ switch (status) {
 The cache status is also included in the response headers via `x-cprxy-data-source`:
 
 ```javascript
+const {endpoint, cache: {CacheableDataAccess}} = require('@63klabs/cache-data');
+
+const cacheObj = await CacheableDataAccess(cacheProfile, endpoint.get, conn, null);
 const response = cacheObj.getResponse();
 console.log(response.headers['x-cprxy-data-source']); // "cache:memory"
 ```

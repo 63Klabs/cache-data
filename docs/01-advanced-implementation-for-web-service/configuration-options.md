@@ -5,7 +5,7 @@ Comprehensive configuration options for all components.
 ## ClientRequest Configuration
 
 ```javascript
-const { ClientRequest } = tools;
+const {tools: { ClientRequest }} = require('@63klabs/cache-data');
 
 ClientRequest.init({
   validations: {
@@ -39,7 +39,7 @@ ClientRequest.init({
 ## Response Configuration
 
 ```javascript
-const { Response } = tools;
+const {tools: {Response}} = require('@63klabs/cache-data');
 
 Response.init({
   settings: {
@@ -212,7 +212,7 @@ const { endpoint, cache: {CacheableDataAccess} } = require("@63klabs/cache-data"
 const { Config } = require("./config.js");
 
 const conn1 = Config.getConn("games");
-const data = await endpoint.get(conn1);
+const data1 = await endpoint.get(conn1);
 
 const {conn, cacheProfile} = Config.getConnCacheProfile("games", "default");
 const cacheObj = await CacheableDataAccess.getData(
@@ -230,6 +230,8 @@ For more on using `Cache` and `CacheableDataAccess` see [Cache Feature Documenta
 ### DebugAndLog Configuration
 
 ```javascript
+const {tools: {DebugAndLog}} = require('@63klabs/cache-data');
+
 // Set via environment variables (recommended)
 process.env.CACHE_DATA_LOG_LEVEL = '5'; // 0-5 (0=ERROR, 5=DEBUG)
 process.env.CACHE_DATA_ENV = 'DEV'; // PROD, TEST, or DEV
@@ -241,11 +243,11 @@ process.env.LOG_LEVEL = '5';
 process.env.LOG_LEVEL = 'DEBUG'; // ERROR, WARN, INFO, MSG, DIAG, DEBUG
 
 // Check environment
-if (tools.DebugAndLog.isDevelopment()) {
+if (DebugAndLog.isDevelopment()) {
   // Development-specific logic
 }
 
-if (tools.DebugAndLog.isProduction()) {
+if (DebugAndLog.isProduction()) {
   // Production-specific logic (log level capped at 2)
 }
 ```

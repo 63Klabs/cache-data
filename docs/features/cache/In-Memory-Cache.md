@@ -47,7 +47,9 @@ Consider disabling the in-memory cache when:
 Use `Cache.info()` to inspect the cache configuration and state:
 
 ```javascript
-const info = cache.Cache.info();
+const {cache: {Cache}} = require('@63klabs/cache-data');
+
+const info = Cache.info();
 
 console.log('In-memory cache enabled:', info.useInMemoryCache);
 

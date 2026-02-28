@@ -190,6 +190,8 @@ module.exports = CachedUsersDAO;
 Transform data before returning to client:
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 class UsersDAO {
   
   static async getUser(userId) {

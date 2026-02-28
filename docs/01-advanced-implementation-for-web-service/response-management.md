@@ -197,27 +197,26 @@ The `finalize()` method:
 - Logs the response to CloudWatch
 
 ```javascript
-async function finalizeResponse(response) {
-  // Finalize automatically handles:
-  // - Content-Type detection
-  // - CORS headers
-  // - Cache-Control headers
-  // - Execution time tracking
-  // - CloudWatch logging
-  return response.finalize();
+const {tools: {ClientRequest, Response}} = require('@63klabs/cache-data');
 
-  // Returns:
-  // {
-  //   statusCode: 200,
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     'Access-Control-Allow-Origin': '*',
-  //     'Cache-Control': 'max-age=3600',
-  //     'x-exec-ms': '45'
-  //   },
-  //   body: '{"data":"value"}'
-  // }
-}
+const request = new ClientRequest(event, context);
+const response = new Response(request);
+
+request.setBody( {user: "12345"});
+
+return response.finalize();
+
+// Returns:
+// {
+//   statusCode: 200,
+//   headers: {
+//     'Content-Type': 'application/json',
+//     'Access-Control-Allow-Origin': '*',
+//     'Cache-Control': 'max-age=3600',
+//     'x-exec-ms': '45'
+//   },
+//   body: '{"user":"12345"}'
+// }
 ```
 
 ## Reset and Reuse

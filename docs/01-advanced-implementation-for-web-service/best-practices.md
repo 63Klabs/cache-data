@@ -82,27 +82,27 @@ Cache expensive operations and external API calls:
 
 ```javascript
 // Cache frequently accessed data with longer expiration
-cache: [{
+const cacheProfile1 = {
   profile: 'static-data',
   defaultExpirationInSeconds: 3600, // 1 hour
   overrideOriginHeaderExpiration: true
-}]
+};
 
 // Cache dynamic data with shorter expiration
-cache: [{
+const cacheProfile2 = {
   profile: 'dynamic-data',
   defaultExpirationInSeconds: 300, // 5 minutes
   overrideOriginHeaderExpiration: true
-}]
+};
 
 // Use interval-based caching for batch updates
-cache: [{
+const cacheProfile3 = {
   profile: 'batch-data',
   defaultExpirationInSeconds: 3600,
   expiresIsOnInterval: true,
   intervalInMinutes: 60, // Expires at top of hour
   timeZoneForInterval: 'America/Chicago'
-}]
+};
 ```
 
 ## 5. Implement Proper Logging
@@ -224,15 +224,6 @@ async function handleRoute(route, response) {
 - **Set up alarms**: Create CloudWatch alarms for error rates and latency
 - **Analyze cache hit rates**: Monitor cache effectiveness
 
-```javascript
-// Log cache hit/miss for monitoring
-if (cacheObj.isCacheHit()) {
-  tools.DebugAndLog.info('Cache hit', { key: cacheKey });
-} else {
-  tools.DebugAndLog.info('Cache miss', { key: cacheKey });
-}
-```
-
 ## 11. Secure Your API
 
 - **Validate referrers**: Restrict access to known domains
@@ -242,6 +233,8 @@ if (cacheObj.isCacheHit()) {
 - **Encrypt sensitive data**: Use encryption for sensitive cached data
 
 ```javascript
+const {tools: { ClientRequest }} = require('@63klabs/cache-data');
+
 // Enable referrer validation
 ClientRequest.init({
   validations: {
@@ -250,11 +243,11 @@ ClientRequest.init({
 });
 
 // Encrypt sensitive cached data
-cache: [{
+const cacheProfile = {
   profile: 'sensitive-data',
   encrypt: true, // Encrypt data at rest
   defaultExpirationInSeconds: 300
-}]
+};
 ```
 
 ## 12. Test Thoroughly

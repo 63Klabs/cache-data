@@ -152,7 +152,7 @@ class AppConfig {
 
 				const debug = (options?.debug === true);
 				if (debug) {
-					DebugAndLog.debug("Config DebugAndLog enabled");
+					DebugAndLog.debug("Config Init in debug mode");
 				}
 
 				if (options.settings) {
@@ -204,6 +204,7 @@ class AppConfig {
 	 * 
 	 * @returns {object|null} Settings object containing application configuration, or null if not initialized
 	 * @example
+	 * // Config extends AppConfig
 	 * const { Config } = require("./config");
 	 * const limit = Config.settings().dataLimit;
 	 */

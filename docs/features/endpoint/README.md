@@ -74,6 +74,8 @@ HTTP method to use for the request.
 - **Options**: `"GET"`, `"POST"`, `"PUT"`, `"DELETE"`, `"PATCH"`, etc.
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   method: 'POST',
   uri: 'https://api.example.com/submit'
@@ -85,6 +87,8 @@ const response = await endpoint.get({
 Complete URI including protocol, host, and path. When provided, overrides `protocol`, `host`, and `path` properties.
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   uri: 'https://api.example.com/data?key=value'
 });
@@ -98,6 +102,8 @@ Protocol to use for the request.
 - **Options**: `"http"`, `"https"`
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   protocol: 'https',
   host: 'api.example.com',
@@ -110,6 +116,8 @@ const response = await endpoint.get({
 Hostname or IP address of the endpoint.
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   host: 'api.example.com',
   path: '/data'
@@ -121,6 +129,8 @@ const response = await endpoint.get({
 Path portion of the URL.
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   host: 'api.example.com',
   path: '/api/v1/users'
@@ -134,6 +144,8 @@ Request body for POST/PUT requests. Should be a string (use `JSON.stringify()` f
 - **Default**: `null`
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   method: 'POST',
   uri: 'https://api.example.com/submit',
@@ -148,6 +160,8 @@ Query string parameters as key-value pairs. Automatically encoded and appended t
 - **Default**: `null`
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   host: 'api.example.com',
   path: '/search',
@@ -167,6 +181,8 @@ HTTP headers as key-value pairs.
 - **Default**: `null`
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   host: 'api.example.com',
   path: '/secure/data',
@@ -184,6 +200,8 @@ Additional request options.
 - **Default**: `null`
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   host: 'api.example.com',
   path: '/data',
@@ -210,6 +228,8 @@ Descriptive note for logging purposes. Helps identify requests in logs.
 - **Default**: `"Get data from endpoint"`
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({
   host: 'api.example.com',
   path: '/data',
@@ -228,6 +248,8 @@ The response object contains the HTTP response details.
 Indicates whether the request was successful (status code 200-299).
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({ uri: 'https://api.example.com/data' });
 if (response.success) {
   console.log('Request succeeded');
@@ -239,6 +261,8 @@ if (response.success) {
 HTTP status code from the response.
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({ uri: 'https://api.example.com/data' });
 console.log(`Status: ${response.statusCode}`); // e.g., 200, 404, 500
 ```
@@ -248,6 +272,8 @@ console.log(`Status: ${response.statusCode}`); // e.g., 200, 404, 500
 Response body. Automatically parsed as JSON if possible, otherwise returned as text.
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({ uri: 'https://api.example.com/data' });
 console.log(response.body); // Parsed JSON object or text string
 ```
@@ -257,6 +283,8 @@ console.log(response.body); // Parsed JSON object or text string
 Response headers as key-value pairs.
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 const response = await endpoint.get({ uri: 'https://api.example.com/data' });
 console.log(response.headers['content-type']);
 ```
@@ -448,9 +476,6 @@ const connection = {
 module.exports = {
   apiConnection: {
     host: process.env.API_HOST,
-    headers: {
-      'Authorization': `Bearer ${process.env.API_TOKEN}`
-    },
     options: {
       timeout: 5000
     }
@@ -470,6 +495,8 @@ const response = await endpoint.get({
 ### 3. Handle Errors Gracefully
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 async function fetchData(path) {
   try {
     const response = await endpoint.get({
@@ -494,23 +521,7 @@ async function fetchData(path) {
 
 For detailed API documentation including all methods, parameters, and return types, refer to the JSDoc comments in the source code:
 
-- **endpoint.get() function**: Main entry point for making requests - see `src/lib/dao-endpoint.js`
-- **Endpoint class**: Request handler class - see `src/lib/dao-endpoint.js`
-- **ConnectionObject typedef**: Connection configuration type definition - see `src/lib/dao-endpoint.js`
-
-### Key Methods
-
-#### endpoint.get(connection, query)
-
-Makes an HTTP request to a remote endpoint with the specified configuration.
-
-**Parameters:**
-- `connection` (ConnectionObject): Connection configuration object
-- `query` (Object, optional): Additional query data to merge with connection parameters
-
-**Returns:** Promise resolving to response object with `success`, `statusCode`, `body`, and `headers` properties
-
-See JSDoc in `src/lib/dao-endpoint.js` for complete method signatures, parameters, return types, and usage examples.
+- **Endpoint**: `src/lib/dao-endpoint.js`
 
 ## Related Documentation
 

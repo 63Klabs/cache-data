@@ -105,10 +105,10 @@ class Connections {
 	 * @returns {object}
 	 */
 	info() {
-		// iterate through connections and return .toObjectInfo for each
+		// iterate through connections and return .toObject for each
 		const obj = {};
 		for (var key in this._connections) {
-			obj[key] = this._connections[key].toInfoObject();
+			obj[key] = this._connections[key].toObject();
 		}
 		return obj;
 	}
@@ -325,7 +325,7 @@ class Connection {
 
 	/**
 	 * 
-	 * @returns {object} (associative array) with connection details in key/pairs
+	 * @returns {object} An object representation of the Connection object
 	 */
 	toObject() {
 		const obj = this._toObject();
@@ -346,6 +346,10 @@ class Connection {
 		return obj;
 	};
 
+	/**
+	 * 
+	 * @returns {object} An object representation of the Connection object
+	 */
 	toInfoObject() {
 		const obj = this._toObject();
 
@@ -364,10 +368,18 @@ class Connection {
 		return obj;
 	}
 
+	/**
+	 * 
+	 * @returns {string} Name of connection
+	 */
 	getName() {
 		return this._name;
 	};
 
+	/**
+	 * 
+	 * @returns {string} String of concatenated connection values
+	 */
 	toString() {
 		return `${this._name} ${this._method} ${(this._uri) ? this._uri : this._protocol+"://"+this._host+this._path}${(this._note) ? " "+this._note : ""}`;
 	};
