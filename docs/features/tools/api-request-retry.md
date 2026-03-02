@@ -276,11 +276,11 @@ const request = new APIRequest({
 
 When a request fails initially but succeeds on retry:
 
-```js
-const successExample = {
+```text
+{
   success: true,
   statusCode: 200,
-  headers: { ... response headers ... },
+  headers: { /* response headers */ },
   body: '{"data":"value"}',
   message: 'OK',
   metadata: {
@@ -290,15 +290,15 @@ const successExample = {
       finalAttempt: 2       // Which attempt succeeded
     }
   }
-};
+}
 ```
 
 ### Exhausted Retries
 
 When all retry attempts fail:
 
-```javascript
-const exhaustedRetriesResponse = {
+```text
+{
   success: false,
   statusCode: 503,
   headers: { /* response headers */ },
@@ -311,23 +311,22 @@ const exhaustedRetriesResponse = {
       finalAttempt: 4       // Last attempt failed
     }
   }
-};
+}
 ```
 
 ### No Retry
 
 When retry is not enabled or not needed:
 
-```javascript
-noPaginationResponse
-const noRetryResponse = {
+```text
+{
   success: true,
   statusCode: 200,
   headers: { /* response headers */ },
   body: '{"data":"value"}',
   message: 'OK'
   // No metadata field
-};
+}
 ```
 
 ## Examples

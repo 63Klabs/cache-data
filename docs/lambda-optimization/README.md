@@ -558,16 +558,20 @@ Connection data needs to stay the same from request to request in order to utili
 
 The order of arrays in parameters is also important. If the order does not matter to the endpoint (it doesn't introduce sort or priority) then always pass parameter arrays in a sorted order.
 
-```json
+```text
 {
+  "host": "api.example.com",
+  "path": "api/v2/produce",
   "parameters": {"fruit": ["apples", "oranges", "plumbs"]}
 }
 ```
 
 Will provide a different cache-key than:
 
-```json
+```text
 {
+  "host": "api.example.com",
+  "path": "api/v2/produce",
   "parameters": {"fruit": ["oranges", "plumbs", "apples"]}
 }
 ```
