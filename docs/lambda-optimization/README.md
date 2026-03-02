@@ -111,43 +111,55 @@ Proper initialization is crucial for minimizing Lambda cold start impact when us
 
 The recommended pattern for cache-data is to implement initialization in a separate configuration module that is imported at the top of your handler file:
 
-**Configuration module** (`config.js`):
 ```javascript
-const { tools, cache } = require('@63klabs/cache-data');
+// config.js
+const { 
+  tools: {AppConfig, CachedSSMParameter, CachedParameterSecrets},
+  cache: {Cache, CacheableDataAccess} } = require('@63klabs/cache-data');
 
-// Initialize configuration
-const Config = new tools._ConfigSuperClass({
-  // Your configuration options
-});
+class Config extends AppConfig {
 
-// Initialize cache
-cache.S3Cache.init('my-cache-bucket');
-cache.DynamoDbCache.init('my-cache-table');
+	static async init() {
+		
+		AppConfig.add(
+			new Promise(async (resolve) => {
 
-// Load parameters/secrets asynchronously
-const initPromise = (async () => {
-  await Config.loadParameters();
-  // Other async initialization
-})();
+        AppConfig.init( {connections} );
 
-module.exports = {
-  Config,
-  initPromise
+        // Cache settings
+        Cache.init({
+          secureDataKey: new CachedSSMParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
+          useInMemoryCache: true, // CACHE_USE_IN_MEMORY
+        });
+
+        resolve(true);
+			})
+		);
+	};
+
+	static async prime() {
+		return Promise.all([
+			CacheableDataAccess.prime(),
+			CachedParameterSecrets.prime()
+		]);
+	};
 };
+
 ```
 
-**Handler module** (`index.js`):
 ```javascript
-const { Config, initPromise } = require('./config');
-const { cache, endpoint } = require('@63klabs/cache-data');
+// index.js
+const { Config } = require('./config');
+const { cache: {CacheableDataAccess}, endpoint } = require('@63klabs/cache-data');
 
 // Handler function
 exports.handler = async (event, context) => {
   // Ensure initialization is complete before proceeding
-  await initPromise;
+	await Config.promise();
+	await Config.prime();
   
   // Now use cache-data components
-  const result = await endpoint.get(Config.getConnection('myApi'));
+  const result = await endpoint.get(Config.getConn('myApi'));
   
   return {
     statusCode: 200,
@@ -217,7 +229,7 @@ Start initialization early and check completion later, allowing other work to pr
 
 ```javascript
 // Start initialization immediately (doesn't block)
-const { Config, initPromise } = require('./config');
+const { Config } = require('./config');
 
 exports.handler = async (event, context) => {
   // Do other work that doesn't need Config
@@ -225,40 +237,14 @@ exports.handler = async (event, context) => {
   const timestamp = Date.now();
   
   // Now wait for initialization to complete
-  await initPromise;
+	await Config.promise();
+	await Config.prime();
   
   // Use initialized components
-  const result = await endpoint.get(Config.getConnection('api'));
+  const result = await endpoint.get(Config.getConn('api'));
   
   return result;
 };
-```
-
-### Cache Operations
-
-Cache-data's cache operations are also async, allowing you to check cache while preparing other data:
-
-```javascript
-async function fetchWithCache(cacheKey, connection, ttl) {
-  // Start cache lookup immediately
-  const cachePromise = cache.CacheData.get(cacheKey);
-
-  // Prepare request while cache lookup runs
-  const headers = prepareHeaders(event);
-
-  // Wait for cache result
-  const cached = await cachePromise;
-
-  if (cached.cache === 1) {
-    return cached.data; // Cache hit
-  }
-
-  // Cache miss - make request
-  const result = await endpoint.get(connection);
-  await cache.CacheData.set(cacheKey, result, ttl);
-
-  return result;
-}
 ```
 
 ### Best Practices for Async Operations
@@ -322,14 +308,24 @@ phases:
 
   pre_build:
     commands:
-      # Install all dependencies including dev for testing
+      # Install dev so we can run tests, but we will remove dev dependencies later
       - npm install --include=dev
-      
-      # Run tests
+      # Run Tests
       - npm test
-      
-      # Remove dev dependencies, keep only production
-      - npm prune --omit=dev
+
+      # Clean up test artifacts and reinstall only production dependencies to reduce Lambda package size
+      - rm -rf __tests__
+      - rm -rf coverage
+      - rm -rf node_modules
+      - npm ci --omit=dev
+
+      # FAIL the build if npm audit has vulnerabilities it can't fix
+      # Perform a fix to move us forward, then check to make sure there were no unresolved high fixes
+      # We are making an intentional choice here: 
+      #     Make breaking changes on in hopes to bring vulnerabilities to 0 
+      #      vs deploying packages with vulnerabilities
+      - npm audit fix --force --omit=dev
+      - npm audit --audit-level=high
 
   build:
     commands:
@@ -408,12 +404,14 @@ Add the Lambda Insights layer to your function definition:
 ```yaml
 # For x86 architecture
 Layers:
-  - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:21"
+  - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:<XX>" # Replace <XX> with version
 
 # For arm64 architecture
 Layers:
-  - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension-Arm64:2"
+  - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension-Arm64:<XX>" # Replace <XX> with version
 ```
+
+In the above ARNs be sure to replace `<XX>` with the most current version number. See [Available versions of the Lambda Insights extension](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html)
 
 Grant Lambda Insights permissions to your execution role (see CloudFormation example below).
 
@@ -423,8 +421,8 @@ In addition to X-Ray and Lambda Insights, cache-data provides built-in logging u
 
 **Timer class**: Measure execution time for specific operations
 ```javascript
-const { tools } = require('@63klabs/cache-data');
-const timer = new tools.Timer();
+const { endpoint, tools: {Timer} } = require('@63klabs/cache-data');
+const timer = new Timer();
 
 timer.start('apiCall');
 const result = await endpoint.get(connection);
@@ -435,11 +433,13 @@ console.log(timer.report()); // Logs execution time
 
 **DebugAndLog class**: Structured logging with configurable log levels
 ```javascript
-const logger = new tools.DebugAndLog({ level: 5 });
+// Lambda Environment Variable LOG_LEVEL=DEBUG
 
-logger.info('Processing request', { requestId: event.requestId });
-logger.debug('Cache lookup', { key: cacheKey });
-logger.error('API call failed', { error: err.message });
+const { tools: {DebugAndLog} } = require('@63klabs/cache-data');
+
+DebugAndLog.info('Processing request', { requestId: event.requestId });
+DebugAndLog.debug('Cache lookup', { key: cacheKey });
+DebugAndLog.error('API call failed', { error: err.message });
 ```
 
 **Automatic request/response logging**: When using ClientRequest and Response objects, cache-data automatically logs request and response details that can be used in CloudWatch Dashboards.
@@ -465,12 +465,13 @@ The InMemoryCache provides microsecond-level cache access for frequently request
 **1. Size appropriately**: InMemoryCache automatically sizes based on Lambda memory allocation. With 1024MB Lambda memory, you get ~5000 cache entries by default. Adjust if needed:
 
 ```javascript
-const { InMemoryCache } = require('@63klabs/cache-data/src/lib/utils/InMemoryCache');
+const {cache: {Cache}} = require('@63klabs/cache-data');
 
-// Custom sizing
-const cache = new InMemoryCache({ 
-  maxEntries: 10000  // Override automatic calculation
+Cache.init({
+  /* ... other options ... */
+  inMemoryCacheDefaultMaxEntries: 1500,
 });
+
 ```
 
 **2. Cache hot data**: Store frequently accessed data in InMemoryCache for ultra-fast retrieval:
@@ -486,24 +487,24 @@ const cache = new InMemoryCache({
 Choose the right caching layer for your data:
 
 **InMemoryCache (L0)**: Microsecond access, container-specific
+- Enabled only if `Cache.init( {useInMemoryCache: true}` or Lambda env variable `CACHE_USE_IN_MEMORY=true`
 - Best for: Hot data, session data, frequently accessed items
 - Limitation: Not shared across containers, lost on cold start
 
-**DynamoDB (L1)**: Millisecond access, shared across all invocations
+**DynamoDB/S3 (L1)**: Millisecond access, shared across all invocations
+- Enabled by default when using `Cache`
 - Best for: Shared cache, high read/write throughput, small items
 - Limitation: 400KB item size limit, costs per request
 
-**S3 (L2)**: Sub-second access, unlimited size, lowest cost
-- Best for: Large responses, infrequently accessed data, long TTL items
-- Limitation: Higher latency than DynamoDB
-
-**Multi-tier strategy**: Use InMemoryCache → DynamoDB → S3 for optimal performance and cost.
+**Multi-tier strategy**: Use InMemoryCache → DynamoDB/S3 for optimal performance and cost.
 
 ### Optimize Endpoint Requests
 
 **1. Use connection pooling**: Initialize connections outside the handler to reuse HTTP agents:
 
 ```javascript
+const {endpoint} = require('@63klabs/cache-data');
+
 // Outside handler - reuses connections across invocations
 const connection = {
   host: 'api.example.com',
@@ -532,27 +533,46 @@ const connection = {
 };
 ```
 
-**3. Implement circuit breakers**: For unreliable endpoints, implement retry logic with exponential backoff or circuit breaker patterns to fail fast.
+**3. Enable retries**: For unreliable endpoints, enable `retry` in the connection object:
+
+```javascript
+const connection = {
+  host: 'api.example.com',
+  retry: {
+    enabled: true
+  }
+};
+```
 
 ### Optimize Cache Keys
 
 Efficient cache key design improves cache hit rates and reduces storage:
 
-**1. Use consistent key formats**: Standardize key generation across your application
-```javascript
-const cacheKey = `user:${userId}:profile:v1`;
+**Use consistent key formats**: Standardize connection object generation across your application
+
+The cache key is generated based on the connection object. Only add necessary headers, parameters, and connection details that are necessary to get the data.
+
+For example, if there are parameters or headers that the endpoint requires, but do not affect the response, do not include it in the connection object. Instead pass through the `options` (4th) parameter of `CacheableDataAccess.getData(cacheProfile, fetch, conn, options)`. On a cache-miss your `fetch` function can then include these in your request.
+
+Connection data needs to stay the same from request to request in order to utilize the cache.
+
+The order of arrays in parameters is also important. If the order does not matter to the endpoint (it doesn't introduce sort or priority) then always pass parameter arrays in a sorted order.
+
+```json
+{
+  "parameters": {"fruit": ["apples", "oranges", "plumbs"]}
+}
 ```
 
-**2. Include version in keys**: Allow cache invalidation by version bump
-```javascript
-const cacheKey = `api:${endpoint}:${hashParams}:v2`;
+Will provide a different cache-key than:
+
+```json
+{
+  "parameters": {"fruit": ["oranges", "plumbs", "apples"]}
+}
 ```
 
-**3. Hash large keys**: Keep keys under 256 characters for DynamoDB efficiency
-```javascript
-const { tools } = require('@63klabs/cache-data');
-const cacheKey = tools.hashThisData(largeKeyData);
-```
+Unless you need to intentionally need to provide a specific order to the endpoint, sort the values before sending.
 
 ### Optimize TTL Settings
 
@@ -595,15 +615,18 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  Environment:
+  DeployEnvironment:
     Type: String
-    Default: dev
-    AllowedValues: [dev, staging, prod]
+    Default: TEST
+    AllowedValues: [DEV, TEST, PROD]
   
   LambdaInsightsLayerArn:
     Type: String
     Description: Lambda Insights Layer ARN for arm64
-    Default: arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:2
+    Default: arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:<xx>
+
+Conditions:
+  IsProduction: !Equals [!Ref DeployEnvironment, "PROD"]
 
 Resources:
 
@@ -625,11 +648,11 @@ Resources:
     Properties:
       FunctionName: !Sub '${AWS::StackName}-function'
       Handler: src/index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       
       # Optimization settings
       MemorySize: 1024  # Recommended for cache-data
-      Timeout: 30
+      Timeout: 11
       Architectures:
         - arm64  # Use Graviton processor
       
@@ -644,7 +667,7 @@ Resources:
       Environment:
         Variables:
           NODE_ENV: production
-          LOG_LEVEL: !If [IsProd, 0, 5]  # 0 for prod, 5 for dev
+          LOG_LEVEL: !If [ IsProduction, "INFO", "DEBUG"]
           CACHE_DATA_AWS_X_RAY_ON: true  # Enable X-Ray in cache-data
           CACHE_BUCKET: !Ref CacheBucket
           CACHE_TABLE: !Ref CacheTable
@@ -778,6 +801,8 @@ AppFunction:
     ProvisionedConcurrencyConfig:
       ProvisionedConcurrentExecutions: 5  # Keep 5 instances warm
 ```
+
+> **Note:** `ProvisionedConcurrentExecutions` does not scale down to zero and will incur sustained costs.
 
 **Reserved Concurrent Executions** (to prevent throttling other functions):
 ```yaml

@@ -141,10 +141,19 @@ const request = new APIRequest({
 When pagination completes successfully, the response includes metadata:
 
 ```javascript
-const successfulPaginationResponse = {
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+// use conn with no pagination enabled
+const request = new APIRequest(conn);
+const successfulPaginationResponse = request.send();
+
+console.log(incompletePaginationResponse);
+
+/*
+{
   success: true,
   statusCode: 200,
-  headers: { /* response headers */ },
+  headers: { ... response headers ... },
   body: '{"items":[...all items from all pages...],"returnedItemCount":523}',
   message: 'OK',
   metadata: {
@@ -157,6 +166,7 @@ const successfulPaginationResponse = {
     }
   }
 };
+*/
 ```
 
 ### Incomplete Pagination
@@ -164,10 +174,18 @@ const successfulPaginationResponse = {
 If an error occurs while fetching subsequent pages, partial results are returned:
 
 ```javascript
-const incompletePaginationResponse = {
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest(conn);
+const incompletePaginationResponse = request.send();
+
+console.log(incompletePaginationResponse);
+
+/*
+{
   success: true,
   statusCode: 200,
-  headers: { /* response headers */ },
+  headers: { ... response headers ... },
   body: '{"items":[...items from successful pages...],"returnedItemCount":300}',
   message: 'OK',
   metadata: {
@@ -180,6 +198,7 @@ const incompletePaginationResponse = {
     }
   }
 };
+*/
 ```
 
 ### No Pagination
@@ -187,14 +206,21 @@ const incompletePaginationResponse = {
 If pagination is not enabled or not needed, no metadata is included:
 
 ```javascript
-const noPaginationResponse = {
-  success: true,
-  statusCode: 200,
-  headers: { /* response headers */ },
-  body: '{"items":[...first page only...],"totalItems":523}',
-  message: 'OK'
-  // No metadata field
-};
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+// use conn with no pagination enabled
+const request = new APIRequest(conn);
+const noPaginationResponse = request.send();
+
+console.log(noPaginationResponse);
+// {
+//   success: true,
+//   statusCode: 200,
+//   headers: { ... response headers ... },
+//   body: '{"items":[...first page only...],"totalItems":523}',
+//   message: 'OK'
+//   // No metadata field
+// };
 ```
 
 ## Examples

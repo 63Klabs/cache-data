@@ -32,9 +32,9 @@ APIRequest automatically creates X-Ray subsegments for each API request when run
 X-Ray tracking is automatic when your Lambda function has X-Ray enabled:
 
 ```javascript
-const { tools } = require('@63klabs/cache-data');
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
 
-const request = new tools.APIRequest({
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch user data'  // Appears in X-Ray subsegment
@@ -86,12 +86,14 @@ Resources:
 Each APIRequest creates a unique subsegment name to distinguish multiple requests to the same endpoint:
 
 ```javascript
-const request1 = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request1 = new APIRequest({
   host: 'api.example.com',
   path: '/users'
 });
 
-const request2 = new tools.APIRequest({
+const request2 = new APIRequest({
   host: 'api.example.com',
   path: '/users'
 });
@@ -124,7 +126,9 @@ Annotations are indexed fields that can be used to filter and search traces in X
 Every APIRequest subsegment includes these annotations:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   method: 'GET',
   host: 'api.example.com',
   path: '/users',
@@ -146,7 +150,9 @@ const response = await request.send();
 When retries occur, additional annotations are added:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -166,7 +172,9 @@ const response = await request.send();
 When pagination occurs, additional annotations are added:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -201,7 +209,9 @@ Metadata provides detailed information about the request but is not indexed for 
 When retry or pagination is enabled, configuration is stored in metadata:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -258,9 +268,9 @@ Detailed pagination information is stored in metadata:
 ### Example 1: Basic X-Ray Tracking
 
 ```javascript
-const { tools } = require('@63klabs/cache-data');
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
 
-const request = new tools.APIRequest({
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/users',
   note: 'Fetch users for dashboard'
@@ -282,7 +292,9 @@ const response = await request.send();
 ### Example 2: X-Ray with Retry Tracking
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch analytics data',
@@ -305,7 +317,9 @@ const response = await request.send();
 ### Example 3: X-Ray with Pagination Tracking
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/orders',
   note: 'Fetch all orders',
@@ -329,7 +343,9 @@ const response = await request.send();
 ### Example 4: X-Ray with Retry + Pagination
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/logs',
   note: 'Fetch application logs',
@@ -359,6 +375,8 @@ const response = await request.send();
 ### Example 5: Multiple Requests with Unique Subsegments
 
 ```javascript
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
 // Make multiple requests to the same endpoint
 const requests = [
   { path: '/users', note: 'Fetch users' },
@@ -366,14 +384,18 @@ const requests = [
   { path: '/users', note: 'Fetch users third time' }
 ];
 
+const responses = []; // we will submit and collect all responses async
+
 for (const config of requests) {
-  const request = new tools.APIRequest({
+  const request = new APIRequest({
     host: 'api.example.com',
     ...config
   });
   
-  await request.send();
+  responses.push(request.send());
 }
+
+await Promise.all(responses); // wait for all to complete
 
 // X-Ray creates three unique subsegments:
 // 1. APIRequest/api.example.com/1705234567890
@@ -430,7 +452,9 @@ The X-Ray service map shows:
 When pagination occurs, each page request creates its own subsegment:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch all data',
@@ -512,7 +536,9 @@ Compare request duration with and without pagination:
 When a request fails, X-Ray provides:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch data',
@@ -537,7 +563,9 @@ const response = await request.send();
 When pagination fails partway through:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -607,16 +635,16 @@ Resources:
 Correlate X-Ray traces with CloudWatch logs:
 
 ```javascript
-const { tools } = require('@63klabs/cache-data');
+const {tools: {APIRequest, DebugAndLog}} = require('@63klabs/cache-data');
 
-const request = new tools.APIRequest({
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch data'
 });
 
 // Log before request
-tools.DebugAndLog.info('Making API request', {
+DebugAndLog.info('Making API request', {
   host: request.getHost(),
   path: request.getPath()
 });
@@ -624,7 +652,7 @@ tools.DebugAndLog.info('Making API request', {
 const response = await request.send();
 
 // Log after request with metadata
-tools.DebugAndLog.info('API request completed', {
+DebugAndLog.info('API request completed', {
   statusCode: response.statusCode,
   retries: response.metadata?.retries?.attempts,
   pagination: response.metadata?.pagination?.totalPages

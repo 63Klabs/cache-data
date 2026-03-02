@@ -20,9 +20,9 @@ Use retry when:
 Enable retry with default settings by passing `{ enabled: true }`:
 
 ```javascript
-const { tools } = require('@63klabs/cache-data');
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
 
-const request = new tools.APIRequest({
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -58,7 +58,11 @@ if (response.metadata?.retries?.occurred) {
 When you enable retry, these defaults are used:
 
 ```javascript
-const defaultRetryConfig = {
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+/*
+// Default retry config. You just need to enable to use
+{
   enabled: false,                          // Must be explicitly enabled
   maxRetries: 1,                          // 1 retry = 2 total attempts
   retryOn: {
@@ -69,6 +73,16 @@ const defaultRetryConfig = {
     clientError: false                    // Do NOT retry on 4xx status codes
   }
 };
+*/
+
+const conn =  {
+  host: 'api.example.com',
+  path: '/data',
+  retry: {enabled: true} // this will use the defaults
+};
+
+const request = new APIRequest(conn);
+const response = request.send();
 ```
 
 ### Custom Retry Count
@@ -76,7 +90,9 @@ const defaultRetryConfig = {
 Control the maximum number of retry attempts:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -91,7 +107,9 @@ const request = new tools.APIRequest({
 Customize which conditions trigger retries:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -115,7 +133,9 @@ const request = new tools.APIRequest({
 Retry when the request fails with a network error (no response received):
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -138,7 +158,9 @@ const request = new tools.APIRequest({
 Retry when the response body is empty or null:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -159,7 +181,9 @@ const request = new tools.APIRequest({
 Retry when the response body cannot be parsed as JSON:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -179,7 +203,9 @@ const request = new tools.APIRequest({
 Retry when the server returns a 5xx status code:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -203,7 +229,9 @@ const request = new tools.APIRequest({
 By default, client errors are NOT retried (they usually indicate a problem with the request):
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -226,7 +254,9 @@ const request = new tools.APIRequest({
 However, you can enable retry for 4xx errors if needed:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -246,11 +276,11 @@ const request = new tools.APIRequest({
 
 When a request fails initially but succeeds on retry:
 
-```javascript
-const successfulRetryResponse = {
+```js
+const successExample = {
   success: true,
   statusCode: 200,
-  headers: { /* response headers */ },
+  headers: { ... response headers ... },
   body: '{"data":"value"}',
   message: 'OK',
   metadata: {
@@ -289,6 +319,7 @@ const exhaustedRetriesResponse = {
 When retry is not enabled or not needed:
 
 ```javascript
+noPaginationResponse
 const noRetryResponse = {
   success: true,
   statusCode: 200,
@@ -304,9 +335,9 @@ const noRetryResponse = {
 ### Example 1: Basic Retry for Transient Errors
 
 ```javascript
-const { tools } = require('@63klabs/cache-data');
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
 
-const request = new tools.APIRequest({
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -332,7 +363,9 @@ if (response.success) {
 ### Example 2: Retry with Custom Conditions
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -354,7 +387,9 @@ const response = await request.send();
 ### Example 3: Retry on Rate Limits (4xx)
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   headers: {
@@ -379,7 +414,9 @@ if (response.statusCode === 429 && !response.success) {
 ### Example 4: Handling Retry Metadata
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest, DebugAndLog}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -398,7 +435,7 @@ if (response.metadata?.retries?.occurred) {
   console.log(`- Success: ${response.success}`);
   
   // Log for monitoring
-  tools.DebugAndLog.log(
+  DebugAndLog.log(
     `API request required ${response.metadata.retries.attempts} attempts`,
     'RETRY'
   );
@@ -408,7 +445,9 @@ if (response.metadata?.retries?.occurred) {
 ### Example 5: Retry with Timeout
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/slow-endpoint',
   options: {
@@ -456,7 +495,9 @@ A retry will NOT occur when:
 Each retry attempt is logged as a warning:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch user data',
@@ -480,7 +521,9 @@ Set `LOG_LEVEL=WARN` or higher to see retry logs.
 ### Network Errors
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'unreachable-api.example.com',
   path: '/data',
   retry: {
@@ -505,7 +548,9 @@ if (!response.success) {
 ### Server Errors
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -532,7 +577,9 @@ if (response.statusCode >= 500 && !response.success) {
 Some requests may succeed on retry after initial failures:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest, DebugAndLog}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -549,7 +596,7 @@ if (response.success && response.metadata?.retries?.occurred) {
   
   // Consider logging for monitoring
   if (response.metadata.retries.attempts > 2) {
-    tools.DebugAndLog.warn('API required multiple retries', {
+    DebugAndLog.warn('API required multiple retries', {
       attempts: response.metadata.retries.attempts,
       endpoint: request.getHost() + request.getPath()
     });
@@ -564,7 +611,9 @@ if (response.success && response.metadata?.retries?.occurred) {
 Each retry attempt respects the timeout setting:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   options: {
@@ -617,7 +666,9 @@ Currently, retries happen immediately without delay. Future enhancement will add
 Retry works seamlessly with pagination:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -639,7 +690,9 @@ const response = await request.send();
 Retry attempts are tracked in X-Ray subsegments:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -739,10 +792,12 @@ If retry isn't working:
 4. **Enable logging**: Set `LOG_LEVEL=WARN` to see retry attempts
 
 ```javascript
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
 // Enable warning logging
 process.env.LOG_LEVEL = 'WARN';
 
-const request = new tools.APIRequest({
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -760,7 +815,9 @@ const response = await request.send();
 If requests are retrying too many times:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -775,7 +832,9 @@ const request = new tools.APIRequest({
 If the wrong conditions trigger retries:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -796,7 +855,9 @@ const request = new tools.APIRequest({
 If retries are causing timeouts:
 
 ```javascript
-const request = new tools.APIRequest({
+const {tools: {APIRequest}} = require('@63klabs/cache-data');
+
+const request = new APIRequest({
   host: 'api.example.com',
   path: '/data',
   options: {
