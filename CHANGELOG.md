@@ -55,12 +55,18 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
     - No breaking changes to public API
     - Default behavior unchanged when new features not configured
   - See documentation: [Pagination Guide](docs/features/tools/api-request-pagination.md), [Retry Guide](docs/features/tools/api-request-retry.md), [X-Ray Guide](docs/features/tools/api-request-xray.md)
+- **tools.AppConfig** replaces `tools._ConfigSuperClass` and receives an `.init()` to simplify initialization
+  - Updated documentation to reflect how `Config` can be implemented to extend `tools._ConfigSuperClass`
+  - Instead of separate `Response.init()`, `ClientRequest.init()` and `Connections.init()` a single `AppConfig.init()` can be used within the `Config.init()`
 
 ### Enhancement
 
 - **Expanded Generic Responses** - Additional responses for status codes
-  - Added responses for 408 and 418
+  - Added responses for 408, 418, and 427
   - Ensured all generic responses have the same statuses
+- **Revised Documentation** - Clarified and revised documentation
+  - Reviewed all code examples
+  - Reviewed implementation instructions
 
 ## v1.3.7 (2026-02-06)
 
