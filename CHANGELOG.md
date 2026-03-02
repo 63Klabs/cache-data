@@ -8,7 +8,7 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
-## v1.3.8 (unreleased)
+## v1.3.8 (2026-03-02)
 
 ### Security
 - **Updated the way dependencies are listed reduce npm Security Vulnerabilities** [Spec: 1-3-8-npm-security-vulnerabilities-fix](.kiro/specs/1-3-8-npm-security-vulnerabilities-fix/)
