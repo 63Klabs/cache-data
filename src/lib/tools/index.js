@@ -144,51 +144,46 @@ class AppConfig {
 	 *   }
 	 * });
 	 */
-	static async init(options = {}) {
+	static init(options = {}) {
 
-		AppConfig._promise = new Promise(async (resolve) => {
+		try {
 
-			try {
-
-				const debug = (options?.debug === true);
-				if (debug) {
-					DebugAndLog.debug("Config Init in debug mode");
-				}
-
-				if (options.settings) {
-					AppConfig._settings = options.settings;
-					if (debug) { DebugAndLog.debug("Settings initialized", AppConfig._settings); }
-				}
-
-				if (options.connections) {
-					AppConfig._connections = new Connections(options.connections);
-					if (debug) { DebugAndLog.debug("Connections initialized", AppConfig._connections.info()); }
-				}
-
-				if (options.validations) {
-					ClientRequest.init(options.validations);
-					if (debug) { DebugAndLog.debug("ClientRequest initialized", ClientRequest.info()); }
-				}
-
-				if (options.responses) {
-					Response.init(options.responses);
-					if (debug) { DebugAndLog.debug("Response initialized", Response.info()); }
-				}
-
-				if (options.ssmParameters) {
-					AppConfig._ssmParameters = await AppConfig._initParameters(options.ssmParameters);
-				}
-
-			} catch (error) {
-				DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
-			} finally {
-				resolve();
+			const debug = (options?.debug === true);
+			if (debug) {
+				DebugAndLog.debug("Config Init in debug mode");
 			}
 
-		});
+			if (options.settings) {
+				AppConfig._settings = options.settings;
+				if (debug) { DebugAndLog.debug("Settings initialized", AppConfig._settings); }
+			}
 
-		return await AppConfig._promise;
+			if (options.connections) {
+				AppConfig._connections = new Connections(options.connections);
+				if (debug) { DebugAndLog.debug("Connections initialized", AppConfig._connections.info()); }
+			}
 
+			if (options.validations) {
+				ClientRequest.init(options.validations);
+				if (debug) { DebugAndLog.debug("ClientRequest initialized", ClientRequest.info()); }
+			}
+
+			if (options.responses) {
+				Response.init(options.responses);
+				if (debug) { DebugAndLog.debug("Response initialized", Response.info()); }
+			}
+
+			if (options.ssmParameters) {
+				AppConfig._ssmParameters = AppConfig._initParameters(options.ssmParameters);
+				AppConfig.add(AppConfig._ssmParameters);
+			}
+
+			return true;
+
+		} catch (error) {
+			DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
+			return false;
+		}
 	};
 
 	/**
