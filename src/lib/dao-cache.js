@@ -1545,8 +1545,8 @@ class Cache {
 			("CACHE_DATA_USE_TOOLS_HASH" in process.env ? Cache.bool(process.env.CACHE_DATA_USE_TOOLS_HASH_METHOD) : false);
 		
 		// Initialize in-memory cache feature flag
-		this.#useInMemoryCache = parameters.useInMemoryCache || 
-			(process.env.CACHE_USE_IN_MEMORY === 'true') || 
+		this.#useInMemoryCache = Cache.bool(parameters.useInMemoryCache) || 
+			Cache.bool(process.env.CACHE_USE_IN_MEMORY) || 
 			false;
 		
 		// Initialize InMemoryCache if enabled
