@@ -25,91 +25,85 @@ my-service/
 ## Configuration (config.js)
 
 ```javascript
-const { tools, cache } = require('@63klabs/cache-data');
+const { tools: {AppConfig, CachedParameterSecrets, CachedSSMParameter, DebugAndLog},
+        cache: {Cache, CacheableDataAccess} } = require('@63klabs/cache-data');
 
-class Config extends tools._ConfigSuperClass {
+const validations = require("./validations.js");
+
+class Config extends AppConfig {
   
-  static async init() {
-    tools._ConfigSuperClass._promise = new Promise(async (resolve, reject) => {
+	static async init() {
+		
+		AppConfig.add(
+			new Promise(async (resolve) => {
       try {
-        // Initialize parameters from SSM
-        const params = await this._initParameters([
+        
+        // Define API connections - this could be moved to connections.js and imported
+        const connections = [
           {
-            group: 'app',
-            path: '/apps/my-service/'
+            name: 'users-api',
+            host: 'api.example.com',
+            path: '/users',
+            headers: {
+              'X-Api-Key': new CachedSSMParameter(process.env.PARAM_STORE_PATH+'UsersApiKey', {refreshAfter: 43200}), // 12 hours
+            },
+            cache: [{
+              profile: 'user-data',
+              defaultExpirationInSeconds: 600,
+              overrideOriginHeaderExpiration: true,
+              expiresIsOnInterval: false,
+              hostId: 'example',
+              pathId: 'users',
+              encrypt: false
+            }]
+          },
+          {
+            name: 'posts-api',
+            host: 'api.example.com',
+            path: '/posts',
+            cache: [{
+              profile: 'post-data',
+              defaultExpirationInSeconds: 300,
+              overrideOriginHeaderExpiration: true,
+              expiresIsOnInterval: false,
+              hostId: 'example',
+              pathId: 'posts',
+              encrypt: false
+            }]
           }
-        ]);
-        
-        // Define API connections
-        const connections = new tools.Connections();
-        
-        connections.add({
-          name: 'users-api',
-          host: 'api.example.com',
-          path: '/users',
-          headers: { 
-            'User-Agent': 'MyService/1.0',
-            'Authorization': `Bearer ${params.app.api_token}`
-          },
-          cache: [{
-            profile: 'user-data',
-            defaultExpirationInSeconds: 600,
-            overrideOriginHeaderExpiration: true,
-            expiresIsOnInterval: false,
-            hostId: 'example',
-            pathId: 'users',
-            encrypt: false
-          }]
-        });
-        
-        connections.add({
-          name: 'posts-api',
-          host: 'api.example.com',
-          path: '/posts',
-          headers: { 
-            'User-Agent': 'MyService/1.0',
-            'Authorization': `Bearer ${params.app.api_token}`
-          },
-          cache: [{
-            profile: 'post-data',
-            defaultExpirationInSeconds: 300,
-            overrideOriginHeaderExpiration: true,
-            expiresIsOnInterval: false,
-            hostId: 'example',
-            pathId: 'posts',
-            encrypt: false
-          }]
-        });
-        
-        tools._ConfigSuperClass._connections = connections;
-        
+        ];
+
+        const responses = {
+          errorExpirationInSeconds: 180,
+          routeExpirationInSeconds: 3600,
+          contentType: tools.Response.CONTENT_TYPE.JSON
+        };
+
+        AppConfig.init( { connections, responses, validations } );
+                
         // Initialize cache
-        cache.Cache.init({
-          dynamoDbTable: process.env.CACHE_TABLE,
-          s3Bucket: process.env.CACHE_BUCKET,
-          secureDataAlgorithm: 'aes-256-cbc',
-          secureDataKey: Buffer.from(params.app.crypt_secureDataKey, 'hex'),
+        Cache.init({
+					secureDataKey: new CachedSsmParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
           DynamoDbMaxCacheSize_kb: 20,
           purgeExpiredCacheEntriesAfterXHours: 24,
           timeZoneForInterval: 'America/Chicago'
         });
         
-        // Initialize Response with custom settings
-        tools.Response.init({
-          settings: {
-            errorExpirationInSeconds: 180,
-            routeExpirationInSeconds: 3600,
-            contentType: tools.Response.CONTENT_TYPE.JSON
-          }
-        });
-        
-        resolve(true);
       } catch (error) {
-        tools.DebugAndLog.error('Config initialization failed', error);
-        reject(false);
+        DebugAndLog.error('Config initialization failed', error);
+      } finally {
+        resolve(true);
       }
     });
   }
+
+  static async prime() {
+		return Promise.all([
+			CacheableDataAccess.prime(),
+			CachedParameterSecrets.prime()
+		]);
+	};
+
 }
 
 module.exports = Config;
@@ -144,19 +138,17 @@ module.exports = {
 ## Users DAO (dao/users.dao.js)
 
 ```javascript
-const { cache, endpoint } = require('@63klabs/cache-data');
+const { cache: {CacheableDataAccess}, endpoint } = require('@63klabs/cache-data');
 const Config = require('../config');
 
 class UsersDAO {
   
   static async getUser(userId) {
-    const connection = Config.getConnection('users-api');
-    const conn = connection.toObject();
+    const {conn, cacheProfile} = Config.getConnCacheProfile('users-api', 'user-data');
+
     conn.path = `/users/${userId}`;
-    
-    const cacheProfile = connection.getCacheProfile('user-data');
-    
-    const cacheObj = await cache.CacheableDataAccess.getData(
+        
+    const cacheObj = await CacheableDataAccess.getData(
       cacheProfile,
       endpoint.get,
       conn,
@@ -167,8 +159,7 @@ class UsersDAO {
   }
   
   static async listUsers(options = {}) {
-    const connection = Config.getConnection('users-api');
-    const conn = connection.toObject();
+    const {conn, cacheProfile} = Config.getConnCacheProfile('users-api', 'user-data');
     
     const query = {
       parameters: {
@@ -177,10 +168,8 @@ class UsersDAO {
         sort: options.sort || 'asc'
       }
     };
-    
-    const cacheProfile = connection.getCacheProfile('user-data');
-    
-    const cacheObj = await cache.CacheableDataAccess.getData(
+        
+    const cacheObj = await CacheableDataAccess.getData(
       cacheProfile,
       endpoint.get,
       conn,
@@ -198,7 +187,7 @@ module.exports = UsersDAO;
 
 ```javascript
 // Example 3: Full controller with DAO and logging
-const { tools } = require('@63klabs/cache-data');
+const { tools: {DebugAndLog} } = require('@63klabs/cache-data');
 const UsersDAO = require('../dao/users.dao');
 
 class UsersControllerFull {
@@ -214,7 +203,7 @@ class UsersControllerFull {
       response.setStatusCode(200);
       response.setBody({ users, count: users.length });
     } catch (error) {
-      tools.DebugAndLog.error('Failed to list users', error);
+      DebugAndLog.error('Failed to list users', error);
       response.setStatusCode(500);
       response.setBody({ error: 'Failed to retrieve users' });
     }
@@ -236,7 +225,7 @@ class UsersControllerFull {
         response.setBody({ user });
       }
     } catch (error) {
-      tools.DebugAndLog.error('Failed to get user', error);
+      DebugAndLog.error('Failed to get user', error);
       response.setStatusCode(500);
       response.setBody({ error: 'Failed to retrieve user' });
     }
@@ -290,21 +279,17 @@ module.exports = { route };
 ## Lambda Handler (index.js)
 
 ```javascript
-const { tools } = require('@63klabs/cache-data');
-const { ClientRequest, Response } = tools;
+const { tools: { ClientRequest, Response, DebugAndLog }} = require('@63klabs/cache-data');
 const Config = require('./config');
-const validations = require('./validations');
 const { route } = require('./router');
 
 // Initialize configuration (outside handler for container reuse)
 Config.init();
 
-// Initialize ClientRequest with validations
-ClientRequest.init({ validations });
-
 exports.handler = async (event, context) => {
   // Wait for configuration to complete
   await Config.promise();
+  await Config.prime();
   
   // Create request and response objects
   const clientRequest = new ClientRequest(event, context);
@@ -322,7 +307,7 @@ exports.handler = async (event, context) => {
     return await route(clientRequest, response);
     
   } catch (error) {
-    tools.DebugAndLog.error('Unhandled error in handler', error);
+    DebugAndLog.error('Unhandled error in handler', error);
     response.setStatusCode(500);
     response.setBody({ error: 'Internal server error' });
     return response.finalize();

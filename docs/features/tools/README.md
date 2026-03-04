@@ -35,7 +35,7 @@ The tools module provides a comprehensive set of utility classes and functions f
 
 ### Configuration and Connections
 
-- **[_ConfigSuperClass](#configsuperclass)**: Base class for application configuration
+- **[AppConfig](#configsuperclass)**: Base class for application configuration
 - **[Connections](#connections-classes)**: Connection management and authentication
 
 ---
@@ -1363,16 +1363,20 @@ Configuration script:
 ```js
 // config.js
 
-const {tools: {_ConfigSuperClass }} = require("@63klabs/cache-data");
+const {tools: {AppConfig }} = require("@63klabs/cache-data");
 
 const connections = require("./connections.js");
 
-class Config extends _ConfigSuperClass {
-  static async init() {
-    // ...
-    _ConfigSuperClass._connections = new Connections(connections);
-    // ...
-  };
+class Config extends AppConfig {
+		AppConfig.add(
+			new Promise(async (resolve) => {
+						
+        AppConfig.init( { connections } );
+
+        resolve(true);
+				
+			})
+		);
 };
 ```
 

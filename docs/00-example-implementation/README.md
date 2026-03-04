@@ -121,7 +121,7 @@ generate-put-ssm.py /webservice/app-name/DatabasePassword
 #### example-config.js and example-handler.js
 
 **Note:** These files are referenced but not currently present in the repository. They would typically contain:
-- **example-config.js:** Configuration class extending cache-data's `_ConfigSuperClass`
+- **example-config.js:** Configuration class extending cache-data's `AppConfig`
 - **example-handler.js:** Lambda handler implementation using cache-data for caching API responses
 
 ## How the Examples Fit Together

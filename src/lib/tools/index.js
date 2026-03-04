@@ -473,8 +473,11 @@ module.exports = {
 	nodeVerMinor,
 	nodeVerMajorMinor,
 	AWS,
+	Aws: AWS,
 	AWSXRay,
+	AwsXRay: AWSXRay, // Alias
 	APIRequest,
+	ApiRequest: APIRequest, // Alias
 	ImmutableObject,
 	Timer,
 	DebugAndLog,
@@ -489,6 +492,7 @@ module.exports = {
 	AppConfig,
 	_ConfigSuperClass: AppConfig, // Alias
 	CachedSSMParameter,
+	CachedSsmParameter: CachedSSMParameter, // Alias
 	CachedSecret,
 	CachedParameterSecret,
 	CachedParameterSecrets,

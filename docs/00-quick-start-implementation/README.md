@@ -138,58 +138,67 @@ Create a configuration class that initializes the cache:
 ```javascript
 const { tools, cache, endpoint } = require('@63klabs/cache-data');
 
-class Config extends tools._ConfigSuperClass {
-  static async init() {
-    tools._ConfigSuperClass._promise = new Promise(async (resolve, reject) => {
-      try {
-        // Get encryption key from SSM Parameter Store
-        const params = await this._initParameters([
-          {
-            group: "app",
-            path: "/apps/my-app/" // Your SSM parameter path
-          }
-        ]);
+class Config extends tools.AppConfig {
+	static async init() {
+		
+		AppConfig.add(
+			new Promise(async (resolve) => {
 
-        // Define connections with cache profiles
-        const connections = new tools.Connections();
-        connections.add({
-          name: "api",
-          host: "api.example.com",
-          path: "/data",
-          headers: { "User-Agent": "MyApp/1.0" },
-          cache: [{
-            profile: "api-data",
-            defaultExpirationInSeconds: 600, // 10 minutes
-            overrideOriginHeaderExpiration: true,
-            expiresIsOnInterval: false,
-            hostId: "example",
-            pathId: "data",
-            encrypt: false
-          }]
-        });
+				const timerConfigInit = new Timer("timerConfigInit", true);
+						
+				try {
 
-        tools._ConfigSuperClass._connections = connections;
+          // Define connections with cache profiles
+          const connections = [
+              {
+              name: "api",
+              host: "api.example.com",
+              path: "/data",
+              headers: { "User-Agent": "MyApp/1.0" },
+              cache: [{
+                profile: "api-data",
+                defaultExpirationInSeconds: 600, // 10 minutes
+                overrideOriginHeaderExpiration: true,
+                expiresIsOnInterval: false,
+                hostId: "example",
+                pathId: "data",
+                encrypt: false
+              }]
+            }
+          ];
 
-        // Initialize cache
-        cache.Cache.init({
-          dynamoDbTable: "my-cache-table",
-          s3Bucket: "my-cache-bucket",
-          secureDataAlgorithm: "aes-256-cbc",
-          secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex"),
-          DynamoDbMaxCacheSize_kb: 20,
-          purgeExpiredCacheEntriesAfterXHours: 24,
-          defaultExpirationExtensionOnErrorInSeconds: 300,
-          timeZoneForInterval: "America/Chicago"
-        });
+          AppConfig.init( { connections });
+          
+          // Initialize cache
+          cache.Cache.init({
+            dynamoDbTable: "my-cache-table",
+            s3Bucket: "my-cache-bucket",
+            secureDataAlgorithm: "aes-256-cbc",
+            secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex"),
+            DynamoDbMaxCacheSize_kb: 20,
+            purgeExpiredCacheEntriesAfterXHours: 24,
+            defaultExpirationExtensionOnErrorInSeconds: 300,
+            timeZoneForInterval: "America/Chicago"
+          });
 
-        resolve(true);
-      } catch (error) {
-        tools.DebugAndLog.error("Config initialization failed", error);
-        reject(false);
-      }
-    });
-  }
-}
+				} catch (error) {
+					DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
+				} finally {
+					timerConfigInit.stop();
+					resolve(true);
+				};
+				
+			})
+		);
+  };
+
+  static async prime() {
+		return Promise.all([
+			CacheableDataAccess.prime(),
+			CachedParameterSecrets.prime()
+		]);
+	};
+};
 
 // Initialize configuration
 Config.init();
@@ -198,6 +207,7 @@ Config.init();
 exports.handler = async (event, context) => {
   // Wait for configuration to complete
   await Config.promise();
+  await Config.prime();
 
   // Your application logic here
   const response = await getData();
@@ -211,16 +221,14 @@ exports.handler = async (event, context) => {
 Once configured, retrieve data through the cache:
 
 ```javascript
-const { tools, cache, endpoint } = require('@63klabs/cache-data');
+const { tools, cache: {CacheableDataAccess}, endpoint } = require('@63klabs/cache-data');
 
 async function getData() {
   // Get connection configuration
-  const connection = Config.getConnection("api");
-  const conn = connection.toObject();
-  const cacheProfile = connection.getCacheProfile("api-data");
+  const {conn, cacheProfile}} = Config.getConnCacheProfile("api", "api-data");
 
   // Get data (from cache if available, otherwise from endpoint)
-  const cacheObj = await cache.CacheableDataAccess.getData(
+  const cacheObj = await CacheableDataAccess.getData(
     cacheProfile,
     endpoint.get,
     conn,
@@ -257,9 +265,9 @@ async function getData() {
 You can use Lambda environment variables instead of hardcoding values:
 
 ```javascript
-const {cache} = require("@63klabs/cache-data");
+const {cache: {Cache}} = require("@63klabs/cache-data");
 
-cache.Cache.init({
+Cache.init({
   dynamoDbTable: process.env.CACHE_TABLE,
   s3Bucket: process.env.CACHE_BUCKET,
   secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex"),
@@ -282,19 +290,19 @@ Resources:
         - !Sub "arn:aws:lambda:${AWS::Region}:590474943231:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11"
 ```
 
-2. **Use CachedSSMParameter** in your code:
+2. **Use CachedSsmParameter** in your code:
 
 ```javascript
-const { tools, cache } = require('@63klabs/cache-data');
+const { tools: {CachedSSMParameter}, cache: {Cache} } = require('@63klabs/cache-data');
 
 // Create cached parameter reference
-const secureKey = new tools.CachedSSMParameter(
+const secureKey = new CachedSSMParameter(
   '/apps/my-app/crypt_secureDataKey',
-  { refreshAfter: 1600 } // seconds
+  { refreshAfter: 3600 } // 5 min
 );
 
 // Initialize cache with cached parameter
-cache.Cache.init({
+Cache.init({
   dynamoDbTable: process.env.CACHE_TABLE,
   s3Bucket: process.env.CACHE_BUCKET,
   secureDataKey: secureKey, // Pass CachedSSMParameter directly
