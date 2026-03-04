@@ -1,3 +1,8 @@
+---
+inclusion: fileMatch
+fileMatchPattern: '**/*.{js,mjs,cjs,ts,tsx,jsx,py}'
+---
+
 # Test Requirements and CI/CD Guidelines
 
 ## Purpose

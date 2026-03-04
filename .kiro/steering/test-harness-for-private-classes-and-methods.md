@@ -1,5 +1,6 @@
 ---
-inclusion: always
+inclusion: fileMatch
+fileMatchPattern: '**/*.{js,mjs,cjs,ts,tsx,jsx}'
 ---
 
 # Test Harness Pattern for Private Classes and Methods

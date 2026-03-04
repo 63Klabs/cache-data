@@ -32,3 +32,4 @@ coverage-jest/
 !.gitignore
 !.github
 !.kiro
+!.kiro/**/.config.kiro

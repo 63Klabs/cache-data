@@ -1,3 +1,8 @@
+---
+inclusion: fileMatch
+fileMatchPattern: '**/CHANGELOG.md'
+---
+
 # Changelog Maintenance Guidelines
 
 ## Overview
