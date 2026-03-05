@@ -199,6 +199,7 @@ class Config extends AppConfig {
   static async init() {
     AppConfig.init({ connections });
     Cache.init( /* options */ )
+    return AppConfig.promise();
   }
 }
 

@@ -299,13 +299,13 @@ class AppConfig {
 
 	/**
 	 * 
-	 * @returns {Promise} A promise that resolves when the Config class has finished initializing
+	 * @returns {Promise<array>} A promise that resolves when the Config class has finished initializing
 	 */
 	static promise() {
 		if (AppConfig._promise !== null ) { // Backwards compatibility
 			AppConfig._promises.push(AppConfig._promise);
 		}
-		return Promise.all[AppConfig._promises];
+		return Promise.all(AppConfig._promises);
 	};
 
 	

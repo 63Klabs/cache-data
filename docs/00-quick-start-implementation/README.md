@@ -136,60 +136,56 @@ Cache API responses in S3 and DynamoDB to improve performance and reduce API cal
 Create a configuration class that initializes the cache:
 
 ```javascript
-const { tools, cache, endpoint } = require('@63klabs/cache-data');
+const { tools: {AppConfig, DebugAndLog, Timer}, cache, endpoint } = require('@63klabs/cache-data');
 
-class Config extends tools.AppConfig {
+class Config extends AppConfig {
 	static async init() {
-		
-		AppConfig.add(
-			new Promise(async (resolve) => {
 
-				const timerConfigInit = new Timer("timerConfigInit", true);
-						
-				try {
+    const timerConfigInit = new Timer("timerConfigInit", true);
+        
+    try {
 
-          // Define connections with cache profiles
-          const connections = [
-              {
-              name: "api",
-              host: "api.example.com",
-              path: "/data",
-              headers: { "User-Agent": "MyApp/1.0" },
-              cache: [{
-                profile: "api-data",
-                defaultExpirationInSeconds: 600, // 10 minutes
-                overrideOriginHeaderExpiration: true,
-                expiresIsOnInterval: false,
-                hostId: "example",
-                pathId: "data",
-                encrypt: false
-              }]
-            }
-          ];
+      // Define connections with cache profiles
+      const connections = [
+          {
+          name: "api",
+          host: "api.example.com",
+          path: "/data",
+          headers: { "User-Agent": "MyApp/1.0" },
+          cache: [{
+            profile: "api-data",
+            defaultExpirationInSeconds: 600, // 10 minutes
+            overrideOriginHeaderExpiration: true,
+            expiresIsOnInterval: false,
+            hostId: "example",
+            pathId: "data",
+            encrypt: false
+          }]
+        }
+      ];
 
-          AppConfig.init( { connections });
-          
-          // Initialize cache
-          cache.Cache.init({
-            dynamoDbTable: "my-cache-table",
-            s3Bucket: "my-cache-bucket",
-            secureDataAlgorithm: "aes-256-cbc",
-            secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex"),
-            DynamoDbMaxCacheSize_kb: 20,
-            purgeExpiredCacheEntriesAfterXHours: 24,
-            defaultExpirationExtensionOnErrorInSeconds: 300,
-            timeZoneForInterval: "America/Chicago"
-          });
+      AppConfig.init( { connections });
+      
+      // Initialize cache
+      cache.Cache.init({
+        dynamoDbTable: "my-cache-table",
+        s3Bucket: "my-cache-bucket",
+        secureDataAlgorithm: "aes-256-cbc",
+        secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex"),
+        DynamoDbMaxCacheSize_kb: 20,
+        purgeExpiredCacheEntriesAfterXHours: 24,
+        defaultExpirationExtensionOnErrorInSeconds: 300,
+        timeZoneForInterval: "America/Chicago"
+      });
 
-				} catch (error) {
-					DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
-				} finally {
-					timerConfigInit.stop();
-					resolve(true);
-				};
-				
-			})
-		);
+    } catch (error) {
+      DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
+    } finally {
+      timerConfigInit.stop();
+    };
+
+    return AppConfig.promise();
+    
   };
 
   static async prime() {

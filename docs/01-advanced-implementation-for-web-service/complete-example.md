@@ -33,68 +33,66 @@ const validations = require("./validations.js");
 class Config extends AppConfig {
   
 	static async init() {
-		
-		AppConfig.add(
-			new Promise(async (resolve) => {
-      try {
-        
-        // Define API connections - this could be moved to connections.js and imported
-        const connections = [
-          {
-            name: 'users-api',
-            host: 'api.example.com',
-            path: '/users',
-            headers: {
-              'X-Api-Key': new CachedSSMParameter(process.env.PARAM_STORE_PATH+'UsersApiKey', {refreshAfter: 43200}), // 12 hours
-            },
-            cache: [{
-              profile: 'user-data',
-              defaultExpirationInSeconds: 600,
-              overrideOriginHeaderExpiration: true,
-              expiresIsOnInterval: false,
-              hostId: 'example',
-              pathId: 'users',
-              encrypt: false
-            }]
+
+    try {
+      
+      // Define API connections - this could be moved to connections.js and imported
+      const connections = [
+        {
+          name: 'users-api',
+          host: 'api.example.com',
+          path: '/users',
+          headers: {
+            'X-Api-Key': new CachedSSMParameter(process.env.PARAM_STORE_PATH+'UsersApiKey', {refreshAfter: 43200}), // 12 hours
           },
-          {
-            name: 'posts-api',
-            host: 'api.example.com',
-            path: '/posts',
-            cache: [{
-              profile: 'post-data',
-              defaultExpirationInSeconds: 300,
-              overrideOriginHeaderExpiration: true,
-              expiresIsOnInterval: false,
-              hostId: 'example',
-              pathId: 'posts',
-              encrypt: false
-            }]
-          }
-        ];
+          cache: [{
+            profile: 'user-data',
+            defaultExpirationInSeconds: 600,
+            overrideOriginHeaderExpiration: true,
+            expiresIsOnInterval: false,
+            hostId: 'example',
+            pathId: 'users',
+            encrypt: false
+          }]
+        },
+        {
+          name: 'posts-api',
+          host: 'api.example.com',
+          path: '/posts',
+          cache: [{
+            profile: 'post-data',
+            defaultExpirationInSeconds: 300,
+            overrideOriginHeaderExpiration: true,
+            expiresIsOnInterval: false,
+            hostId: 'example',
+            pathId: 'posts',
+            encrypt: false
+          }]
+        }
+      ];
 
-        const responses = {
-          errorExpirationInSeconds: 180,
-          routeExpirationInSeconds: 3600,
-          contentType: tools.Response.CONTENT_TYPE.JSON
-        };
+      const responses = {
+        errorExpirationInSeconds: 180,
+        routeExpirationInSeconds: 3600,
+        contentType: tools.Response.CONTENT_TYPE.JSON
+      };
 
-        AppConfig.init( { connections, responses, validations } );
-                
-        // Initialize cache
-        Cache.init({
-					secureDataKey: new CachedSsmParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
-          DynamoDbMaxCacheSize_kb: 20,
-          purgeExpiredCacheEntriesAfterXHours: 24,
-          timeZoneForInterval: 'America/Chicago'
-        });
-        
-      } catch (error) {
-        DebugAndLog.error('Config initialization failed', error);
-      } finally {
-        resolve(true);
-      }
-    });
+      AppConfig.init( { connections, responses, validations } );
+              
+      // Initialize cache
+      Cache.init({
+        secureDataKey: new CachedSsmParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
+        DynamoDbMaxCacheSize_kb: 20,
+        purgeExpiredCacheEntriesAfterXHours: 24,
+        timeZoneForInterval: 'America/Chicago'
+      });
+      
+    } catch (error) {
+      DebugAndLog.error('Config initialization failed', error);
+    }
+    
+    return AppConfig.promise();
+    
   }
 
   static async prime() {

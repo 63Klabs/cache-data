@@ -120,21 +120,16 @@ const {
 class Config extends AppConfig {
 
 	static async init() {
-		
-		AppConfig.add(
-			new Promise(async (resolve) => {
 
-        AppConfig.init( {connections} );
+    AppConfig.init( {connections} );
 
-        // Cache settings
-        Cache.init({
-          secureDataKey: new CachedSSMParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
-          useInMemoryCache: true, // CACHE_USE_IN_MEMORY
-        });
+    // Cache settings
+    Cache.init({
+      secureDataKey: new CachedSSMParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
+      useInMemoryCache: true, // CACHE_USE_IN_MEMORY
+    });
 
-        resolve(true);
-			})
-		);
+    return AppConfig.promise();
 	};
 
 	static async prime() {

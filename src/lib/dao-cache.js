@@ -1654,34 +1654,51 @@ class Cache {
 	};
 
 	/**
-	 * Convert a value to boolean with special handling for the string "false".
+	 * Convert a value to boolean with strict handling for string values.
 	 * 
 	 * JavaScript's Boolean() function treats any non-empty string as true, including
-	 * the string "false". This method adds special handling for the string "false"
-	 * (case-insensitive) to return false, which is useful when dealing with JSON data,
-	 * query parameters, or configuration strings.
+	 * the string "false". This method provides strict boolean conversion where:
+	 * - The string "true" (case-insensitive) returns true
+	 * - The string "1" returns true
+	 * - The number 1 returns true
+	 * - The boolean true returns true
+	 * - All other values return false (including "false", "0", "no", whitespace, empty strings, null, undefined)
 	 * 
-	 * All other values are evaluated using JavaScript's standard Boolean() conversion.
+	 * This is useful when dealing with environment variables, JSON data, query parameters,
+	 * or configuration strings where only explicit "true" or "1" should enable a feature.
 	 * 
 	 * @param {*} value A value to convert to boolean
-	 * @returns {boolean} The boolean representation of the value, with "false" string treated as false
+	 * @returns {boolean} True only if value is explicitly truthy ("true", "1", 1, or true), false otherwise
 	 * @example
 	 * Cache.bool(true);      // true
 	 * Cache.bool(false);     // false
 	 * Cache.bool("true");    // true
-	 * Cache.bool("false");   // false (special handling)
-	 * Cache.bool("FALSE");   // false (case-insensitive)
+	 * Cache.bool("TRUE");    // true (case-insensitive)
+	 * Cache.bool("1");       // true
 	 * Cache.bool(1);         // true
+	 * Cache.bool("false");   // false
+	 * Cache.bool("0");       // false
+	 * Cache.bool("no");      // false
+	 * Cache.bool(" ");       // false (whitespace)
+	 * Cache.bool("  ");      // false (whitespace)
 	 * Cache.bool(0);         // false
 	 * Cache.bool(null);      // false
+	 * Cache.bool(undefined); // false
 	 * Cache.bool("");        // false
 	 */
 	static bool (value) {
 
-		if ( typeof value === 'string') { value = value.toLowerCase(); }
+		// >! Handle strings with strict true/false logic
+		// >! Only "true" and "1" are considered truthy strings
+		if ( typeof value === 'string') { 
+			value = value.trim().toLowerCase();
+			return value === 'true' || value === '1';
+		}
 
-		// Boolean("false") is true so we need to code for it. As long as it is not "false", trust Boolean()
-		return  (( value !== "false") ? Boolean(value) : false ); 
+		// >! For non-strings, use standard Boolean conversion
+		// >! This handles: true, 1, objects, arrays
+		// >! And returns false for: false, 0, null, undefined, NaN
+		return Boolean(value);
 	};
 
 	/**

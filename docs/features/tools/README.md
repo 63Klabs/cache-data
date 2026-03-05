@@ -1192,26 +1192,22 @@ const responses = require("./responses.js");
 
 class Config extends AppConfig {
   static async init() {
-		AppConfig.add(
-			new Promise(async (resolve) => {
 						
-				try {
+    try {
 
-					AppConfig.init( { settings, validations, connections, responses, debug: true } );
+      AppConfig.init( { settings, validations, connections, responses, debug: true } );
 
-					// Cache settings
-					Cache.init({
-						secureDataKey: new CachedSSMParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
-					});
+      // Cache settings
+      Cache.init({
+        secureDataKey: new CachedSSMParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
+      });
 
-				} catch (error) {
-					DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
-				} finally {
-					resolve(true);
-				};
+    } catch (error) {
+      DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
+    }
+
+    return AppConfig.promise();
 				
-			})
-		);
 	};
 
 	static async prime() {
@@ -1368,15 +1364,9 @@ const {tools: {AppConfig }} = require("@63klabs/cache-data");
 const connections = require("./connections.js");
 
 class Config extends AppConfig {
-		AppConfig.add(
-			new Promise(async (resolve) => {
-						
-        AppConfig.init( { connections } );
-
-        resolve(true);
-				
-			})
-		);
+  static async init() {
+		AppConfig.init( { connections } );
+    return AppConfig.promise();
 };
 ```
 
