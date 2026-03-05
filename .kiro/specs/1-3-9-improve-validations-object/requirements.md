@@ -81,8 +81,9 @@ The enhanced validation system will maintain full backwards compatibility with e
 1. THE ClientRequest SHALL apply validation rules in the following priority order: (1) Method-and-route match (BY_ROUTE with METHOD:route), (2) Route-only match (BY_ROUTE with route), (3) Method-only match (BY_METHOD), (4) Global parameter name
 2. WHEN a higher-priority validation rule matches, THE ClientRequest SHALL not check lower-priority rules
 3. WHEN no route-specific or method-specific validation matches, THE ClientRequest SHALL fall back to global parameter validation
-4. WHEN no validation rule matches a parameter, THE ClientRequest SHALL exclude that parameter from the validated parameters object
-5. THE ClientRequest SHALL document the validation priority order in JSDoc comments
+4. WHEN no validation rule matches a parameter AND excludeParamsWithNoValidationMatch is true (default), THE ClientRequest SHALL exclude that parameter from the validated parameters object
+5. WHEN no validation rule matches a parameter AND excludeParamsWithNoValidationMatch is false, THE ClientRequest SHALL include that parameter in the validated parameters object without validation
+6. THE ClientRequest SHALL document the validation priority order in JSDoc comments
 
 ### Requirement 6: Route Pattern Matching
 
@@ -160,7 +161,7 @@ The enhanced validation system will maintain full backwards compatibility with e
 
 1. THE ClientRequest SHALL minimize the number of route pattern comparisons by checking most specific patterns first
 2. WHEN a validation rule matches, THE ClientRequest SHALL stop checking lower-priority rules for that parameter
-3. THE ClientRequest SHALL cache normalized route patterns to avoid repeated string processing
+3. THE ClientRequest SHALL cache normalized route patterns during initialization to avoid repeated string processing
 4. THE ClientRequest SHALL perform validation during request initialization (constructor) to fail fast
 5. THE ClientRequest SHALL not perform validation on parameters that are not present in the request
 
@@ -172,10 +173,11 @@ The enhanced validation system will maintain full backwards compatibility with e
 
 1. THE ClientRequest SHALL continue to accept validations objects with the existing export structure
 2. THE ClientRequest SHALL support the `referrers` property at the root level
-3. THE ClientRequest SHALL support the `parameters` property containing pathParameters, queryParameters, headerParameters, cookieParameters, and bodyParameters
-4. THE ClientRequest SHALL accept BY_ROUTE as an optional property within each parameter type object
-5. THE ClientRequest SHALL accept BY_METHOD as an optional property within each parameter type object
-6. THE ClientRequest SHALL not require any changes to the module.exports structure in validation files
+3. THE ClientRequest SHALL support the `excludeParamsWithNoValidationMatch` property at the root level with a default value of true when not present
+4. THE ClientRequest SHALL support the `parameters` property containing pathParameters, queryParameters, headerParameters, cookieParameters, and bodyParameters
+5. THE ClientRequest SHALL accept BY_ROUTE as an optional property within each parameter type object
+6. THE ClientRequest SHALL accept BY_METHOD as an optional property within each parameter type object
+7. THE ClientRequest SHALL not require any changes to the module.exports structure in validation files
 
 ### Requirement 13: Parameter Specification in Route Patterns
 
