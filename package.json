@@ -35,10 +35,11 @@
     "sinon": "^21.0.1"
   },
   "overrides": {
-    "fast-xml-parser": ">=5.3.4",
     "diff": ">=8.0.3",
+    "fast-xml-parser": ">=5.3.4",
+    "glob": ">=13.0.6",
     "minimatch": ">=10.2.2",
-    "glob": ">=13.0.6"
+    "serialize-javascript": ">=7.0.3"
   },
   "scripts": {
     "test": "mocha 'test/**/*-tests.mjs' --exclude 'test/migration/property/test-execution-equivalence-property-tests.mjs'",

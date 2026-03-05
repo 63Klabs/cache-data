@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 
 // Import ValidationMatcher directly (it's a private class not exported in tools/index.js)
-const ValidationMatcherModule = await import('../../../../src/lib/tools/ValidationMatcher.class.js');
+const ValidationMatcherModule = await import('../../../../src/lib/utils/ValidationMatcher.class.js');
 const ValidationMatcher = ValidationMatcherModule.default;
 
 describe('ValidationMatcher', () => {

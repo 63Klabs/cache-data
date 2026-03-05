@@ -121,7 +121,7 @@ All public APIs must have complete JSDoc with:
 - `@example` with at least one working code example
 - `@throws` for each error type that can be thrown
 
-See `.kiro/steering/documentation-standards.md` for complete requirements.
+See `.kiro/steering/documentation-standards-jsdoc.md` for complete requirements.
 
 ## Testing
 
@@ -155,7 +155,7 @@ Potential enhancements for contributor experience:
 ## Related Documentation
 
 - [CONTRIBUTING.md](../../../CONTRIBUTING.md) - Full contribution guidelines
-- [Documentation Standards](../../steering/documentation-standards.md) - Complete JSDoc requirements
+- [JSDoc Documentation Standards](../../steering/documentation-standards-jsdoc.md) - Complete JSDoc requirements
 - [Pre-Commit Hook Fix](./PRE-COMMIT-HOOK-FIX.md) - Technical details of the hook fix
 - [Completion Summary](./COMPLETION-SUMMARY.md) - Overall documentation enhancement summary
 

@@ -221,7 +221,7 @@ const { tools, cache: {CacheableDataAccess}, endpoint } = require('@63klabs/cach
 
 async function getData() {
   // Get connection configuration
-  const {conn, cacheProfile}} = Config.getConnCacheProfile("api", "api-data");
+  const {conn, cacheProfile} = Config.getConnCacheProfile("api", "api-data");
 
   // Get data (from cache if available, otherwise from endpoint)
   const cacheObj = await CacheableDataAccess.getData(

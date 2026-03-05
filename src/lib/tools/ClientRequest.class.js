@@ -2,13 +2,25 @@ const RequestInfo = require('./RequestInfo.class');
 const Timer = require('./Timer.class');
 const DebugAndLog = require('./DebugAndLog.class');
 const { safeClone } = require('./utils');
+const ValidationMatcher = require('../utils/ValidationMatcher.class');
+const ValidationExecutor = require('../utils/ValidationExecutor.class');
 
 
 /**
- * Extends RequestInfo
- * Can be used to create a custom ClientRequest object
+ * Extends RequestInfo to provide request validation, parameter extraction, and authentication.
+ * 
+ * ClientRequest processes Lambda API Gateway events and validates parameters using a flexible
+ * validation system that supports global, route-specific, method-specific, and method-and-route
+ * specific validation rules with clear priority ordering.
+ * 
+ * Validation Priority Order (highest to lowest):
+ * 1. Method-and-route match (BY_ROUTE with "METHOD:route")
+ * 2. Route-only match (BY_ROUTE with "route")
+ * 3. Method-only match (BY_METHOD with "METHOD")
+ * 4. Global parameter name
+ * 
  * @example
- * // Initialize ClientRequest with validations
+ * // Initialize ClientRequest with global validations (backwards compatible)
  * ClientRequest.init({
  *   validations: {
  *     referrers: ['example.com', 'myapp.com'],
@@ -20,6 +32,88 @@ const { safeClone } = require('./utils');
  *       pathParameters: {
  *         id: (value) => /^[a-zA-Z0-9-]+$/.test(value)
  *       }
+ *     }
+ *   }
+ * });
+ * 
+ * @example
+ * // Initialize with route-specific validations
+ * ClientRequest.init({
+ *   parameters: {
+ *     pathParameters: {
+ *       // Global validation (Priority 4) - applies to all routes
+ *       id: (value) => typeof value === 'string' && value.length > 0,
+ *       
+ *       // Route-specific validations (Priority 2)
+ *       BY_ROUTE: [
+ *         {
+ *           route: "product/{id}",
+ *           validate: (value) => /^P-[0-9]+$/.test(value)
+ *         },
+ *         {
+ *           route: "employee/{id}",
+ *           validate: (value) => /^E-[0-9]+$/.test(value)
+ *         }
+ *       ]
+ *     }
+ *   }
+ * });
+ * 
+ * @example
+ * // Initialize with method-specific validations
+ * ClientRequest.init({
+ *   parameters: {
+ *     pathParameters: {
+ *       id: (value) => typeof value === 'string',
+ *       
+ *       // Method-specific validations (Priority 3)
+ *       BY_METHOD: [
+ *         {
+ *           method: "POST",
+ *           validate: (value) => value.length <= 50
+ *         },
+ *         {
+ *           method: "GET",
+ *           validate: (value) => value.length > 0
+ *         }
+ *       ]
+ *     }
+ *   }
+ * });
+ * 
+ * @example
+ * // Initialize with method-and-route validations (highest priority)
+ * ClientRequest.init({
+ *   parameters: {
+ *     pathParameters: {
+ *       BY_ROUTE: [
+ *         {
+ *           route: "POST:game/join/{id}",  // Priority 1: Method-and-route
+ *           validate: (value) => /^[0-9]{6}$/.test(value)
+ *         },
+ *         {
+ *           route: "GET:game/join/{id}",   // Priority 1: Method-and-route
+ *           validate: (value) => /^[0-9]+$/.test(value)
+ *         }
+ *       ]
+ *     }
+ *   }
+ * });
+ * 
+ * @example
+ * // Multi-parameter validation - validate multiple parameters together
+ * ClientRequest.init({
+ *   parameters: {
+ *     queryStringParameters: {
+ *       BY_ROUTE: [
+ *         {
+ *           route: "search?query,limit",  // Specify multiple parameters
+ *           validate: ({query, limit}) => {
+ *             // Validation function receives object with all specified parameters
+ *             return query.length > 0 && limit >= 1 && limit <= 100;
+ *           }
+ *         }
+ *       ]
  *     }
  *   }
  * });
@@ -61,6 +155,9 @@ class ClientRequest extends RequestInfo {
 	#context = null;
 	#authorizations = safeClone(ClientRequest.#unauthenticatedAuthorizations);
 	#roles = [];
+	
+	/* Validation system */
+	#validationMatchers = {};
 
 	/* The request data */
 	#props = {};
@@ -74,9 +171,36 @@ class ClientRequest extends RequestInfo {
 	}
 
 	/**
-	 * Initializes the request data based on the event. Also sets the 
-	 * validity of the request so it may be checked by .isValid()
-	 * @param {object} event object from Lambda
+	 * Initializes the request data based on the event and performs parameter validation.
+	 * 
+	 * The constructor initializes ValidationMatchers for each parameter type (path, query, header, cookie)
+	 * using the configured validation rules. Validation is performed immediately during construction,
+	 * and the request validity can be checked using isValid().
+	 * 
+	 * Validation uses a four-tier priority system:
+	 * 1. Method-and-route match (BY_ROUTE with "METHOD:route") - Most specific
+	 * 2. Route-only match (BY_ROUTE with "route")
+	 * 3. Method-only match (BY_METHOD with "METHOD")
+	 * 4. Global parameter name - Least specific
+	 * 
+	 * @param {Object} event - Lambda API Gateway event object
+	 * @param {Object} context - Lambda context object
+	 * @example
+	 * // Basic usage
+	 * const clientRequest = new ClientRequest(event, context);
+	 * if (clientRequest.isValid()) {
+	 *   // Process valid request
+	 * }
+	 * 
+	 * @example
+	 * // With route-specific validation
+	 * // If event.resource = "/product/{id}" and event.httpMethod = "GET"
+	 * // ValidationMatcher will check:
+	 * // 1. GET:product/{id} validation (if exists)
+	 * // 2. product/{id} validation (if exists)
+	 * // 3. GET method validation (if exists)
+	 * // 4. Global 'id' parameter validation (if exists)
+	 * const clientRequest = new ClientRequest(event, context);
 	 */
 	constructor(event, context) {
 		super(event);
@@ -111,18 +235,175 @@ class ClientRequest extends RequestInfo {
 			calcMsToDeadline: this.calcMsToDeadline
 		};
 		
+		// >! Initialize ValidationMatchers for each parameter type
+		// >! This enables route-specific and method-specific validations
+		const httpMethod = this.#event.httpMethod || '';
+		const resourcePath = resource || '';
+		const paramValidations = ClientRequest.getParameterValidations();
+		
+		// >! Support both queryParameters and queryStringParameters for backwards compatibility
+		const queryValidations = paramValidations?.queryStringParameters || paramValidations?.queryParameters;
+		
+		this.#validationMatchers = {
+			pathParameters: new ValidationMatcher(paramValidations?.pathParameters, httpMethod, resourcePath),
+			queryStringParameters: new ValidationMatcher(queryValidations, httpMethod, resourcePath),
+			headerParameters: new ValidationMatcher(paramValidations?.headerParameters, httpMethod, resourcePath),
+			cookieParameters: new ValidationMatcher(paramValidations?.cookieParameters, httpMethod, resourcePath)
+		};
+		
 		this.#validate();
 
 	};
 
 	/**
-	 * This is used to initialize the ClientRequest class for all requests.
-	 * Add ClientRequest.init(options) to the Config.init process or at the
-	 * top of the main index.js file outside of the handler.
-	 * @param {object} options - Configuration options with validations property containing referrers and parameters
-	 * @param {Array<string>} options.referrers - Array of allowed referrers
-	 * @param {object} options.parameters - Object containing parameter validation functions
+	 * Initialize the ClientRequest class with validation configuration.
+	 * 
+	 * This method configures the validation system for all ClientRequest instances.
+	 * Call this once during application initialization, before creating any ClientRequest instances.
+	 * 
+	 * Validation Configuration Structure:
+	 * - referrers: Array of allowed referrer domains (use ['*'] to allow all)
+	 * - parameters: Object containing validation rules for each parameter type
+	 *   - pathParameters, queryStringParameters, headerParameters, cookieParameters, bodyParameters
+	 *   - Each parameter type can have:
+	 *     - Global validations: paramName: (value) => boolean
+	 *     - BY_ROUTE: Array of route-specific validation rules
+	 *     - BY_METHOD: Array of method-specific validation rules
+	 * 
+	 * Parameter Specification Syntax:
+	 * - Path parameters: "route/{param}" - Validates 'param' path parameter
+	 * - Query parameters: "route?param" - Validates 'param' query parameter
+	 * - Multiple parameters: "route?param1,param2" - Validates both parameters together
+	 * - Method-and-route: "METHOD:route" - Applies only to specific HTTP method and route
+	 * 
+	 * @param {Object} options - Configuration options
+	 * @param {Array<string>} [options.referrers] - Array of allowed referrers (use ['*'] for all)
+	 * @param {Object} [options.parameters] - Parameter validation configuration
+	 * @param {Object} [options.parameters.pathParameters] - Path parameter validations
+	 * @param {Object} [options.parameters.queryStringParameters] - Query parameter validations
+	 * @param {Object} [options.parameters.headerParameters] - Header parameter validations
+	 * @param {Object} [options.parameters.cookieParameters] - Cookie parameter validations
+	 * @param {Object} [options.parameters.bodyParameters] - Body parameter validations
+	 * @param {Array<{route: string, validate: Function}>} [options.parameters.*.BY_ROUTE] - Route-specific validations
+	 * @param {Array<{method: string, validate: Function}>} [options.parameters.*.BY_METHOD] - Method-specific validations
+	 * @param {boolean} [options.parameters.excludeParamsWithNoValidationMatch=true] - Exclude parameters without validation rules
 	 * @throws {Error} If options is not an object
+	 * 
+	 * @example
+	 * // Global validations only (backwards compatible)
+	 * ClientRequest.init({
+	 *   referrers: ['example.com'],
+	 *   parameters: {
+	 *     pathParameters: {
+	 *       id: (value) => /^[a-zA-Z0-9-]+$/.test(value)
+	 *     },
+	 *     queryStringParameters: {
+	 *       limit: (value) => !isNaN(value) && value > 0 && value <= 100
+	 *     }
+	 *   }
+	 * });
+	 * 
+	 * @example
+	 * // Route-specific validations (Priority 2)
+	 * ClientRequest.init({
+	 *   parameters: {
+	 *     pathParameters: {
+	 *       id: (value) => typeof value === 'string',  // Global fallback
+	 *       BY_ROUTE: [
+	 *         {
+	 *           route: "product/{id}",
+	 *           validate: (value) => /^P-[0-9]+$/.test(value)
+	 *         },
+	 *         {
+	 *           route: "employee/{id}",
+	 *           validate: (value) => /^E-[0-9]+$/.test(value)
+	 *         }
+	 *       ]
+	 *     }
+	 *   }
+	 * });
+	 * 
+	 * @example
+	 * // Method-specific validations (Priority 3)
+	 * ClientRequest.init({
+	 *   parameters: {
+	 *     pathParameters: {
+	 *       BY_METHOD: [
+	 *         {
+	 *           method: "POST",
+	 *           validate: (value) => value.length <= 50
+	 *         },
+	 *         {
+	 *           method: "GET",
+	 *           validate: (value) => value.length > 0
+	 *         }
+	 *       ]
+	 *     }
+	 *   }
+	 * });
+	 * 
+	 * @example
+	 * // Method-and-route validations (Priority 1 - highest)
+	 * ClientRequest.init({
+	 *   parameters: {
+	 *     pathParameters: {
+	 *       BY_ROUTE: [
+	 *         {
+	 *           route: "POST:game/join/{id}",
+	 *           validate: (value) => /^[0-9]{6}$/.test(value)
+	 *         },
+	 *         {
+	 *           route: "GET:game/join/{id}",
+	 *           validate: (value) => /^[0-9]+$/.test(value)
+	 *         }
+	 *       ]
+	 *     }
+	 *   }
+	 * });
+	 * 
+	 * @example
+	 * // Multi-parameter validation
+	 * ClientRequest.init({
+	 *   parameters: {
+	 *     queryStringParameters: {
+	 *       BY_ROUTE: [
+	 *         {
+	 *           route: "search?query,limit",  // Specify multiple parameters
+	 *           validate: ({query, limit}) => {
+	 *             // Validation function receives object with all parameters
+	 *             return query.length > 0 && limit >= 1 && limit <= 100;
+	 *           }
+	 *         }
+	 *       ]
+	 *     }
+	 *   }
+	 * });
+	 * 
+	 * @example
+	 * // Mixed priority levels
+	 * ClientRequest.init({
+	 *   parameters: {
+	 *     pathParameters: {
+	 *       id: (value) => typeof value === 'string',  // Priority 4: Global
+	 *       BY_METHOD: [
+	 *         {
+	 *           method: "POST",  // Priority 3: Method-only
+	 *           validate: (value) => value.length <= 50
+	 *         }
+	 *       ],
+	 *       BY_ROUTE: [
+	 *         {
+	 *           route: "product/{id}",  // Priority 2: Route-only
+	 *           validate: (value) => /^P-[0-9]+$/.test(value)
+	 *         },
+	 *         {
+	 *           route: "POST:product/{id}",  // Priority 1: Method-and-route
+	 *           validate: (value) => /^P-[0-9]{4}$/.test(value)
+	 *         }
+	 *       ]
+	 *     }
+	 *   }
+	 * });
 	 */
 	static init(options) {
 		if (typeof options === 'object') {
@@ -198,7 +479,7 @@ class ClientRequest extends RequestInfo {
 
 	};
 
-	#hasValidParameters(paramValidations, clientParameters) {
+	#hasValidParameters(paramValidations, clientParameters, validationMatcher) {
 
 		let rValue = {
 			isValid: true,
@@ -206,29 +487,57 @@ class ClientRequest extends RequestInfo {
 		}
 	
 		if (clientParameters && paramValidations) {
+			// >! Check excludeParamsWithNoValidationMatch flag (default: true)
+			const excludeUnmatched = ClientRequest.#validations.parameters?.excludeParamsWithNoValidationMatch !== false;
+			
+			// >! Create normalized parameter map for validation execution
+			const normalizedParams = {};
+			for (const [key, value] of Object.entries(clientParameters)) {
+				const normalizedKey = key.replace(/^\/|\/$/g, '');
+				normalizedParams[normalizedKey] = value;
+			}
+			
 			// Use a for...of loop instead of forEach for better control flow
 			for (const [key, value] of Object.entries(clientParameters)) {
+				// >! Preserve existing parameter key normalization
 				const paramKey = key.replace(/^\/|\/$/g, '');
 				const paramValue = value;
 				
-				if (paramKey in paramValidations) {
-					const validationFunc = paramValidations[paramKey];
-					if (typeof validationFunc === 'function' && validationFunc(paramValue)) {
+				// >! Use ValidationMatcher to find the best matching validation rule
+				const rule = validationMatcher.findValidationRule(paramKey);
+				
+				if (rule) {
+					// >! Use ValidationExecutor to execute validation with appropriate interface
+					// Pass normalized parameters so validation functions can access them by normalized names
+					const isValid = ValidationExecutor.execute(rule.validate, rule.params, normalizedParams);
+					
+					if (isValid) {
 						rValue.params[paramKey] = paramValue;
 					} else {
+						// >! Maintain existing logging for invalid parameters
 						DebugAndLog.warn(`Invalid parameter: ${paramKey} = ${paramValue}`);
 						rValue.isValid = false;
 						rValue.params = {};
-						return rValue; // exit right away
+						// >! Ensure early exit on validation failure
+						return rValue;
 					}
+				} else if (!excludeUnmatched) {
+					// No validation rule found, but excludeUnmatched is false
+					// Include parameter without validation
+					rValue.params[paramKey] = paramValue;
 				}
+				// If excludeUnmatched is true and no rule found, skip parameter (existing behavior)
 			}
 		}	
 		return rValue;
 	}
 
 	#hasValidPathParameters() {
-		const { isValid, params } = this.#hasValidParameters(ClientRequest.getParameterValidations()?.pathParameters, this.#event?.pathParameters);
+		const { isValid, params } = this.#hasValidParameters(
+			ClientRequest.getParameterValidations()?.pathParameters,
+			this.#event?.pathParameters,
+			this.#validationMatchers.pathParameters
+		);
 		this.#props.pathParameters = params;
 		return isValid;
 	}
@@ -239,7 +548,16 @@ class ClientRequest extends RequestInfo {
 		for (const key in this.#event.queryStringParameters) {
 			qs[key.toLowerCase()] = this.#event.queryStringParameters[key];
 		}
-		const { isValid, params } = this.#hasValidParameters(ClientRequest.getParameterValidations()?.queryStringParameters, qs);
+		
+		// >! Support both queryParameters and queryStringParameters for backwards compatibility
+		const paramValidations = ClientRequest.getParameterValidations();
+		const queryValidations = paramValidations?.queryStringParameters || paramValidations?.queryParameters;
+		
+		const { isValid, params } = this.#hasValidParameters(
+			queryValidations,
+			qs,
+			this.#validationMatchers.queryStringParameters
+		);
 		this.#props.queryStringParameters = params;
 		return isValid;
 	}
@@ -251,13 +569,21 @@ class ClientRequest extends RequestInfo {
 			const camelCaseKey = key.toLowerCase().replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 			headers[camelCaseKey] = this.#event.headers[key];
 		}
-		const { isValid, params } = this.#hasValidParameters(ClientRequest.getParameterValidations()?.headerParameters, headers);
+		const { isValid, params } = this.#hasValidParameters(
+			ClientRequest.getParameterValidations()?.headerParameters,
+			headers,
+			this.#validationMatchers.headerParameters
+		);
 		this.#props.headerParameters = params;
 		return isValid;
 	}
 
 	#hasValidCookieParameters() {
-		const { isValid, params } = this.#hasValidParameters(ClientRequest.getParameterValidations()?.cookiearameters, this.#event?.cookie); // TODO
+		const { isValid, params } = this.#hasValidParameters(
+			ClientRequest.getParameterValidations()?.cookieParameters,
+			this.#event?.cookie,
+			this.#validationMatchers.cookieParameters
+		);
 		this.#props.cookieParameters = params;
 		return isValid;
 	}
@@ -425,9 +751,11 @@ class ClientRequest extends RequestInfo {
 	isAuthorizedReferrer() {
 		/* Check the array of valid referrers */
 		/* Check if the array includes a wildcard (*) OR if one of the whitelisted referrers matches the end of the referrer */
-		if (ClientRequest.requiresValidReferrer()) {
+		if (!ClientRequest.requiresValidReferrer()) {
+			// Wildcard (*) is in the list, allow all referrers
 			return true;
 		} else {
+			// Check if referrer matches one of the whitelisted referrers
 			for (let i = 0; i < ClientRequest.#validations.referrers.length; i++) {
 				if (this.getClientReferer().endsWith(ClientRequest.#validations.referrers[i])) {
 					return true;

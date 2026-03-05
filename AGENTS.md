@@ -234,7 +234,102 @@ src/
 5. **Immutability**: Prefer immutable objects where possible
 6. **Error Handling**: Always handle errors gracefully, log appropriately
 
-### 3.4 Adding New Functionality
+### 3.4 Non-Public Class Organization
+
+**CRITICAL**: Not all classes should be exported in the public API. Internal implementation classes must be kept separate from user-facing APIs.
+
+#### Directory Structure for Classes
+
+- **`src/lib/tools/`**: Public API classes and utilities
+  - Classes exported in `src/lib/tools/index.js`
+  - User-facing functionality
+  - Examples: `DebugAndLog`, `Timer`, `Response`, `APIRequest`
+
+- **`src/lib/utils/`**: Internal implementation classes
+  - Classes NOT exported in public API
+  - Used internally by public classes
+  - Examples: `InMemoryCache`, `ValidationExecutor`, `ValidationMatcher`
+
+#### When to Use Each Directory
+
+**Use `src/lib/tools/` when:**
+- Class is part of the public API
+- Users need direct access to the class
+- Class is exported in `src/index.js` or `src/lib/tools/index.js`
+- Class provides user-facing functionality
+
+**Use `src/lib/utils/` when:**
+- Class is internal implementation detail
+- Class is only used by other classes in the package
+- Class should not be exposed to users
+- Class is a helper or utility for internal use
+
+#### Example: ValidationExecutor and ValidationMatcher
+
+These classes are internal to ClientRequest's validation system:
+
+```javascript
+// src/lib/utils/ValidationExecutor.class.js
+// Internal class - not exported in public API
+class ValidationExecutor {
+  static execute(validateFn, paramNames, paramValues) {
+    // Implementation
+  }
+}
+
+// src/lib/utils/ValidationMatcher.class.js  
+// Internal class - not exported in public API
+class ValidationMatcher {
+  constructor(paramValidations, httpMethod, resourcePath) {
+    // Implementation
+  }
+}
+
+// src/lib/tools/ClientRequest.class.js
+// Public class - uses internal classes
+const ValidationMatcher = require('../utils/ValidationMatcher.class');
+const ValidationExecutor = require('../utils/ValidationExecutor.class');
+
+class ClientRequest {
+  // Uses ValidationMatcher and ValidationExecutor internally
+}
+```
+
+#### Testing Internal Classes
+
+Internal classes can still be tested using direct imports in test files:
+
+```javascript
+// test/request/validation/unit/validation-executor-tests.jest.mjs
+const ValidationExecutorModule = await import('../../../../src/lib/utils/ValidationExecutor.class.js');
+const ValidationExecutor = ValidationExecutorModule.default;
+
+describe('ValidationExecutor', () => {
+  it('should execute validation correctly', () => {
+    // Test internal class
+  });
+});
+```
+
+#### Rules for AI Assistants
+
+When creating new classes:
+
+1. **Determine visibility**: Is this class part of the public API?
+2. **Choose directory**: 
+   - Public API → `src/lib/tools/`
+   - Internal implementation → `src/lib/utils/`
+3. **Update exports**: Only export public classes in `src/lib/tools/index.js`
+4. **Document clearly**: Mark internal classes with `@private` JSDoc tag
+5. **Test appropriately**: Internal classes can be tested directly
+
+**DO NOT**:
+- Export internal classes in public API
+- Place public API classes in `src/lib/utils/`
+- Mix concerns between directories
+- Change class location without updating all imports
+
+### 3.5 Adding New Functionality
 
 **Before adding new methods or classes:**
 

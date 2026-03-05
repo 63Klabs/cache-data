@@ -26,7 +26,7 @@ Spec-Driven, AI-Assisted Engineering (SD-AI) is a software development methodolo
 
 Code must be reviewed, understood, and tested by a human before being merged.
 
-Kiro is the required AI coding assistant for final integrations, documentation, and testing, as it is in the AWS Ecosystem and this project is deveoped to deploy on the AWS platform. Just like test suites, Kiro ensures the proper tests, documentation, and guardrails are in place. Kiro is as important as commit-hooks and tests as it is a tool that ensures quality checks and should not be bypassed.
+Kiro is the required AI coding assistant for final integrations, documentation, and testing, as it is in the AWS Ecosystem and this project is developed to deploy on the AWS platform. Just like test suites, Kiro ensures the proper tests, documentation, and guardrails are in place. Kiro is as important as commit-hooks and tests as it is a tool that ensures quality checks and should not be bypassed.
 
 Ensure [AGENTS](./AGENTS.md) and Kiro steering documents are reviewed, understood, and used by both humans and AI.
 
@@ -126,7 +126,7 @@ npm test -- test/cache/
 
 ## Documentation Standards
 
-All public APIs must have complete JSDoc documentation. See [Documentation Standards](.kiro/steering/documentation-standards.md) for detailed requirements.
+All public APIs must have complete JSDoc documentation. See [JSDoc Documentation Standards](.kiro/steering/documentation-standards-jsdoc.md) for detailed requirements.
 
 **Required JSDoc tags:**
 - Description of what the function/class does

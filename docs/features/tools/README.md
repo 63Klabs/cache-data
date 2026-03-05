@@ -1367,7 +1367,8 @@ class Config extends AppConfig {
   static async init() {
 		AppConfig.init( { connections } );
     return AppConfig.promise();
-};
+  }
+}
 ```
 
 ## API Reference

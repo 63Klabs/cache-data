@@ -1,4 +1,4 @@
-const DebugAndLog = require('./DebugAndLog.class');
+const DebugAndLog = require('../tools/DebugAndLog.class');
 
 /**
  * Internal class for matching validation rules to request parameters.

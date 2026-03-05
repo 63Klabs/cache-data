@@ -10,6 +10,23 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.9 (unreleased)
 
+### Security
+- **Fixed npm security vulnerabilities in serialize-javascript** [Spec: 1-3-9-npm-security-vulnerabilities-fix](.kiro/specs/1-3-9-npm-security-vulnerabilities-fix/)
+  - Fixed 2 high severity vulnerabilities in serialize-javascript (RCE via RegExp.flags and Date.prototype.toISOString)
+  - Added npm override for serialize-javascript >=7.0.3 to force secure version
+  - No breaking changes to public APIs
+  - All existing tests pass
+
+### Added
+- **Enhanced Validation System for ClientRequest** [Spec: 1-3-9-improve-validations-object](.kiro/specs/1-3-9-improve-validations-object/)
+  - **Route-Specific Validations**: Define different validation rules for the same parameter name in different routes (e.g., `id` in `/product/{id}` vs `/employee/{id}`)
+  - **Method-Specific Validations**: Define different validation rules based on HTTP method (e.g., stricter validation for `POST` than `GET`)
+  - **Method-and-Route Validations**: Most precise control with validation rules for specific method-route combinations (e.g., `POST:join/{id}`)
+  - **Multi-Parameter Validations**: Validate multiple parameters together to enforce cross-parameter constraints
+  - **Clear Priority Order**: Four-tier priority system (method-and-route > route-only > method-only > global)
+  - **Backwards Compatible**: Existing global parameter validations continue to work without any code changes
+  - **Performance Optimized**: Pattern normalization caching and early exit optimization for minimal overhead
+  - **Comprehensive Testing**: 15 correctness properties validated through property-based testing
 
 ## v1.3.8 (2026-03-02)
 
