@@ -146,45 +146,90 @@ class AppConfig {
 	 */
 	static init(options = {}) {
 
-		try {
+			try {
 
-			const debug = (options?.debug === true);
-			if (debug) {
-				DebugAndLog.debug("Config Init in debug mode");
+				const debug = (options?.debug === true);
+				if (debug) {
+					DebugAndLog.debug("Config Init in debug mode");
+				}
+
+				if (options.settings) {
+					const settingsPromise = new Promise((resolve) => {
+						try {
+							AppConfig._settings = options.settings;
+							if (debug) {
+								DebugAndLog.debug("Settings initialized", AppConfig._settings);
+							}
+							resolve();
+						} catch (error) {
+							DebugAndLog.error(`Settings initialization failed: ${error.message}`, error.stack);
+							resolve();
+						}
+					});
+					AppConfig.add(settingsPromise);
+				}
+
+				if (options.connections) {
+					const connectionsPromise = new Promise((resolve) => {
+						try {
+							AppConfig._connections = new Connections(options.connections);
+							if (debug) {
+								DebugAndLog.debug("Connections initialized", AppConfig._connections.info());
+							}
+							resolve();
+						} catch (error) {
+							DebugAndLog.error(`Connections initialization failed: ${error.message}`, error.stack);
+							resolve();
+						}
+					});
+					AppConfig.add(connectionsPromise);
+				}
+
+				if (options.validations) {
+					const validationsPromise = new Promise((resolve) => {
+						try {
+							ClientRequest.init(options.validations);
+							if (debug) {
+								DebugAndLog.debug("ClientRequest initialized", ClientRequest.info());
+							}
+							resolve();
+						} catch (error) {
+							DebugAndLog.error(`ClientRequest initialization failed: ${error.message}`, error.stack);
+							resolve();
+						}
+					});
+					AppConfig.add(validationsPromise);
+				}
+
+				if (options.responses) {
+					const responsesPromise = new Promise((resolve) => {
+						try {
+							Response.init(options.responses);
+							if (debug) {
+								DebugAndLog.debug("Response initialized", Response.info());
+							}
+							resolve();
+						} catch (error) {
+							DebugAndLog.error(`Response initialization failed: ${error.message}`, error.stack);
+							resolve();
+						}
+					});
+					AppConfig.add(responsesPromise);
+				}
+
+				if (options.ssmParameters) {
+					AppConfig._ssmParameters = AppConfig._initParameters(options.ssmParameters);
+					AppConfig.add(AppConfig._ssmParameters);
+				}
+
+				return true;
+
+			} catch (error) {
+				DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
+				return false;
 			}
-
-			if (options.settings) {
-				AppConfig._settings = options.settings;
-				if (debug) { DebugAndLog.debug("Settings initialized", AppConfig._settings); }
-			}
-
-			if (options.connections) {
-				AppConfig._connections = new Connections(options.connections);
-				if (debug) { DebugAndLog.debug("Connections initialized", AppConfig._connections.info()); }
-			}
-
-			if (options.validations) {
-				ClientRequest.init(options.validations);
-				if (debug) { DebugAndLog.debug("ClientRequest initialized", ClientRequest.info()); }
-			}
-
-			if (options.responses) {
-				Response.init(options.responses);
-				if (debug) { DebugAndLog.debug("Response initialized", Response.info()); }
-			}
-
-			if (options.ssmParameters) {
-				AppConfig._ssmParameters = AppConfig._initParameters(options.ssmParameters);
-				AppConfig.add(AppConfig._ssmParameters);
-			}
-
-			return true;
-
-		} catch (error) {
-			DebugAndLog.error(`Could not initialize Config ${error.message}`, error.stack);
-			return false;
 		}
-	};
+;
 
 	/**
 	 * Add a promise to AppConfig. Use AppConfig.promise() to ensure all are resolved.
