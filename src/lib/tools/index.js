@@ -107,7 +107,11 @@ class AppConfig {
 	static _ssmParameters = null;
 
 	/**
-	 * Initialize the Config class
+	 * Initialize the Config class with asynchronous parallel execution.
+	 * 
+	 * This method returns immediately (synchronously) while initialization operations
+	 * execute asynchronously in parallel. Use AppConfig.promise() to wait for all
+	 * initialization to complete before accessing initialized configuration.
 	 *
 	 * @param {object} options Configuration options
 	 * @param {object} options.settings Application settings retrieved by Config.settings()
@@ -124,8 +128,10 @@ class AppConfig {
 	 * @param {object} options.responses.rssResponses
 	 * @param {object} options.responses.textResponses
 	 * @param {object} options.ssmParameters Parameter Store
-	 * @returns {Promise<void>}
+	 * @param {boolean} [options.debug=false] Enable debug logging
+	 * @returns {boolean} True if initialization started successfully, false on synchronous error
 	 * @example
+	 * // Initialize configuration (returns immediately)
 	 * const { Config } = require("./config");
 	 * Config.init({
 	 *   settings: {
@@ -143,6 +149,13 @@ class AppConfig {
 	 *     }
 	 *   }
 	 * });
+	 * 
+	 * // Wait for all initialization to complete
+	 * await Config.promise();
+	 * 
+	 * // Now safe to access initialized configuration
+	 * const settings = Config.settings();
+	 * const conn = Config.getConn('myConnection');
 	 */
 	static init(options = {}) {
 

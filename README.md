@@ -50,7 +50,7 @@ The @63klabs/cache-data package provides three main modules:
 
 ### Requirements
 
-- Node.js >=20.0.0 runtime on Lambda
+- Node.js >=22.0.0 runtime on Lambda
 - AWS Services:
   - **AWS Lambda**: For running your serverless functions
   - **Amazon S3**: For storing large cached objects
@@ -68,7 +68,7 @@ Install the package using npm:
 npm install @63klabs/cache-data
 ```
 
-The simplest way to get started is to use the [63klabs Atlantis Templates and Script platform](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments) to deploy this and other ready-to-run solutions via CI/CD.
+The simplest way to get started is to use the [63klabs Atlantis Templates and Script Platform](https://github.com/63Klabs/atlantis) to deploy this and other ready-to-run solutions via CI/CD.
 
 However, if you want to write your own templates and code, follow the following steps:
 
@@ -102,26 +102,22 @@ It is recommended that you use the quick-start method when implementing for the 
 ### Basic Caching Example
 
 ```javascript
-const { cache } = require("@63klabs/cache-data");
+const { cache: {CacheableDataAccess, Cache}, endpoint } = require("@63klabs/cache-data");
 
 // Initialize cache with your S3 bucket and DynamoDB table
 cache.Cache.init({
-  s3Bucket: process.env.CACHE_DATA_S3_BUCKET,
-  dynamoDbTable: process.env.CACHE_DATA_DYNAMODB_TABLE,
-  securityKey: process.env.CACHE_DATA_SECURITY_KEY
+  s3Bucket: process.env.CACHE_DATA_S3_BUCKET, // Cache.init will check this env variable automatically if not provided here
+  dynamoDbTable: process.env.CACHE_DATA_DYNAMODB_TABLE, // Cache.init will check this env variable automatically if not provided here
+  securityKey: process.env.CACHE_DATA_SECURITY_KEY // don't do this, use SSM Parameter Store - example only
 });
 
-// Cache some data
-const cacheKey = "my-data-key";
-const dataToCache = { message: "Hello, World!", timestamp: Date.now() };
-
-await cache.Cache.put(cacheKey, dataToCache, 3600); // Cache for 1 hour
+// 
 
 // Retrieve cached data
-const cachedData = await cache.Cache.get(cacheKey);
-if (cachedData) {
-  console.log("Retrieved from cache:", cachedData);
-}
+const conn = { host: "api.example.com", path: "api/users"};
+const cacheProfile = {/* cache parameters */};
+const cachedData = await CacheableDataAccess.getData(cacheProfile, endpoint.get, conn);
+const data = cachedData.getBody(true);
 ```
 
 ### Making Endpoint Requests
@@ -131,8 +127,7 @@ const { endpoint } = require("@63klabs/cache-data");
 
 // Make a simple GET request to an API
 const response = await endpoint.get(
-  { host: "api.example.com", path: "/data" },
-  { parameters: { q: "search-term" } }
+  { host: "api.example.com", path: "/data", parameters: { q: "search-term" } }
 );
 
 console.log("API Response:", response.body);
@@ -142,7 +137,7 @@ console.log("Status Code:", response.statusCode);
 ### Using APIRequest with Pagination and Retry
 
 ```javascript
-const { tools } = require("@63klabs/cache-data");
+const { tools: {APIRequest} } = require("@63klabs/cache-data");
 
 // Make a request with automatic pagination and retry
 const request = new tools.APIRequest({
@@ -165,23 +160,15 @@ const response = await request.send();
 // Response contains all users from all pages
 const allUsers = JSON.parse(response.body).items;
 console.log(`Retrieved ${allUsers.length} total users`);
-
-// Check metadata
-if (response.metadata?.pagination?.occurred) {
-  console.log(`Fetched ${response.metadata.pagination.totalPages} pages`);
-}
-if (response.metadata?.retries?.occurred) {
-  console.log(`Succeeded after ${response.metadata.retries.attempts} attempts`);
-}
 ```
 
 ### Using Utility Tools
 
 ```javascript
-const { tools } = require("@63klabs/cache-data");
+const { tools: {DebugAndLog, Timer} } = require("@63klabs/cache-data");
 
 // Create a timer to measure performance
-const timer = new tools.Timer("my-operation");
+const timer = new Timer("my-operation");
 timer.start();
 
 // Your code here...
@@ -190,9 +177,8 @@ timer.stop();
 console.log(`Operation took ${timer.elapsed()}ms`);
 
 // Use the logger
-const logger = new tools.DebugAndLog("MyApp");
-logger.info("Application started");
-logger.error("An error occurred", { details: "error info" });
+DebugAndLog.debug("MyApp");
+DebugAndLog.error("Error in Service", error.msg);
 ```
 
 ## Help
