@@ -80,6 +80,7 @@ const resourceId = clientRequest.getResourceAt(1); // '{id}'
 const pathParams = clientRequest.getPathParameters(); // { id: '123' }
 const queryParams = clientRequest.getQueryStringParameters(); // { format: 'json' }
 const headerParams = clientRequest.getHeaderParameters(); // { authorization: 'Bearer ...' }
+const bodyParams = clientRequest.getBodyParameters(); // { name: 'John', email: 'john@example.com' }
 ```
 
 ## Request Logging

@@ -42,9 +42,9 @@ describe('Property 4: Validation Function Interface Selection', () => {
 						fc.constant(undefined)
 					),
 					httpMethod: fc.constantFrom('GET', 'POST', 'PUT', 'DELETE'),
-					routePattern: fc.stringMatching(/^[a-z]+\/\{[a-z]+\}$/)
+					routePrefix: fc.stringMatching(/^[a-z]+$/)
 				}),
-				async ({ paramName, paramValue, httpMethod, routePattern }) => {
+				async ({ paramName, paramValue, httpMethod, routePrefix }) => {
 					let receivedValue;
 					let receivedType;
 					let callCount = 0;
@@ -57,17 +57,17 @@ describe('Property 4: Validation Function Interface Selection', () => {
 						return true;
 					};
 					
-					// >! Create configuration with single-parameter specification
+					// >! Create configuration with single-parameter specification (no path params)
 					const config = {
 						BY_ROUTE: [
 							{
-								route: `${routePattern}?${paramName}`,
+								route: `${routePrefix}?${paramName}`,
 								validate: validateFn
 							}
 						]
 					};
 					
-					const matcher = new ValidationMatcher(config, httpMethod, `/${routePattern}`);
+					const matcher = new ValidationMatcher(config, httpMethod, `/${routePrefix}`);
 					const rule = matcher.findValidationRule(paramName);
 					
 					expect(rule).not.toBeNull();
@@ -268,6 +268,7 @@ describe('Property 4: Validation Function Interface Selection', () => {
 					};
 					
 					// >! Create configuration with mixed parameter types (path + query)
+					// >! When route has both path and query params, validation receives object with both
 					const routePattern = `${routePrefix}/{${pathParam}}`;
 					const config = {
 						BY_ROUTE: [
@@ -282,18 +283,22 @@ describe('Property 4: Validation Function Interface Selection', () => {
 					const rule = matcher.findValidationRule(queryParam);
 					
 					expect(rule).not.toBeNull();
-					expect(rule.params).toEqual([queryParam]);
+					// >! Route with both path and query params returns both in params array
+					expect(rule.params).toEqual([pathParam, queryParam]);
 					
-					// >! Execute validation - should receive single value for single param
+					// >! Execute validation - should receive object with both params for multi-param validation
 					const paramValues = {
 						[queryParam]: queryValue,
 						[pathParam]: pathValue
 					};
 					ValidationExecutor.execute(rule.validate, rule.params, paramValues);
 					
-					// >! Verify single value interface (not object)
-					expect(receivedValue).toBe(queryValue);
-					expect(typeof receivedValue).not.toBe('object');
+					// >! Verify multi-parameter object interface (not single value)
+					expect(typeof receivedValue).toBe('object');
+					expect(receivedValue).toEqual({
+						[pathParam]: pathValue,
+						[queryParam]: queryValue
+					});
 					
 					return true;
 				}

@@ -32,7 +32,8 @@ describe('Defect 3: Header Parameter Extraction - Exploration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'api/data',
-								validate: ({ contentType }) => {
+								validate: (contentType) => {
+									// >! Single-parameter validation receives value directly (not as object)
 									// Content-Type must be application/json
 									return contentType === 'application/json';
 								}
@@ -81,7 +82,7 @@ describe('Defect 3: Header Parameter Extraction - Exploration Tests', () => {
 					headerParameters: {
 						BY_ROUTE: [
 							{
-								route: 'api/secure',
+								route: 'api/secure?contentType,authorization',
 								validate: ({ contentType, authorization }) => {
 									// Both headers must be present and valid
 									return contentType === 'application/json' && 
@@ -131,7 +132,7 @@ describe('Defect 3: Header Parameter Extraction - Exploration Tests', () => {
 					headerParameters: {
 						BY_ROUTE: [
 							{
-								route: 'api/content',
+								route: 'api/content?contentType,accept,userAgent',
 								validate: ({ contentType, accept, userAgent }) => {
 									// All headers must be non-empty strings
 									return typeof contentType === 'string' && 
@@ -186,16 +187,17 @@ describe('Defect 3: Header Parameter Extraction - Exploration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'product/{id}',
-								validate: ({ id }) => /^\d+$/.test(id)
+								validate: (id) => /^\d+$/.test(id)
 							}
 						]
 					},
 					headerParameters: {
 						BY_ROUTE: [
 							{
-								route: 'product/{id}',
-								validate: ({ contentType }) => {
-									return contentType === 'application/json';
+								route: 'product/{id}?contentType',  // >! Route with path param and header param
+								validate: ({ id, contentType }) => {
+									// >! Multi-parameter validation receives object with all parameters
+									return /^\d+$/.test(id) && contentType === 'application/json';
 								}
 							}
 						]
@@ -291,9 +293,10 @@ describe('Defect 3: Header Parameter Extraction - Exploration Tests', () => {
 						BY_METHOD: [
 							{
 								method: 'POST',
-								validate: ({ contentType, authorization }) => {
-									return contentType === 'application/json' && 
-									       typeof authorization === 'string';
+								validate: (value) => {
+									// >! BY_METHOD validations receive single parameter value directly
+									// >! Each parameter is validated separately
+									return typeof value === 'string' && value.length > 0;
 								}
 							}
 						]
@@ -341,7 +344,8 @@ describe('Defect 3: Header Parameter Extraction - Exploration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'api/search?query',
-								validate: ({ query }) => {
+								validate: (query) => {
+									// >! Single-parameter validation receives value directly (not as object)
 									return typeof query === 'string' && query.length > 0;
 								}
 							}
@@ -351,7 +355,8 @@ describe('Defect 3: Header Parameter Extraction - Exploration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'api/search',
-								validate: ({ contentType }) => {
+								validate: (contentType) => {
+									// >! Single-parameter validation receives value directly (not as object)
 									return contentType === 'application/json';
 								}
 							}

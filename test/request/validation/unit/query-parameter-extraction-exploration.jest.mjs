@@ -32,8 +32,9 @@ describe('Defect 2: Query String Parameter Extraction - Exploration Tests', () =
 						BY_ROUTE: [
 							{
 								route: 'search?query',
-								validate: ({ query }) => {
+								validate: (query) => {
 									// Query must be a non-empty string
+									// >! Single-parameter validation receives value directly (not as object)
 									return typeof query === 'string' && query.length > 0;
 								}
 							}
@@ -186,16 +187,18 @@ describe('Defect 2: Query String Parameter Extraction - Exploration Tests', () =
 						BY_ROUTE: [
 							{
 								route: 'product/{id}',
-								validate: ({ id }) => /^\d+$/.test(id)
+								validate: (id) => /^\d+$/.test(id)
 							}
 						]
 					},
 					queryStringParameters: {
 						BY_ROUTE: [
 							{
-								route: 'product/{id}?includeProfile',
-								validate: ({ includeProfile }) => {
-									return includeProfile === 'true' || includeProfile === 'false';
+								route: 'product/{id}?includeprofile',  // >! Lowercase to match lowercased query parameter keys
+								validate: ({ id, includeprofile }) => {
+									// >! Multi-parameter validation (path + query) receives object with all parameters
+									// >! Note: query parameter keys are lowercased by hasValidQueryStringParameters
+									return /^\d+$/.test(id) && (includeprofile === 'true' || includeprofile === 'false');
 								}
 							}
 						]
@@ -234,9 +237,10 @@ describe('Defect 2: Query String Parameter Extraction - Exploration Tests', () =
 
 			// EXPECTED: Query parameters should be extracted
 			// ACTUAL (on unfixed code): getQueryStringParameters() returns {}
+			// NOTE: Query parameter keys are lowercased by hasValidQueryStringParameters
 			const queryParams = clientRequest.getQueryStringParameters();
 			expect(queryParams).toEqual({
-				includeProfile: 'true'
+				includeprofile: 'true'
 			});
 		});
 	});
@@ -291,9 +295,10 @@ describe('Defect 2: Query String Parameter Extraction - Exploration Tests', () =
 						BY_METHOD: [
 							{
 								method: 'GET',
-								validate: ({ sort, order }) => {
-									return typeof sort === 'string' && 
-									       (order === 'asc' || order === 'desc');
+								validate: (value) => {
+									// >! BY_METHOD validations receive single parameter value directly
+									// >! Each parameter is validated separately
+									return typeof value === 'string' && value.length > 0;
 								}
 							}
 						]

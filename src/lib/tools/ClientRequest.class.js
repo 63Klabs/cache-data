@@ -19,6 +19,43 @@ const ValidationExecutor = require('../utils/ValidationExecutor.class');
  * 3. Method-only match (BY_METHOD with "METHOD")
  * 4. Global parameter name
  * 
+ * Header Key Format Conversion:
+ * 
+ * HTTP headers use kebab-case naming (e.g., 'content-type', 'x-api-key'), but JavaScript
+ * property naming conventions prefer camelCase. ClientRequest automatically converts header
+ * keys from kebab-case to camelCase during validation and parameter extraction to maintain
+ * consistency with JavaScript naming standards.
+ * 
+ * This conversion is necessary because:
+ * - JavaScript object properties conventionally use camelCase
+ * - Accessing headers as object properties (e.g., headers.contentType) is more idiomatic
+ * - Validation rule keys should match JavaScript property naming conventions
+ * 
+ * Conversion Algorithm:
+ * 1. Convert entire header name to lowercase
+ * 2. Replace each hyphen followed by a letter with the uppercase letter
+ * 3. Remove all hyphens
+ * 
+ * Header Key Conversion Reference Table:
+ * 
+ * | HTTP Header (kebab-case)  | JavaScript Property (camelCase) |
+ * |---------------------------|----------------------------------|
+ * | content-type              | contentType                      |
+ * | Content-Type              | contentType                      |
+ * | authorization             | authorization                    |
+ * | x-api-key                 | xApiKey                          |
+ * | X-API-Key                 | xApiKey                          |
+ * | x-custom-header           | xCustomHeader                    |
+ * | if-modified-since         | ifModifiedSince                  |
+ * | if-none-match             | ifNoneMatch                      |
+ * | cache-control             | cacheControl                     |
+ * | user-agent                | userAgent                        |
+ * | accept-encoding           | acceptEncoding                   |
+ * 
+ * When configuring header parameter validation rules, use the camelCase property names
+ * shown in the right column. Use the static method convertHeaderKeyToCamelCase() to
+ * determine the correct property name for any HTTP header
+ * 
  * @example
  * // Initialize ClientRequest with global validations (backwards compatible)
  * ClientRequest.init({
@@ -117,6 +154,212 @@ const ValidationExecutor = require('../utils/ValidationExecutor.class');
  *     }
  *   }
  * });
+ * 
+ * @example
+ * // Header parameter validation with camelCase property names
+ * // Note: HTTP headers are automatically converted from kebab-case to camelCase
+ * ClientRequest.init({
+ *   parameters: {
+ *     headerParameters: {
+ *       // Use camelCase for header validation rules
+ *       contentType: (value) => value === 'application/json',
+ *       authorization: (value) => value.startsWith('Bearer '),
+ *       xApiKey: (value) => /^[a-zA-Z0-9]{32}$/.test(value),
+ *       
+ *       // Use convertHeaderKeyToCamelCase() to determine correct property names
+ *       // ClientRequest.convertHeaderKeyToCamelCase('x-custom-header') returns 'xCustomHeader'
+ *       xCustomHeader: (value) => value.length > 0
+ *     }
+ *   }
+ * });
+ * 
+ * @example
+ * // Body parameter validation - basic single-field validation
+ * // Body content is automatically parsed from JSON before validation
+ * ClientRequest.init({
+ *   parameters: {
+ *     bodyParameters: {
+ *       // Global validation for specific fields
+ *       email: (value) => typeof value === 'string' && value.includes('@'),
+ *       age: (value) => typeof value === 'number' && value >= 0 && value <= 150,
+ *       username: (value) => /^[a-zA-Z0-9_-]{3,20}$/.test(value)
+ *     }
+ *   }
+ * });
+ * 
+ * // In Lambda handler
+ * exports.handler = async (event, context) => {
+ *   // event.body = '{"email":"user@example.com","age":25,"username":"john_doe"}'
+ *   const clientRequest = new ClientRequest(event, context);
+ *   
+ *   if (!clientRequest.isValid()) {
+ *     return { statusCode: 400, body: 'Invalid request body' };
+ *   }
+ *   
+ *   // Access validated body parameters
+ *   const bodyParams = clientRequest.getBodyParameters();
+ *   console.log(bodyParams.email);    // 'user@example.com'
+ *   console.log(bodyParams.age);      // 25
+ *   console.log(bodyParams.username); // 'john_doe'
+ * };
+ * 
+ * @example
+ * // Body parameter validation - multi-field validation
+ * // Validate multiple fields together with complex business logic
+ * ClientRequest.init({
+ *   parameters: {
+ *     bodyParameters: {
+ *       BY_ROUTE: [
+ *         {
+ *           route: 'POST:users',
+ *           validate: ({email, password, confirmPassword}) => {
+ *             // Multi-field validation: password confirmation
+ *             return email && password && 
+ *                    password === confirmPassword &&
+ *                    password.length >= 8 &&
+ *                    email.includes('@');
+ *           }
+ *         },
+ *         {
+ *           route: 'PUT:users/{id}',
+ *           validate: ({email, username}) => {
+ *             // At least one field must be provided for update
+ *             return email || username;
+ *           }
+ *         }
+ *       ]
+ *     }
+ *   }
+ * });
+ * 
+ * @example
+ * // Body parameter validation - error handling for invalid JSON
+ * // ClientRequest handles JSON parsing errors gracefully
+ * exports.handler = async (event, context) => {
+ *   // event.body = 'invalid json{' (malformed JSON)
+ *   const clientRequest = new ClientRequest(event, context);
+ *   
+ *   if (!clientRequest.isValid()) {
+ *     // Validation fails for invalid JSON
+ *     return { 
+ *       statusCode: 400, 
+ *       body: JSON.stringify({ error: 'Invalid request body' })
+ *     };
+ *   }
+ *   
+ *   // This code only runs if body is valid JSON and passes validation
+ *   const bodyParams = clientRequest.getBodyParameters();
+ *   // Process valid body parameters...
+ * };
+ * 
+ * @example
+ * // Body parameter validation - complex nested objects and arrays
+ * ClientRequest.init({
+ *   parameters: {
+ *     bodyParameters: {
+ *       // Validate nested object structure
+ *       user: (value) => {
+ *         return value && 
+ *                typeof value === 'object' &&
+ *                typeof value.name === 'string' &&
+ *                typeof value.email === 'string' &&
+ *                value.email.includes('@');
+ *       },
+ *       
+ *       // Validate array of items
+ *       items: (value) => {
+ *         return Array.isArray(value) &&
+ *                value.length > 0 &&
+ *                value.every(item => 
+ *                  item.id && 
+ *                  typeof item.quantity === 'number' &&
+ *                  item.quantity > 0
+ *                );
+ *       },
+ *       
+ *       // Validate nested array of objects with specific structure
+ *       addresses: (value) => {
+ *         return Array.isArray(value) &&
+ *                value.every(addr =>
+ *                  addr.street &&
+ *                  addr.city &&
+ *                  addr.zipCode &&
+ *                  /^\d{5}$/.test(addr.zipCode)
+ *                );
+ *       }
+ *     }
+ *   }
+ * });
+ * 
+ * // Example request body:
+ * // {
+ * //   "user": {
+ * //     "name": "John Doe",
+ * //     "email": "john@example.com"
+ * //   },
+ * //   "items": [
+ * //     {"id": "item-1", "quantity": 2},
+ * //     {"id": "item-2", "quantity": 1}
+ * //   ],
+ * //   "addresses": [
+ * //     {"street": "123 Main St", "city": "Boston", "zipCode": "02101"}
+ * //   ]
+ * // }
+ * 
+ * exports.handler = async (event, context) => {
+ *   const clientRequest = new ClientRequest(event, context);
+ *   
+ *   if (!clientRequest.isValid()) {
+ *     return { statusCode: 400, body: 'Invalid request body structure' };
+ *   }
+ *   
+ *   const bodyParams = clientRequest.getBodyParameters();
+ *   console.log(bodyParams.user.name);        // 'John Doe'
+ *   console.log(bodyParams.items.length);     // 2
+ *   console.log(bodyParams.addresses[0].city); // 'Boston'
+ * };
+ * 
+ * @example
+ * // Body parameter validation - combining with other parameter types
+ * ClientRequest.init({
+ *   parameters: {
+ *     pathParameters: {
+ *       id: (value) => /^[0-9]+$/.test(value)
+ *     },
+ *     bodyParameters: {
+ *       BY_ROUTE: [
+ *         {
+ *           route: 'PUT:users/{id}',
+ *           validate: ({email, username, bio}) => {
+ *             // Validate update payload
+ *             const hasAtLeastOneField = email || username || bio;
+ *             const emailValid = !email || email.includes('@');
+ *             const usernameValid = !username || /^[a-zA-Z0-9_-]{3,20}$/.test(username);
+ *             const bioValid = !bio || bio.length <= 500;
+ *             
+ *             return hasAtLeastOneField && emailValid && usernameValid && bioValid;
+ *           }
+ *         }
+ *       ]
+ *     }
+ *   }
+ * });
+ * 
+ * exports.handler = async (event, context) => {
+ *   const clientRequest = new ClientRequest(event, context);
+ *   
+ *   if (!clientRequest.isValid()) {
+ *     return { statusCode: 400, body: 'Invalid request' };
+ *   }
+ *   
+ *   // All parameter types are validated
+ *   const userId = clientRequest.getPathParameters().id;
+ *   const updates = clientRequest.getBodyParameters();
+ *   
+ *   // Update user with validated data
+ *   await updateUser(userId, updates);
+ *   return { statusCode: 200, body: 'User updated' };
+ * };
  * 
  * @example
  * // Use in Lambda handler
@@ -224,6 +467,7 @@ class ClientRequest extends RequestInfo {
 			queryStringParameters: {},
 			headerParameters: {},
 			cookieParameters: {},
+			bodyParameters: {},
 			bodyPayload: this.#event?.body || null, // from body
 			client: {
 				isAuthenticated: this.isAuthenticated(),
@@ -248,7 +492,8 @@ class ClientRequest extends RequestInfo {
 			pathParameters: new ValidationMatcher(paramValidations?.pathParameters, httpMethod, resourcePath),
 			queryStringParameters: new ValidationMatcher(queryValidations, httpMethod, resourcePath),
 			headerParameters: new ValidationMatcher(paramValidations?.headerParameters, httpMethod, resourcePath),
-			cookieParameters: new ValidationMatcher(paramValidations?.cookieParameters, httpMethod, resourcePath)
+			cookieParameters: new ValidationMatcher(paramValidations?.cookieParameters, httpMethod, resourcePath),
+			bodyParameters: new ValidationMatcher(paramValidations?.bodyParameters, httpMethod, resourcePath)
 		};
 		
 		this.#validate();
@@ -462,6 +707,47 @@ class ClientRequest extends RequestInfo {
 	static getParameterValidations() {
 		return ClientRequest.#validations.parameters;
 	};
+	/**
+	 * Convert HTTP header key from kebab-case to camelCase.
+	 *
+	 * This utility method helps developers determine the correct key names for header validation rules.
+	 * HTTP headers use kebab-case (e.g., 'content-type'), but ClientRequest converts them to camelCase
+	 * (e.g., 'contentType') during validation for JavaScript property naming conventions.
+	 *
+	 * The conversion algorithm:
+	 * 1. Convert entire string to lowercase
+	 * 2. Replace each hyphen followed by a letter with the uppercase letter
+	 * 3. Remove all hyphens
+	 *
+	 * @param {string} headerKey - HTTP header key in kebab-case (e.g., 'Content-Type', 'x-custom-header')
+	 * @returns {string} Header key in camelCase (e.g., 'contentType', 'xCustomHeader')
+	 * @example
+	 * // Common HTTP headers
+	 * ClientRequest.convertHeaderKeyToCamelCase('content-type');  // 'contentType'
+	 * ClientRequest.convertHeaderKeyToCamelCase('Content-Type');  // 'contentType'
+	 * ClientRequest.convertHeaderKeyToCamelCase('x-api-key');     // 'xApiKey'
+	 *
+	 * @example
+	 * // Multiple hyphens
+	 * ClientRequest.convertHeaderKeyToCamelCase('x-custom-header-name');  // 'xCustomHeaderName'
+	 *
+	 * @example
+	 * // Use in validation configuration
+	 * const headerKey = ClientRequest.convertHeaderKeyToCamelCase('X-Custom-Header');
+	 * // Now use 'xCustomHeader' in validation rules
+	 */
+	static convertHeaderKeyToCamelCase(headerKey) {
+		if (!headerKey || typeof headerKey !== 'string') {
+			return '';
+		}
+
+		// >! Convert to lowercase and replace -([a-z]) with uppercase letter
+		// >! Then remove any remaining hyphens (e.g., from consecutive hyphens or trailing hyphens)
+		// >! This prevents injection via special characters in header names
+		return headerKey.toLowerCase()
+			.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase())
+			.replace(/-/g, '');
+	}
 
 	/**
 	 * Used in the constructor to set validity of the request
@@ -472,13 +758,35 @@ class ClientRequest extends RequestInfo {
 		let valid = false;
 
 		// add your additional validations here
-		valid = this.isAuthorizedReferrer() && this.#hasValidPathParameters() && this.#hasValidQueryStringParameters() && this.#hasValidHeaderParameters() && this.#hasValidCookieParameters();
+		valid = this.isAuthorizedReferrer() && this.#hasValidPathParameters() && this.#hasValidQueryStringParameters() && this.#hasValidHeaderParameters() && this.#hasValidCookieParameters() && this.#hasValidBodyParameters();
 
 		// set the variable
 		super._isValid = valid;
 
 	};
 
+	/**
+	 * Validate parameters using ValidationMatcher and ValidationExecutor.
+	 * 
+	 * This method implements the core parameter validation logic:
+	 * 1. Uses ValidationMatcher to find the best matching validation rule (4-tier priority)
+	 * 2. Uses ValidationExecutor to execute validation with appropriate interface (single or multi-parameter)
+	 * 3. Extracts validated parameters and returns them
+	 * 4. Respects excludeParamsWithNoValidationMatch flag (default: true)
+	 * 
+	 * @private
+	 * @param {Object} paramValidations - Parameter validation configuration (may include BY_ROUTE, BY_METHOD, and global validations)
+	 * @param {Object} clientParameters - Parameters from the request (path, query, header, or cookie parameters)
+	 * @param {ValidationMatcher} validationMatcher - ValidationMatcher instance for finding validation rules
+	 * @returns {{isValid: boolean, params: Object}} Object with validation result and extracted parameters
+	 * @example
+	 * // Internal use - validates path parameters
+	 * const { isValid, params } = #hasValidParameters(
+	 *   paramValidations.pathParameters,
+	 *   event.pathParameters,
+	 *   validationMatcher
+	 * );
+	 */
 	#hasValidParameters(paramValidations, clientParameters, validationMatcher) {
 
 		let rValue = {
@@ -491,7 +799,43 @@ class ClientRequest extends RequestInfo {
 			const excludeUnmatched = ClientRequest.#validations.parameters?.excludeParamsWithNoValidationMatch !== false;
 			
 			// >! Create normalized parameter map for validation execution
+			// >! Include ALL parameter types so multi-parameter validations can access them
 			const normalizedParams = {};
+			
+			// >! Add path parameters (if available)
+			if (this.#event?.pathParameters) {
+				for (const [key, value] of Object.entries(this.#event.pathParameters)) {
+					const normalizedKey = key.replace(/^\/|\/$/g, '');
+					normalizedParams[normalizedKey] = value;
+				}
+			}
+			
+			// >! Add query parameters (if available, lowercased)
+			if (this.#event?.queryStringParameters) {
+				for (const [key, value] of Object.entries(this.#event.queryStringParameters)) {
+					const normalizedKey = key.toLowerCase().replace(/^\/|\/$/g, '');
+					normalizedParams[normalizedKey] = value;
+				}
+			}
+			
+			// >! Add header parameters (if available, camelCased)
+			if (this.#event?.headers) {
+				for (const [key, value] of Object.entries(this.#event.headers)) {
+					const camelCaseKey = key.toLowerCase().replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+					normalizedParams[camelCaseKey] = value;
+				}
+			}
+			
+			// >! Add cookie parameters (if available)
+			if (this.#event?.cookie) {
+				for (const [key, value] of Object.entries(this.#event.cookie)) {
+					const normalizedKey = key.replace(/^\/|\/$/g, '');
+					normalizedParams[normalizedKey] = value;
+				}
+			}
+			
+			// >! Add client parameters being validated to normalizedParams
+			// >! This ensures validation functions can access the parameters they're validating
 			for (const [key, value] of Object.entries(clientParameters)) {
 				const normalizedKey = key.replace(/^\/|\/$/g, '');
 				normalizedParams[normalizedKey] = value;
@@ -532,6 +876,18 @@ class ClientRequest extends RequestInfo {
 		return rValue;
 	}
 
+	/**
+	 * Validate path parameters from the request.
+	 * 
+	 * Uses ValidationMatcher to find matching validation rules based on route pattern and HTTP method.
+	 * Extracts validated path parameters and stores them in this.#props.pathParameters.
+	 * 
+	 * @private
+	 * @returns {boolean} True if all path parameters are valid, false otherwise
+	 * @example
+	 * // Internal use during request validation
+	 * const isValid = #hasValidPathParameters();
+	 */
 	#hasValidPathParameters() {
 		const { isValid, params } = this.#hasValidParameters(
 			ClientRequest.getParameterValidations()?.pathParameters,
@@ -542,6 +898,20 @@ class ClientRequest extends RequestInfo {
 		return isValid;
 	}
 
+	/**
+	 * Validate query string parameters from the request.
+	 * 
+	 * Normalizes query parameter keys to lowercase before validation.
+	 * Uses ValidationMatcher to find matching validation rules based on route pattern and HTTP method.
+	 * Extracts validated query parameters and stores them in this.#props.queryStringParameters.
+	 * Supports both queryStringParameters and queryParameters for backwards compatibility.
+	 * 
+	 * @private
+	 * @returns {boolean} True if all query string parameters are valid, false otherwise
+	 * @example
+	 * // Internal use during request validation
+	 * const isValid = #hasValidQueryStringParameters();
+	 */
 	#hasValidQueryStringParameters() {
 		// lowercase all the this.#event.queryStringParameters keys
 		const qs = {};
@@ -562,21 +932,59 @@ class ClientRequest extends RequestInfo {
 		return isValid;
 	}
 
-	#hasValidHeaderParameters() {
-		// camel case all the this.#event.headers keys and remove hyphens
-		const headers = {};
-		for (const key in this.#event.headers) {
-			const camelCaseKey = key.toLowerCase().replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-			headers[camelCaseKey] = this.#event.headers[key];
+	/**
+	 * Validate header parameters from the request.
+	 * 
+	 * Normalizes header keys to camelCase (e.g., 'content-type' becomes 'contentType') before validation.
+	 * Uses ValidationMatcher to find matching validation rules based on route pattern and HTTP method.
+	 * Extracts validated header parameters and stores them in this.#props.headerParameters.
+	 * 
+	 * @private
+	 * @returns {boolean} True if all header parameters are valid, false otherwise
+	 * @example
+	 * // Internal use during request validation
+	 * const isValid = #hasValidHeaderParameters();
+	 */
+	/**
+		 * Validate header parameters from the request.
+		 * 
+		 * HTTP headers are automatically converted from kebab-case to camelCase for JavaScript
+		 * property naming conventions. The conversion algorithm:
+		 * 1. Convert entire header key to lowercase
+		 * 2. Replace each hyphen followed by a letter with the uppercase letter
+		 * 3. Remove all hyphens
+		 * 
+		 * This allows validation rules to use JavaScript-friendly property names while
+		 * maintaining compatibility with standard HTTP header naming conventions.
+		 * 
+		 * @private
+		 * @returns {boolean} True if all header parameters are valid, false otherwise
+		 * @example
+		 * // HTTP header conversion examples:
+		 * // 'Content-Type' → 'contentType'
+		 * // 'content-type' → 'contentType'
+		 * // 'X-API-Key' → 'xApiKey'
+		 * // 'x-custom-header' → 'xCustomHeader'
+		 * // 'authorization' → 'authorization' (no hyphens, unchanged)
+		 * 
+		 * // Internal use during request validation
+		 * const isValid = this.#hasValidHeaderParameters();
+		 */
+		#hasValidHeaderParameters() {
+			// camel case all the this.#event.headers keys and remove hyphens
+			const headers = {};
+			for (const key in this.#event.headers) {
+				const camelCaseKey = key.toLowerCase().replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+				headers[camelCaseKey] = this.#event.headers[key];
+			}
+			const { isValid, params } = this.#hasValidParameters(
+				ClientRequest.getParameterValidations()?.headerParameters,
+				headers,
+				this.#validationMatchers.headerParameters
+			);
+			this.#props.headerParameters = params;
+			return isValid;
 		}
-		const { isValid, params } = this.#hasValidParameters(
-			ClientRequest.getParameterValidations()?.headerParameters,
-			headers,
-			this.#validationMatchers.headerParameters
-		);
-		this.#props.headerParameters = params;
-		return isValid;
-	}
 
 	#hasValidCookieParameters() {
 		const { isValid, params } = this.#hasValidParameters(
@@ -587,6 +995,55 @@ class ClientRequest extends RequestInfo {
 		this.#props.cookieParameters = params;
 		return isValid;
 	}
+
+	/**
+	 * Validate body parameters from the request.
+	 *
+	 * Parses JSON body content before validation. Handles both API Gateway v1 and v2 formats.
+	 * Uses ValidationMatcher to find matching validation rules based on route pattern and HTTP method.
+	 * Extracts validated body parameters and stores them in this.#props.bodyParameters.
+	 *
+	 * Null, undefined, or empty string bodies are treated as empty objects for validation.
+	 * If the body contains invalid JSON, the error is logged and validation fails.
+	 *
+	 * @private
+	 * @returns {boolean} True if all body parameters are valid, false otherwise
+	 * @example
+	 * // Internal use during request validation
+	 * const isValid = #hasValidBodyParameters();
+	 */
+	#hasValidBodyParameters() {
+		// >! Parse body content before validation
+		let bodyObject = {};
+
+		// >! Handle null, undefined, and empty string body cases
+		if (this.#event.body && this.#event.body !== '') {
+			try {
+				// >! Parse JSON with error handling
+				bodyObject = JSON.parse(this.#event.body);
+			} catch (error) {
+				// >! Log JSON parsing errors
+				DebugAndLog.error(
+					`Failed to parse request body as JSON: ${error?.message || 'Unknown error'}`,
+					error?.stack
+				);
+				this.#props.bodyParameters = {};
+				return false;
+			}
+		}
+
+		// >! Use existing validation framework with body validation matcher
+		const { isValid, params } = this.#hasValidParameters(
+			ClientRequest.getParameterValidations()?.bodyParameters,
+			bodyObject,
+			this.#validationMatchers.bodyParameters
+		);
+
+		// >! Store validated parameters
+		this.#props.bodyParameters = params;
+		return isValid;
+	}
+
 
 
 	// Utility function for getPathArray and getResourceArray
@@ -713,6 +1170,15 @@ class ClientRequest extends RequestInfo {
 	 */
 	getCookieParameters() {
 		return this.#props.cookieParameters;
+	};
+
+	/**
+	 * Returns the body parameters received in the request.
+	 * Body parameters are validated in the applications validation functions.
+	 * @returns {object} body parameters
+	 */
+	getBodyParameters() {
+		return this.#props.bodyParameters || {};
 	};
 
 	#authenticate() {

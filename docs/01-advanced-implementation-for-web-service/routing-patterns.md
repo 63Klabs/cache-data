@@ -64,6 +64,13 @@ async function route(clientRequest, response) {
     return await getUserPosts(clientRequest, response, userId);
   }
   
+  // GET /users/{userId}/posts/{postId}
+  if (method === 'GET' && pathArray.length === 4 && pathArray[0] === 'users' && pathArray[2] === 'posts') {
+    const userId = pathArray[1];
+    const postId = pathArray[3];
+    return await getUserPost(clientRequest, response, userId, postId);
+  }
+  
   // POST /users
   if (method === 'POST' && pathArray.length === 1 && pathArray[0] === 'users') {
     return await createUser(clientRequest, response);
@@ -97,6 +104,9 @@ async function route(clientRequest, response) {
       
     case 'GET:users/{id}/posts':
       return await getUserPosts(clientRequest, response, pathParams.id);
+      
+    case 'GET:users/{userId}/posts/{postId}':
+      return await getUserPost(clientRequest, response, pathParams.userId, pathParams.postId);
       
     case 'POST:users':
       return await createUser(clientRequest, response);

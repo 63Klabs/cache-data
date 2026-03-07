@@ -119,12 +119,24 @@ class ValidationMatcher {
 
 	/**
 	 * Check if a route pattern matches the request route.
-	 * Supports placeholder matching (e.g., {id}, {page}).
+	 * Supports placeholder matching for any number of placeholders (e.g., {id}, {userId}, {postId}).
+	 * Performs segment-by-segment comparison with placeholder detection.
 	 * 
 	 * @private
-	 * @param {string} pattern - Route pattern to match
-	 * @param {string} requestRoute - Normalized request route
-	 * @returns {boolean} True if pattern matches request route
+	 * @param {string} pattern - Route pattern to match (e.g., 'users/{userId}/posts/{postId}')
+	 * @param {string} requestRoute - Normalized request route (e.g., 'users/123/posts/456')
+	 * @returns {boolean} True if pattern matches request route, false otherwise
+	 * @example
+	 * // Single placeholder
+	 * #routeMatches('product/{id}', 'product/123') // true
+	 * 
+	 * @example
+	 * // Multiple placeholders
+	 * #routeMatches('users/{userId}/posts/{postId}', 'users/123/posts/456') // true
+	 * 
+	 * @example
+	 * // Segment count mismatch
+	 * #routeMatches('product/{id}', 'product/123/extra') // false
 	 */
 	#routeMatches(pattern, requestRoute) {
 		if (!pattern || !requestRoute) {
@@ -161,10 +173,19 @@ class ValidationMatcher {
 
 	/**
 	 * Find method-and-route match (Priority 1: METHOD:route).
+	 * Matches validation rules with method prefix (e.g., 'POST:product/{id}').
+	 * Extracts method and route parts, validates both match the request.
 	 * 
 	 * @private
-	 * @param {string} paramName - Parameter name
-	 * @returns {{validate: Function, params: Array<string>}|null} Validation rule or null
+	 * @param {string} paramName - Parameter name to find validation for
+	 * @returns {{validate: Function, params: Array<string>}|null} Validation rule with function and parameter list, or null if no match
+	 * @example
+	 * // Matches 'POST:product/{id}' for POST request to /product/123
+	 * #findMethodRouteMatch('id') // { validate: Function, params: ['id'] }
+	 * 
+	 * @example
+	 * // Does not match 'GET:product/{id}' for POST request
+	 * #findMethodRouteMatch('id') // null
 	 */
 	#findMethodRouteMatch(paramName) {
 		if (!this.#paramValidations.BY_ROUTE || !Array.isArray(this.#paramValidations.BY_ROUTE)) {
@@ -308,15 +329,36 @@ class ValidationMatcher {
 
 	/**
 	 * Extract parameter names from route pattern.
-	 * Supports path parameters ({id}, {page}) and query parameters (?key, ?key1,key2).
+	 * Extracts both path parameters (from {}) and query parameters (after ?).
+	 * When ? is present, query parameters are added to path parameters.
+	 * When ? is absent, only path parameters in {} are extracted.
 	 * 
 	 * @private
-	 * @param {string} routePattern - Route pattern to parse
-	 * @returns {Array<string>} Array of parameter names
+	 * @param {string} routePattern - Route pattern to parse (e.g., 'product/{id}?key', 'POST:users/{userId}/posts/{postId}')
+	 * @returns {Array<string>} Array of unique parameter names to validate
 	 * @example
-	 * extractParamNames('product/{id}') // ['id']
-	 * extractParamNames('search?query,limit') // ['query', 'limit']
-	 * extractParamNames('POST:product/{id}?key') // ['id', 'key']
+	 * // Path parameters only (no ? specification)
+	 * #extractParamNames('product/{id}') // ['id']
+	 * 
+	 * @example
+	 * // Multiple path parameters (no ? specification)
+	 * #extractParamNames('users/{userId}/posts/{postId}') // ['userId', 'postId']
+	 * 
+	 * @example
+	 * // Query parameters only (? specification, no path params)
+	 * #extractParamNames('search?query,limit') // ['query', 'limit']
+	 * 
+	 * @example
+	 * // Path and query parameters combined
+	 * #extractParamNames('POST:product/{id}?key') // ['id', 'key'] - both path and query params
+	 * 
+	 * @example
+	 * // Multiple path and query parameters
+	 * #extractParamNames('users/{userId}/posts/{postId}?includeProfile') // ['userId', 'postId', 'includeProfile']
+	 * 
+	 * @example
+	 * // Duplicate parameters removed
+	 * #extractParamNames('product/{id}?id,key') // ['id', 'key'] (not ['id', 'id', 'key'])
 	 */
 	#extractParamNames(routePattern) {
 		if (!routePattern || typeof routePattern !== 'string') {
@@ -335,20 +377,28 @@ class ValidationMatcher {
 		// Split route and query parts
 		const [routePart, queryPart] = pattern.split('?', 2);
 
-		// Extract path parameters from {param} placeholders
-		const pathParamRegex = /\{([^}]+)\}/g;
-		let match;
-		while ((match = pathParamRegex.exec(routePart)) !== null) {
-			params.push(match[1]);
+		// >! Extract path parameters from {} placeholders
+		if (routePart) {
+			const pathParamMatches = routePart.match(/\{([^}]+)\}/g);
+			if (pathParamMatches) {
+				for (const match of pathParamMatches) {
+					// Remove braces and add to params
+					const paramName = match.slice(1, -1).trim();
+					if (paramName.length > 0) {
+						params.push(paramName);
+					}
+				}
+			}
 		}
 
-		// Extract query parameters
+		// >! Add query parameters to the list
 		if (queryPart) {
 			const queryParams = queryPart.split(',').map(p => p.trim()).filter(p => p.length > 0);
 			params.push(...queryParams);
 		}
 
-		return params;
+		// >! Remove duplicates while preserving order
+		return [...new Set(params)];
 	}
 }
 

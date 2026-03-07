@@ -173,9 +173,11 @@ Route patterns are matched against the API Gateway `resource` path (not the actu
 
 - **Exact match**: `"users"` matches `/users`
 - **Path parameters**: `"product/{id}"` matches `/product/{id}` resource
+- **Multiple placeholders**: `"users/{userId}/posts/{postId}"` matches `/users/{userId}/posts/{postId}` resource
 - **Nested paths**: `"user/{userId}/profile"` matches `/user/{userId}/profile`
 - **Case-insensitive**: `"Product/{id}"` matches `/product/{id}`
 - **Normalized**: Leading/trailing slashes are ignored
+- **Method prefix**: `"POST:product/{id}"` matches POST requests to `/product/{id}` resource
 
 ### When to Use Route-Specific Validations
 
@@ -224,6 +226,8 @@ ClientRequest.init({
 ## Method-and-Route Validations
 
 Method-and-route validations are the most specific, applying only to a particular combination of HTTP method and route.
+
+**Note**: Method-and-route patterns use the format `"METHOD:route"` where METHOD is the HTTP method (GET, POST, PUT, DELETE, etc.) and route is the route pattern. This allows you to apply different validation rules to the same route based on the HTTP method.
 
 ```javascript
 ClientRequest.init({
@@ -299,6 +303,15 @@ ClientRequest.init({
           route: "user/{userId}/post/{postId}",
           validate: ({userId, postId}) => {
             return /^[0-9]+$/.test(userId) && /^[0-9]+$/.test(postId);
+          }
+        },
+        {
+          // Three or more path parameters
+          route: "api/{version}/resources/{resourceId}/items/{itemId}",
+          validate: ({version, resourceId, itemId}) => {
+            return /^v[0-9]+$/.test(version) && 
+                   /^[a-zA-Z0-9-]+$/.test(resourceId) && 
+                   /^[0-9]+$/.test(itemId);
           }
         }
       ]
@@ -474,6 +487,19 @@ ClientRequest.init({
 ```
 
 ## Troubleshooting
+
+### Recent Bug Fixes (v1.3.9)
+
+The following validation issues were fixed in version 1.3.9:
+
+1. **Multiple Placeholder Routes**: Routes with multiple placeholders (e.g., `users/{userId}/posts/{postId}`) now match correctly
+2. **Query Parameter Extraction**: Query parameters are now properly extracted when validation rules exist
+3. **Header Parameter Extraction**: Header parameters are now properly extracted when validation rules exist
+4. **Method-and-Route Patterns**: Method-and-route patterns (e.g., `POST:product/{id}`) now match correctly
+5. **Duplicate Parameters**: Validation rules no longer contain duplicate parameter names
+6. **Body Parameters Method**: The `getBodyParameters()` method is now available
+
+If you experienced issues with any of these scenarios in earlier versions, upgrading to v1.3.9 or later will resolve them.
 
 ### Common Issues
 

@@ -17,7 +17,17 @@ const isTrue = (value) => {
  */
 const USE_XRAY = isTrue(process.env?.CacheData_AWSXRayOn) || isTrue(process.env?.CACHE_DATA_AWS_X_RAY_ON);
 
+/**
+ * X-Ray object if it is enabled
+ * @returns {object|null} The AWSXRay object if enabled and initialized, null otherwise
+ */
 let AWSXRay = null;
+
+/**
+ * Whether or not X-Ray is initialized
+ * @private
+ * @returns {object|null} The AWSXRay object if enabled and initialized, null otherwise
+ */
 let xrayInitialized = false;
 
 const initializeXRay = () => {
@@ -278,9 +288,25 @@ class AWS {
 			}
 		}
 	)();
-	
+		
 	/**
-	 * @returns {object} DynamoDB Document Client and functions for put, get, scan, delete, update
+	 * Provides a DynamoDB client and helper functions.
+	 *
+	 * @returns {{
+	 *   client: object,
+	 *   put: {(params:Object) => Promise<any>},
+	 *   get: {(params:Object) => Promise<any>},
+	 *   scan: {(params:Object) => Promise<any>},
+	 *   delete: {(params:Object) => Promise<any>},
+	 *   update: {(params:Object) => Promise<any>},
+	 *   sdk: {
+	 *     DynamoDB: object,
+	 *     DynamoDBClient: object,
+	 *     DynamoDBDocumentClient: object,
+	 *     GetCommand: object,
+	 *     PutCommand: object
+	 *   }
+	 * }}
 	 */
 	static get dynamo() {
 		return {
@@ -295,7 +321,18 @@ class AWS {
 	}
 
 	/**
-	 * @returns {object} S3 Client and functions for put, get
+	 * Provides a S3 client and helper functions.
+	 *
+	 * @returns {{
+	 *   client: object,
+	 *   put: {(params:Object) => Promise<any>},
+	 *   get: {(params:Object) => Promise<any>},
+	 *   sdk: {
+	 *     S3: object,
+	 *     GetObjectCommand: object,
+	 *     PutObjectCommand: object
+	 *   }
+	 * }}
 	 */
 	static get s3() {
 		return {
@@ -307,7 +344,18 @@ class AWS {
 	}
 
 	/**
-	 * @returns {object} SSM Client and functions for getByName, getByPath
+	 * Provides a SSM client and helper functions.
+	 *
+	 * @returns {{
+	 *   client: object,
+	 *   getByName: {(query:Object) => Promise<any>},
+	 *   getByPath: {(query:Object) => Promise<any>},
+	 *   sdk: {
+	 *     SSMClient: object,
+	 *     GetParametersByPathCommand: object,
+	 *     GetParametersCommand: object
+	 *   }
+	 * }}
 	 */
 	static get ssm() {
 		return {
@@ -327,4 +375,9 @@ class AWS {
 
 };
 
-module.exports = {AWS, AWSXRay};
+module.exports = {
+	AWS,
+	Aws: AWS, // alias
+	AWSXRay,
+	AwsXRay: AWSXRay, // alias
+};

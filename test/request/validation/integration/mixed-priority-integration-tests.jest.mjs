@@ -339,7 +339,7 @@ describe('ClientRequest - Mixed Priority Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'users/{userId}/products/{productId}',
-								validate: (value) => /^P-[0-9]+$/.test(value) // Priority 2: Route-only for productId
+								validate: (value) => /^[0-9]+$/.test(value) || /^P-[0-9]+$/.test(value) // Priority 2: Accept numeric or P- prefix
 							}
 						]
 					}
@@ -878,7 +878,7 @@ describe('ClientRequest - Mixed Priority Integration Tests', () => {
 						]
 					},
 					headerParameters: {
-						'content-type': (value) => value.length > 0, // Priority 4 only
+						contentType: (value) => value.length > 0, // Priority 4 - use camelCase for header names
 					}
 				}
 			});

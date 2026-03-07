@@ -258,11 +258,11 @@ describe('Defect 4: Duplicate Parameters in Validation Rules - Exploration Tests
 	});
 
 	describe('Method-and-Route Patterns with Duplicates', () => {
-		it('should have unique parameters for method-and-route pattern POST:product/{id}?key', () => {
+		it('should have unique parameters for method-and-route pattern POST:product/{id}?id,key', () => {
 			const paramValidations = {
 				BY_ROUTE: [
 					{
-						route: 'POST:product/{id}?key',
+						route: 'POST:product/{id}?id,key',
 						validate: ({ id, key }) => {
 							return /^\d+$/.test(id) && typeof key === 'string';
 						}
@@ -279,6 +279,7 @@ describe('Defect 4: Duplicate Parameters in Validation Rules - Exploration Tests
 			const rule = matcher.findValidationRule('id');
 
 			// EXPECTED: rule.params should be ['id', 'key'] with no duplicates
+			// NOTE: Route explicitly lists both id and key after ?, so both are validated
 			expect(rule).not.toBeNull();
 			expect(rule.params).toBeDefined();
 
@@ -329,12 +330,13 @@ describe('Defect 4: Duplicate Parameters in Validation Rules - Exploration Tests
 	describe('Impact on Validation Interface Selection', () => {
 		it('should correctly select multi-parameter validation interface when rule.params has no duplicates', () => {
 			// Initialize ClientRequest with validation that expects object parameter
+			// NOTE: Routes explicitly list both id and key after ? to validate both
 			ClientRequest.init({
 				parameters: {
 					pathParameters: {
 						BY_ROUTE: [
 							{
-								route: 'product/{id}?key',
+								route: 'product/{id}?id,key',
 								validate: (params) => {
 									// This validation function expects an object with id and key
 									// If rule.params has duplicates, ValidationExecutor may pass
@@ -457,10 +459,10 @@ describe('Defect 4: Duplicate Parameters in Validation Rules - Exploration Tests
  * 
  * When this test is run on UNFIXED code, the following counterexamples are expected:
  * 
- * 1. Route pattern "product/{id}?key"
+ * 1. Route pattern "product/{id}?id,key"
  *    - Expected: rule.params === ['id', 'key']
- *    - Actual: rule.params === ['id', 'key', 'key']
- *    - Reason: Query parameter 'key' is extracted twice
+ *    - Actual: rule.params === ['id', 'id', 'key']
+ *    - Reason: Path parameter 'id' is extracted twice (once from {id}, once from ?id)
  * 
  * 2. Route pattern "users/{userId}?userId,status"
  *    - Expected: rule.params === ['userId', 'status']

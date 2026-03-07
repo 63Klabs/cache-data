@@ -326,11 +326,11 @@ describe('ValidationMatcher', () => {
 			expect(rule.params).toEqual(['query', 'limit']);
 		});
 
-		it('should extract both path and query parameters', () => {
+		it('should extract both path and query parameters when explicitly listed', () => {
 			const paramValidations = {
 				BY_ROUTE: [
 					{
-						route: 'product/{id}?key',
+						route: 'product/{id}?id,key',
 						validate: (value) => true
 					}
 				]
@@ -342,11 +342,11 @@ describe('ValidationMatcher', () => {
 			expect(rule.params).toEqual(['id', 'key']);
 		});
 
-		it('should extract parameters from method-and-route pattern', () => {
+		it('should extract parameters from method-and-route pattern when explicitly listed', () => {
 			const paramValidations = {
 				BY_ROUTE: [
 					{
-						route: 'POST:product/{id}?key',
+						route: 'POST:product/{id}?id,key',
 						validate: (value) => true
 					}
 				]
@@ -740,7 +740,7 @@ describe('ValidationMatcher', () => {
 			const paramValidations = {
 				BY_ROUTE: [
 					{
-						route: 'product/{id}?key',
+						route: 'product/{id}?id,key',
 						validate: (value) => true
 					}
 				]
@@ -758,15 +758,24 @@ describe('ValidationMatcher', () => {
 			const paramValidations = {
 				BY_ROUTE: [
 					{
-						route: 'product/{id}?key',
+						route: 'product?key',
 						validate: (value) => true
 					}
 				]
 			};
-			const matcher = new ValidationMatcher(paramValidations, 'GET', '/product/123');
-			const rule = matcher.findValidationRule('otherId');
+			const matcher = new ValidationMatcher(paramValidations, 'GET', '/product');
 			
-			expect(rule).toBeNull();
+			// 'id' is not in the params list (route has no path params, only query param 'key')
+			const rule1 = matcher.findValidationRule('id');
+			expect(rule1).toBeNull();
+			
+			// 'otherId' is not in the params list
+			const rule2 = matcher.findValidationRule('otherId');
+			expect(rule2).toBeNull();
+			
+			// 'key' IS in the params list
+			const rule3 = matcher.findValidationRule('key');
+			expect(rule3).not.toBeNull();
 		});
 
 		it('should match when no params specified (legacy behavior)', () => {
@@ -848,7 +857,7 @@ describe('ValidationMatcher', () => {
 			const paramValidations = {
 				BY_ROUTE: [
 					{
-						route: 'product/{id}?key',
+						route: 'product/{id}?id,key',
 						validate: (value) => true
 					}
 				],
