@@ -173,10 +173,10 @@ class AppConfig {
 							if (debug) {
 								DebugAndLog.debug("Settings initialized", AppConfig._settings);
 							}
-							resolve();
+							resolve(true);
 						} catch (error) {
 							DebugAndLog.error(`Settings initialization failed: ${error.message}`, error.stack);
-							resolve();
+							resolve(false);
 						}
 					});
 					AppConfig.add(settingsPromise);
@@ -189,10 +189,10 @@ class AppConfig {
 							if (debug) {
 								DebugAndLog.debug("Connections initialized", AppConfig._connections.info());
 							}
-							resolve();
+							resolve(true);
 						} catch (error) {
 							DebugAndLog.error(`Connections initialization failed: ${error.message}`, error.stack);
-							resolve();
+							resolve(false);
 						}
 					});
 					AppConfig.add(connectionsPromise);
@@ -205,10 +205,10 @@ class AppConfig {
 							if (debug) {
 								DebugAndLog.debug("ClientRequest initialized", ClientRequest.info());
 							}
-							resolve();
+							resolve(true);
 						} catch (error) {
 							DebugAndLog.error(`ClientRequest initialization failed: ${error.message}`, error.stack);
-							resolve();
+							resolve(false);
 						}
 					});
 					AppConfig.add(validationsPromise);
@@ -221,10 +221,10 @@ class AppConfig {
 							if (debug) {
 								DebugAndLog.debug("Response initialized", Response.info());
 							}
-							resolve();
+							resolve(true);
 						} catch (error) {
 							DebugAndLog.error(`Response initialization failed: ${error.message}`, error.stack);
-							resolve();
+							resolve(false);
 						}
 					});
 					AppConfig.add(responsesPromise);
