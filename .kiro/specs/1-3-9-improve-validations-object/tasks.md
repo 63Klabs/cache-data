@@ -266,7 +266,7 @@ The implementation maintains strict backwards compatibility throughout, uses Jes
     - _Requirements: 10.1, 10.6_
 
   - [x] 3.4 Create example validation configuration file
-    - Create `examples/example-validations-enhanced.js` file
+    - Create `docs/00-example-implementation/example-validations-enhanced.js` file
     - Include example of legacy global validations (backwards compatibility)
     - Include example of BY_ROUTE with route-only patterns
     - Include example of BY_ROUTE with method-and-route patterns

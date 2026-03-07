@@ -607,5 +607,5 @@ See [validation-system-migration.md](../../migration/validation-system-migration
 ## Related Documentation
 
 - [ClientRequest API Reference](../../../src/lib/tools/ClientRequest.class.js)
-- [Example Validation Configurations](../../../examples/example-validations-enhanced.js)
+- [Example Validation Configurations](../../../docs/00-example-implementation/example-validations-enhanced.js)
 - [Migration Guide](../../migration/validation-system-migration.md)

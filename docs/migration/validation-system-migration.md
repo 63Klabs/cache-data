@@ -695,5 +695,5 @@ After successful migration:
 ## Related Documentation
 
 - [Request Validation Guide](../features/tools/request-validation.md)
-- [Example Validation Configurations](../../examples/example-validations-enhanced.js)
+- [Example Validation Configurations](../../docs/00-example-implementation/example-validations-enhanced.js)
 - [ClientRequest API Reference](../../src/lib/tools/ClientRequest.class.js)
