@@ -40,19 +40,8 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
     - Common validation pattern support
     - Multi-parameter validation interface
 
-### Fixed
-- **ClientRequest Validation System Bug Fixes** [Spec: 1-3-9-client-request-validation-fixes](.kiro/specs/1-3-9-client-request-validation-fixes/)
-  - **Multiple Placeholder Route Matching**: Fixed route patterns with multiple placeholders (e.g., `users/{userId}/posts/{postId}`) that were incorrectly failing validation. Routes with 2 or more placeholders now match correctly.
-  - **Query String Parameter Extraction**: Fixed `getQueryStringParameters()` returning empty object `{}` when validation rules existed. Query parameters are now correctly extracted and returned with their actual values.
-  - **Header Parameter Extraction**: Fixed `getHeaderParameters()` returning empty object `{}` when validation rules existed. Header parameters are now correctly extracted and returned with their actual values.
-  - **Duplicate Parameters in Validation Rules**: Fixed `rule.params` arrays containing duplicate parameter names (e.g., `['id','key','key']`). Parameter lists now contain unique names only, ensuring correct validation interface selection.
-  - **Missing getBodyParameters() Method**: Added missing `getBodyParameters()` method to ClientRequest class. Method now exists and returns validated body parameters as an object.
-  - **Method-and-Route Pattern Matching**: Fixed route patterns with method prefixes (e.g., `POST:product/{id}`) that were failing to match. Method-and-route patterns now match correctly when both HTTP method and path match.
-  - **Backwards Compatible**: All fixes maintain backwards compatibility. Existing single-placeholder routes, global validations, and simple validation scenarios continue to work unchanged.
-  - **Comprehensive Testing**: 14 property-based tests validate correctness properties and preservation of existing behavior across all scenarios.
-
 ### Security
-- **Fixed npm security vulnerabilities in serialize-javascript** [Spec: 1-3-9-npm-security-vulnerabilities-fix](.kiro/specs/1-3-9-npm-security-vulnerabilities-fix/)
+- **Fixed npm security vulnerabilities in serialize-javascript dependency** [Spec: 1-3-9-npm-security-vulnerabilities-fix](.kiro/specs/1-3-9-npm-security-vulnerabilities-fix/)
   - Fixed 2 high severity vulnerabilities in serialize-javascript (RCE via RegExp.flags and Date.prototype.toISOString)
   - Added npm override for serialize-javascript >=7.0.3 to force secure version
   - No breaking changes to public APIs
