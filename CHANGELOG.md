@@ -10,6 +10,10 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.9 (unreleased)
 
+- Unreleased
+
+## v1.3.9 (2026-03-09)
+
 ### Added
 - **Body Parameter Validation for ClientRequest** [Spec: 1-3-9-body-validation-and-header-format-fix](.kiro/specs/1-3-9-body-validation-and-header-format-fix/)
   - **Body Parameter Validation**: ClientRequest now validates body parameters using the same validation framework as path, query, header, and cookie parameters
