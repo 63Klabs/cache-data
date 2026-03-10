@@ -10,7 +10,15 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.9 (unreleased)
 
-- Unreleased
+### Changes
+
+- **ApiRequest** and **CachedSsmParameter** renaming to conform to naming conventions:
+  - `APIRequest` has been renamed to `ApiRequest`.
+  - `APIRequest` is now aliased to `ApiRequest` and will still work. 
+  - `CachedSSMParameter` has been renamed to `CachedSsmParameter`.
+  - `CachedSSMParameter` is now aliased to `CachedSsmParameter` and will still work. 
+  - While there is no timeframe to deprecate and remove the old naming, it will happen with a future **major** version update.
+  - New code should use the new conventions. Old code should be updated.
 
 ## v1.3.9 (2026-03-09)
 
