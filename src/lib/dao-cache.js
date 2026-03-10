@@ -38,9 +38,10 @@ const moment = require('moment-timezone');
  * and retrieval operations - cache expiration logic and data management are
  * handled by the CacheData class.
  * 
- * Use this class when you need direct access to S3 cache storage operations.
- * For most use cases, use the Cache or CacheableDataAccess classes instead.
+ * Used by Cache object to write and retrieve data that is larger than what
+ * we want to store in DynamoDB
  * 
+ * @private
  * @example
  * // Initialize S3Cache with bucket name
  * S3Cache.init('my-cache-bucket');
@@ -272,14 +273,14 @@ class S3Cache {
 };
 
 /**
- * Basic DynamoDb read/write for cache data. Provides low-level storage operations
+ * Basic DynamoDB read/write for cache data. Provides low-level storage operations
  * for cached data in Amazon DynamoDB. This class handles only the storage format
  * and retrieval operations - cache expiration logic and data management are
  * handled by the CacheData class.
  * 
- * Use this class when you need direct access to DynamoDB cache storage operations.
- * For most use cases, use the Cache or CacheableDataAccess classes instead.
+ * Used by Cache object to write and retrieve data in DynamoDB
  * 
+ * @private
  * @example
  * // Initialize DynamoDbCache with table name
  * DynamoDbCache.init('my-cache-table');
@@ -455,8 +456,8 @@ class DynamoDbCache {
  * coordinates storage between DynamoDB (for small items) and S3 (for large items).
  * 
  * This class is used internally by the publicly exposed Cache class and should
- * not be used directly in most cases. Use the Cache or CacheableDataAccess
- * classes instead for application-level caching.
+ * not be used directly. Use the CacheableDataAccess to access data for
+ * application-level caching.
  * 
  * Key responsibilities:
  * - Expiration time calculations and interval-based caching
@@ -464,6 +465,7 @@ class DynamoDbCache {
  * - Automatic routing between DynamoDB and S3 based on size
  * - ETag and Last-Modified header generation
  * 
+ * @private
  * @example
  * // Initialize CacheData (typically done through Cache.init())
  * CacheData.init({
@@ -1373,25 +1375,17 @@ class CacheData {
 };
 
 /**
- * The Cache object handles the settings for the cache system
+ * The Cache object handles the settings for the cache system and is only
+ * accessed by the application during init.
  * 
- * Before using it must be initialized. 
+ * Reading of the cache is done through CacheableDataAccess.getData()
+ * 
+ * Before using the Cache, it must be initialized. 
  * 
  * Many settings can be set through Environment variables or by
  * passing parameters to Cache.init():
  * 
  * Cache.init({parameters});
- * 
- * Then you can then make a request, sending it through CacheableDataAccess:
- * 
- *  const { cache } = require("@63klabs/cache-data");
- * 
- *	const cacheObj = await cache.CacheableDataAccess.getData(
- *		cacheCfg, 
- *		yourFetchFunction,
- *		conn, 
- *		daoQuery
- *	);
  * 
  * @example
  * // Initialize the cache system
@@ -1401,13 +1395,6 @@ class CacheData {
  *   idHashAlgorithm: 'sha256'
  * });
  * 
- * // Create a cache instance with connection and profile
- * const connection = { host: 'api.example.com', path: '/data' };
- * const cacheProfile = { 
- *   defaultExpirationInSeconds: 300,
- *   encrypt: true 
- * };
- * const cacheInstance = new Cache(connection, cacheProfile);
  */
 class Cache {
 
@@ -3012,7 +2999,7 @@ class Cache {
 /**
  * The CacheableDataAccess object provides an interface to 
  * the cache. It is responsible for reading from and writing to cache.
- * All requests to data go through the cache
+ * All requests to data go through CacheableDataAccess.getData
  * 
  * Before using CacheableDataAccess, the Cache must be initialized. 
  * 
