@@ -16,10 +16,10 @@ Only **~5 items** may be legitimate issues that need investigation.
 
 | File | "Class" Name | Actual Issue |
 |------|-------------|--------------|
-| APIRequest.class.js | `object` | Parser sees `@param {object}` and thinks "object" is a class |
-| APIRequest.class.js | `and` | Likely from text like "object and" in a comment |
-| APIRequest.class.js | `as` | Likely from text like "used as" in a comment |
-| APIRequest.class.js | `can` | Likely from text like "can be" in a comment |
+| ApiRequest.class.js | `object` | Parser sees `@param {object}` and thinks "object" is a class |
+| ApiRequest.class.js | `and` | Likely from text like "object and" in a comment |
+| ApiRequest.class.js | `as` | Likely from text like "used as" in a comment |
+| ApiRequest.class.js | `can` | Likely from text like "can be" in a comment |
 | ClientRequest.class.js | `for` | Likely from text like "for the" in a comment |
 | DebugAndLog.class.js | `for` | Likely from text like "for logging" in a comment |
 | RequestInfo.class.js | `that` | Likely from text like "that contains" in a comment |
@@ -92,13 +92,13 @@ Only **~5 items** may be legitimate issues that need investigation.
 | File | Item | Type | Status |
 |------|------|------|--------|
 | index.js | `_ConfigSuperClass.settings` | method | ✅ **FIXED** - Added complete JSDoc |
-| APIRequest.class.js | `can.call` | method | ✅ **VERIFIED** - Does not exist, parser error |
-| APIRequest.class.js | `object.call` | method | ✅ **VERIFIED** - Does not exist, parser error |
+| ApiRequest.class.js | `can.call` | method | ✅ **VERIFIED** - Does not exist, parser error |
+| ApiRequest.class.js | `object.call` | method | ✅ **VERIFIED** - Does not exist, parser error |
 | CachedParametersSecrets.classes.js | `CachedParameterSecret.write` | method | ✅ **VERIFIED** - Does not exist, parser error |
 
 **Actions Completed:**
 1. ✅ `_ConfigSuperClass.settings` - Added complete JSDoc with description, @returns, and @example
-2. ✅ Verified `can.call` and `object.call` do not exist in APIRequest.class.js (grep search found no matches)
+2. ✅ Verified `can.call` and `object.call` do not exist in ApiRequest.class.js (grep search found no matches)
 3. ✅ Verified `CachedParameterSecret.write` does not exist in code
 
 ---

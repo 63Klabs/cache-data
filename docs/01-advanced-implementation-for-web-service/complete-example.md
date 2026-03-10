@@ -25,7 +25,7 @@ my-service/
 ## Configuration (config.js)
 
 ```javascript
-const { tools: {AppConfig, CachedParameterSecrets, CachedSSMParameter, DebugAndLog},
+const { tools: {AppConfig, CachedParameterSecrets, CachedSsmParameter, DebugAndLog},
         cache: {Cache, CacheableDataAccess} } = require('@63klabs/cache-data');
 
 const validations = require("./validations.js");
@@ -43,7 +43,7 @@ class Config extends AppConfig {
           host: 'api.example.com',
           path: '/users',
           headers: {
-            'X-Api-Key': new CachedSSMParameter(process.env.PARAM_STORE_PATH+'UsersApiKey', {refreshAfter: 43200}), // 12 hours
+            'X-Api-Key': new CachedSsmParameter(process.env.PARAM_STORE_PATH+'UsersApiKey', {refreshAfter: 43200}), // 12 hours
           },
           cache: [{
             profile: 'user-data',

@@ -98,7 +98,7 @@ cache.Cache.init({
   // Encryption algorithm for private data
   secureDataAlgorithm: 'aes-256-cbc',
   
-  // Encryption key (Buffer, string, or CachedSSMParameter)
+  // Encryption key (Buffer, string, or CachedSsmParameter)
   secureDataKey: Buffer.from(params.app.crypt_secureDataKey, 'hex'),
   
   // Max size for DynamoDB storage (KB) - larger items go to S3

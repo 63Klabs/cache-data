@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This specification defines the requirements for migrating existing Mocha tests to Jest for three specific modules: APIRequest.class, dao-endpoint.js, and AWS.classes. This is part of a larger test migration effort to standardize on Jest as the primary testing framework while maintaining backwards compatibility and ensuring no breaking changes are introduced. During the migration period, both Mocha and Jest tests will run in parallel to ensure consistency and catch any discrepancies.
+This specification defines the requirements for migrating existing Mocha tests to Jest for three specific modules: ApiRequest.class, dao-endpoint.js, and AWS.classes. This is part of a larger test migration effort to standardize on Jest as the primary testing framework while maintaining backwards compatibility and ensuring no breaking changes are introduced. During the migration period, both Mocha and Jest tests will run in parallel to ensure consistency and catch any discrepancies.
 
 ## Glossary
 
@@ -11,7 +11,7 @@ This specification defines the requirements for migrating existing Mocha tests t
 - **Jest**: The target test framework for migration
 - **Test_Migration**: The process of converting Mocha tests to Jest format
 - **Parallel_Execution**: Running both Mocha and Jest tests simultaneously during migration
-- **APIRequest**: The APIRequest.class.js module in src/lib/tools/
+- **ApiRequest**: The ApiRequest.class.js module in src/lib/tools/
 - **Endpoint**: The dao-endpoint.js module in src/lib/
 - **AWS_Classes**: The AWS.classes.js module in src/lib/tools/
 - **Test_Coverage**: The percentage of code paths exercised by tests
@@ -19,16 +19,16 @@ This specification defines the requirements for migrating existing Mocha tests t
 
 ## Requirements
 
-### Requirement 1: Migrate APIRequest.class Tests to Jest
+### Requirement 1: Migrate ApiRequest.class Tests to Jest
 
-**User Story:** As a developer, I want all APIRequest.class tests migrated from Mocha to Jest, so that the test suite uses a consistent testing framework.
+**User Story:** As a developer, I want all ApiRequest.class tests migrated from Mocha to Jest, so that the test suite uses a consistent testing framework.
 
 #### Acceptance Criteria
 
-1. WHEN the test migration is complete, THE System SHALL have Jest versions of all existing Mocha tests for APIRequest.class
+1. WHEN the test migration is complete, THE System SHALL have Jest versions of all existing Mocha tests for ApiRequest.class
 2. WHEN Jest tests are executed, THE System SHALL produce equivalent test results to the Mocha tests
 3. WHEN both test suites run, THE System SHALL verify that both Mocha and Jest tests pass with identical assertions
-4. THE System SHALL maintain all existing test coverage for APIRequest.class
+4. THE System SHALL maintain all existing test coverage for ApiRequest.class
 5. THE System SHALL preserve all test descriptions and assertion logic from Mocha tests
 
 ### Requirement 2: Migrate dao-endpoint.js Tests to Jest
@@ -57,11 +57,11 @@ This specification defines the requirements for migrating existing Mocha tests t
 
 ### Requirement 4: Identify and Fill Test Coverage Gaps
 
-**User Story:** As a developer, I want comprehensive test coverage for APIRequest.class, dao-endpoint.js, and AWS.classes, so that all functionality is properly validated.
+**User Story:** As a developer, I want comprehensive test coverage for ApiRequest.class, dao-endpoint.js, and AWS.classes, so that all functionality is properly validated.
 
 #### Acceptance Criteria
 
-1. WHEN analyzing test coverage, THE System SHALL identify untested code paths in APIRequest.class
+1. WHEN analyzing test coverage, THE System SHALL identify untested code paths in ApiRequest.class
 2. WHEN analyzing test coverage, THE System SHALL identify untested code paths in dao-endpoint.js
 3. WHEN analyzing test coverage, THE System SHALL identify untested code paths in AWS.classes
 4. WHEN coverage gaps are identified, THE System SHALL generate Jest tests to cover missing functionality
@@ -75,7 +75,7 @@ This specification defines the requirements for migrating existing Mocha tests t
 
 #### Acceptance Criteria
 
-1. THE System SHALL NOT modify any source code in APIRequest.class.js during test migration
+1. THE System SHALL NOT modify any source code in ApiRequest.class.js during test migration
 2. THE System SHALL NOT modify any source code in dao-endpoint.js during test migration
 3. THE System SHALL NOT modify any source code in AWS.classes.js during test migration
 4. WHEN tests are migrated, THE System SHALL preserve all existing public API behaviors

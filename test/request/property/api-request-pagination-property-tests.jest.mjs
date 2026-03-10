@@ -2,13 +2,13 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import fc from 'fast-check';
 import https from 'https';
 
-describe('APIRequest - Pagination Property-Based Tests', () => {
-	let APIRequest;
+describe('ApiRequest - Pagination Property-Based Tests', () => {
+	let ApiRequest;
 
 	beforeEach(async () => {
 		// Import fresh module for each test
-		const module = await import('../../../src/lib/tools/APIRequest.class.js');
-		APIRequest = module.default;
+		const module = await import('../../../src/lib/tools/ApiRequest.class.js');
+		ApiRequest = module.default;
 	});
 
 	afterEach(() => {
@@ -85,7 +85,7 @@ describe('APIRequest - Pagination Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					expect(response.success).toBe(true);
@@ -143,7 +143,7 @@ describe('APIRequest - Pagination Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					expect(response.success).toBe(true);
@@ -224,7 +224,7 @@ describe('APIRequest - Pagination Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					expect(response.success).toBe(true);
@@ -313,7 +313,7 @@ describe('APIRequest - Pagination Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					expect(response.success).toBe(true);
@@ -399,7 +399,7 @@ describe('APIRequest - Pagination Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					expect(response.success).toBe(true);
@@ -489,7 +489,7 @@ describe('APIRequest - Pagination Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					expect(response.success).toBe(true);
@@ -578,7 +578,7 @@ describe('APIRequest - Pagination Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					expect(response.success).toBe(true);

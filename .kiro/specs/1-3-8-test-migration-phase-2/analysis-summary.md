@@ -3,7 +3,7 @@
 ## Overview
 
 This document provides a consolidated summary of the test coverage analysis for the three modules in scope for Test Migration Phase 2:
-1. APIRequest.class.js
+1. ApiRequest.class.js
 2. dao-endpoint.js
 3. AWS.classes.js
 
@@ -11,14 +11,14 @@ This document provides a consolidated summary of the test coverage analysis for 
 
 | Module | Existing Tests | Coverage Estimate | Missing Tests | Priority |
 |--------|---------------|-------------------|---------------|----------|
-| APIRequest.class.js | 20 | ~60% lines, ~50% branches | 15-20 | High |
+| ApiRequest.class.js | 20 | ~60% lines, ~50% branches | 15-20 | High |
 | dao-endpoint.js | 8 | ~55% lines, ~45% branches | 20-25 | High |
 | AWS.classes.js | 0 | 0% (no tests) | 40-50 | **CRITICAL** |
 | **TOTAL** | **28** | **~38% overall** | **75-95** | - |
 
 ## Key Findings
 
-### 1. APIRequest.class.js
+### 1. ApiRequest.class.js
 - **Status**: Partial coverage with significant gaps
 - **Strengths**: Good coverage of basic request functionality, headers, parameters, and timeout handling
 - **Critical Gaps**:
@@ -55,7 +55,7 @@ This document provides a consolidated summary of the test coverage analysis for 
 
 ## Detailed Analysis by Module
 
-### APIRequest.class.js
+### ApiRequest.class.js
 
 **Test Count**: 20 existing tests
 
@@ -145,22 +145,22 @@ This document provides a consolidated summary of the test coverage analysis for 
 Before migrating to Jest, consider creating Mocha tests for untested functionality:
 - **Pros**: Validates functionality before migration, provides baseline
 - **Cons**: Extra work, delays Jest migration
-- **Recommendation**: Skip for APIRequest and dao-endpoint (partial coverage exists), but consider for AWS.classes (zero coverage)
+- **Recommendation**: Skip for ApiRequest and dao-endpoint (partial coverage exists), but consider for AWS.classes (zero coverage)
 
 ### Phase 2: Migrate Existing Tests to Jest
 Migrate the 28 existing Mocha tests to Jest:
-1. APIRequest.class.js: 20 tests
+1. ApiRequest.class.js: 20 tests
 2. dao-endpoint.js: 8 tests
 3. AWS.classes.js: 0 tests (nothing to migrate)
 
 ### Phase 3: Add Missing Tests in Jest
 Add missing tests directly in Jest format:
-1. APIRequest.class.js: 15-20 additional tests
+1. ApiRequest.class.js: 15-20 additional tests
 2. dao-endpoint.js: 20-25 additional tests
 3. AWS.classes.js: 40-50 new tests
 
 ### Total Jest Tests Expected
-- APIRequest.class.js: ~35-40 tests
+- ApiRequest.class.js: ~35-40 tests
 - dao-endpoint.js: ~28-33 tests
 - AWS.classes.js: ~40-50 tests
 - **TOTAL**: ~103-123 tests
@@ -169,16 +169,16 @@ Add missing tests directly in Jest format:
 
 ### Immediate Priority (Critical Gaps)
 1. **AWS.classes.js**: Create comprehensive test suite from scratch
-2. **APIRequest.class.js**: Add redirect handling tests
+2. **ApiRequest.class.js**: Add redirect handling tests
 3. **dao-endpoint.js**: Add query parameter merging tests
 
 ### High Priority (Key Functionality)
-4. **APIRequest.class.js**: Add 304 Not Modified and error handling tests
+4. **ApiRequest.class.js**: Add 304 Not Modified and error handling tests
 5. **dao-endpoint.js**: Add non-JSON response and error handling tests
 6. **AWS.classes.js**: Add version detection and region configuration tests
 
 ### Medium Priority (Edge Cases)
-7. **APIRequest.class.js**: Add query string edge cases and helper method tests
+7. **ApiRequest.class.js**: Add query string edge cases and helper method tests
 8. **dao-endpoint.js**: Add response caching and default value tests
 9. **AWS.classes.js**: Add client operation tests
 
@@ -188,14 +188,14 @@ Add missing tests directly in Jest format:
 
 ## Testing Challenges
 
-### APIRequest.class.js
+### ApiRequest.class.js
 - **Redirect testing**: Need to mock or use test endpoints that return redirects
 - **X-Ray testing**: Need to mock aws-xray-sdk-core
 - **Error event testing**: Need to simulate network errors
 
 ### dao-endpoint.js
 - **Non-JSON testing**: Need test endpoints that return non-JSON responses
-- **Error testing**: Need to simulate APIRequest failures
+- **Error testing**: Need to simulate ApiRequest failures
 - **Caching testing**: Need to verify response is cached and not re-fetched
 
 ### AWS.classes.js
@@ -213,7 +213,7 @@ Add missing tests directly in Jest format:
 - ✅ Test counts match between frameworks
 
 ### Coverage Improvement
-- ✅ APIRequest.class.js: Increase from ~60% to ~85% line coverage
+- ✅ ApiRequest.class.js: Increase from ~60% to ~85% line coverage
 - ✅ dao-endpoint.js: Increase from ~55% to ~85% line coverage
 - ✅ AWS.classes.js: Increase from 0% to ~80% line coverage
 - ✅ Overall: Increase from ~38% to ~83% line coverage
@@ -231,8 +231,8 @@ Based on the analysis:
 
 | Task | Estimated Effort | Priority |
 |------|-----------------|----------|
-| Migrate APIRequest tests (20) | 4-6 hours | High |
-| Add APIRequest missing tests (15-20) | 6-8 hours | High |
+| Migrate ApiRequest tests (20) | 4-6 hours | High |
+| Add ApiRequest missing tests (15-20) | 6-8 hours | High |
 | Migrate dao-endpoint tests (8) | 2-3 hours | High |
 | Add dao-endpoint missing tests (20-25) | 8-10 hours | High |
 | Create AWS.classes tests (40-50) | 16-20 hours | Critical |
@@ -244,7 +244,7 @@ Based on the analysis:
 
 The test coverage analysis reveals significant gaps across all three modules:
 
-1. **APIRequest.class.js**: Partial coverage with critical gaps in redirect handling and error paths
+1. **ApiRequest.class.js**: Partial coverage with critical gaps in redirect handling and error paths
 2. **dao-endpoint.js**: Basic coverage with key features (parameter merging, non-JSON responses) untested
 3. **AWS.classes.js**: Zero coverage - most critical gap
 
@@ -261,7 +261,7 @@ The migration will not only convert existing tests to Jest but also significantl
 
 ## References
 
-- [Detailed APIRequest Analysis](./analysis-2.1-api-request.md)
+- [Detailed ApiRequest Analysis](./analysis-2.1-api-request.md)
 - [Detailed dao-endpoint Analysis](./analysis-2.2-dao-endpoint.md)
 - [Detailed AWS.classes Analysis](./analysis-2.3-aws-classes.md)
 - [Requirements Document](./requirements.md)

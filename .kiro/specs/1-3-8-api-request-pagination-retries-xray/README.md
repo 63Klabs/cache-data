@@ -1,6 +1,6 @@
 # API Request Pagination Retries XRay
 
-The APIRequest class requires some updates to include pagination, request retries, and better X-Ray segmentation.
+The ApiRequest class requires some updates to include pagination, request retries, and better X-Ray segmentation.
 
 An example working implementation that has been used in production is available in the following 3 files:
 
@@ -8,13 +8,13 @@ An example working implementation that has been used in production is available 
 - [AcmeApi.dao.class.js](AcmeApi.dao.class.js)
 - [rockets.service.js](rockets.service.js)
 
-These were implemented in a production project but so that they can be replicated across other projects we need to move pagination into APIRequest. Be sure to review how the files and methods are related.
+These were implemented in a production project but so that they can be replicated across other projects we need to move pagination into ApiRequest. Be sure to review how the files and methods are related.
 
 The PAGINATION_OPTIONS in AcmeApi should continue to be used in the developer's DAO class.
 
-paginateResults() in Acme.dao.class should be moved to APIRequest. Also, retries in the get() in Acme should be moved to APIRequest.
+paginateResults() in Acme.dao.class should be moved to ApiRequest. Also, retries in the get() in Acme should be moved to ApiRequest.
 
-It is imperative that the APIRequest class does not receive any breaking changes. All current tests must pass and not be disturbed. Only new tests should be added to ensure the changes work.
+It is imperative that the ApiRequest class does not receive any breaking changes. All current tests must pass and not be disturbed. Only new tests should be added to ensure the changes work.
 
 Ask clarifying questions in SPEC-QUESTIONS.md in this directory and the user will respond with answers there.
 
@@ -32,7 +32,7 @@ A "continuation token" would also need to be an option
 
 Care should be taken to not introduce any breaking changes.
 
-Pagination options are not required by functions calling APIRequest and not all requests require use of pagination.
+Pagination options are not required by functions calling ApiRequest and not all requests require use of pagination.
 
 # API Request Retries
 
@@ -42,7 +42,7 @@ Add retries directly to the API Request.
 
 To allow the calling function or class the ability to perform its own retries (either including or excluding the underlying retries) the API function should return some meta data about the response, including the number of retries.
 
-This should be able to offload the retry code to the APIRequest class API tools, but allow classes to perform their own retries as necessary.
+This should be able to offload the retry code to the ApiRequest class API tools, but allow classes to perform their own retries as necessary.
 
 ## XRay Subsegments in API Request
 

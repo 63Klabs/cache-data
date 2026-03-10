@@ -259,7 +259,7 @@ describe('Feature: documentation-quality-fixes - Backwards Compatibility', funct
 			const toolsModule = require(toolsIndexPath);
 
 			// Verify key tool exports exist
-			expect(toolsModule).to.have.property('APIRequest');
+			expect(toolsModule).to.have.property('ApiRequest');
 			expect(toolsModule).to.have.property('ClientRequest');
 			expect(toolsModule).to.have.property('Response');
 			expect(toolsModule).to.have.property('DebugAndLog');

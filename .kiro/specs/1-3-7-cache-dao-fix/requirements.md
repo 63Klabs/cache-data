@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document specifies requirements for fixing a production bug where the cache-dao module passes undefined values to HTTP headers, specifically the "if-modified-since" header. The error manifests as: `Invalid value "undefined" for header "if-modified-since"` in the APIRequest class when making HTTP requests.
+This document specifies requirements for fixing a production bug where the cache-dao module passes undefined values to HTTP headers, specifically the "if-modified-since" header. The error manifests as: `Invalid value "undefined" for header "if-modified-since"` in the ApiRequest class when making HTTP requests.
 
 The issue occurs when cache.getLastModified() returns undefined instead of null, and the conditional check only validates against null. This allows undefined values to be assigned to HTTP headers, which violates HTTP specifications and causes request failures.
 
@@ -11,7 +11,7 @@ Additionally, this specification addresses the need to set up Jest for testing a
 ## Glossary
 
 - **Cache_DAO**: The cache data access object module (dao-cache.js) containing S3Cache, DynamoDbCache, CacheData, and Cache classes
-- **APIRequest**: The HTTP request handling class in tools/APIRequest.class.js that validates and sends HTTP requests
+- **ApiRequest**: The HTTP request handling class in tools/ApiRequest.class.js that validates and sends HTTP requests
 - **Header_Value**: A string or number value assigned to an HTTP header field
 - **Undefined_Value**: JavaScript undefined type, which is not a valid HTTP header value
 - **Null_Value**: JavaScript null type, representing intentional absence of a value
@@ -83,7 +83,7 @@ Additionally, this specification addresses the need to set up Jest for testing a
 2. THE System SHALL include unit tests for getLastModified() return value handling
 3. THE System SHALL include unit tests for getETag() return value handling
 4. THE System SHALL include integration tests for CacheableDataAccess header assignment
-5. THE System SHALL include tests that verify undefined values never reach APIRequest headers
+5. THE System SHALL include tests that verify undefined values never reach ApiRequest headers
 
 ### Requirement 6: Create Property-Based Tests for Header Validation
 

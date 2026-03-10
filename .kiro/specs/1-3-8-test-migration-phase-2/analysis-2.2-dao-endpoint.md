@@ -76,7 +76,7 @@
    - Error logging
 
 4. **Error Handling in _call() Method (Lines ~290-295)**
-   - Error during APIRequest instantiation
+   - Error during ApiRequest instantiation
    - Error during send() operation
    - Error response format (500 status)
 
@@ -133,7 +133,7 @@
 3. **Error Handling Tests**
    ```javascript
    it('should handle error during _call()')
-   it('should handle error during APIRequest instantiation')
+   it('should handle error during ApiRequest instantiation')
    it('should handle error during send()')
    it('should return 500 error response on failure')
    ```
@@ -225,10 +225,10 @@ When migrating to Jest:
 - Focus on query parameter merging, non-JSON responses, error handling, and response caching
 - Consider whether to keep the direct chai-http test or convert to Endpoint class usage
 
-## Comparison with APIRequest Tests
+## Comparison with ApiRequest Tests
 
-- dao-endpoint.js has fewer tests (8) compared to APIRequest.class.js (20)
-- dao-endpoint.js is a simpler wrapper around APIRequest
-- Most complexity is delegated to APIRequest class
+- dao-endpoint.js has fewer tests (8) compared to ApiRequest.class.js (20)
+- dao-endpoint.js is a simpler wrapper around ApiRequest
+- Most complexity is delegated to ApiRequest class
 - Key untested functionality is the wrapper logic (parameter merging, JSON parsing, caching)
 - Error handling is less complex but still untested

@@ -1,8 +1,8 @@
-# APIRequest Retry Guide
+# ApiRequest Retry Guide
 
 ## Overview
 
-The APIRequest class provides automatic retry functionality for handling transient network errors and temporary API failures. When enabled, APIRequest will automatically retry failed requests based on configurable conditions, eliminating the need for manual retry logic in your code.
+The ApiRequest class provides automatic retry functionality for handling transient network errors and temporary API failures. When enabled, ApiRequest will automatically retry failed requests based on configurable conditions, eliminating the need for manual retry logic in your code.
 
 ## When to Use Retry
 
@@ -20,9 +20,9 @@ Use retry when:
 Enable retry with default settings by passing `{ enabled: true }`:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -41,7 +41,7 @@ if (response.metadata?.retries?.occurred) {
 
 ### How It Works
 
-1. APIRequest makes the initial request
+1. ApiRequest makes the initial request
 2. If the request fails with a retryable condition, a retry is attempted
 3. The request is retried up to `maxRetries` times (default: 1 retry = 2 total attempts)
 4. If a retry succeeds, the successful response is returned with metadata
@@ -58,7 +58,7 @@ if (response.metadata?.retries?.occurred) {
 When you enable retry, these defaults are used:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 /*
 // Default retry config. You just need to enable to use
@@ -81,7 +81,7 @@ const conn =  {
   retry: {enabled: true} // this will use the defaults
 };
 
-const request = new APIRequest(conn);
+const request = new ApiRequest(conn);
 const response = request.send();
 ```
 
@@ -90,9 +90,9 @@ const response = request.send();
 Control the maximum number of retry attempts:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -107,9 +107,9 @@ const request = new APIRequest({
 Customize which conditions trigger retries:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -133,9 +133,9 @@ const request = new APIRequest({
 Retry when the request fails with a network error (no response received):
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -158,9 +158,9 @@ const request = new APIRequest({
 Retry when the response body is empty or null:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -181,9 +181,9 @@ const request = new APIRequest({
 Retry when the response body cannot be parsed as JSON:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -203,9 +203,9 @@ const request = new APIRequest({
 Retry when the server returns a 5xx status code:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -229,9 +229,9 @@ const request = new APIRequest({
 By default, client errors are NOT retried (they usually indicate a problem with the request):
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -254,9 +254,9 @@ const request = new APIRequest({
 However, you can enable retry for 4xx errors if needed:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -334,9 +334,9 @@ When retry is not enabled or not needed:
 ### Example 1: Basic Retry for Transient Errors
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -362,9 +362,9 @@ if (response.success) {
 ### Example 2: Retry with Custom Conditions
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -386,9 +386,9 @@ const response = await request.send();
 ### Example 3: Retry on Rate Limits (4xx)
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   headers: {
@@ -413,9 +413,9 @@ if (response.statusCode === 429 && !response.success) {
 ### Example 4: Handling Retry Metadata
 
 ```javascript
-const {tools: {APIRequest, DebugAndLog}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest, DebugAndLog}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -444,9 +444,9 @@ if (response.metadata?.retries?.occurred) {
 ### Example 5: Retry with Timeout
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/slow-endpoint',
   options: {
@@ -494,9 +494,9 @@ A retry will NOT occur when:
 Each retry attempt is logged as a warning:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch user data',
@@ -520,9 +520,9 @@ Set `LOG_LEVEL=WARN` or higher to see retry logs.
 ### Network Errors
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'unreachable-api.example.com',
   path: '/data',
   retry: {
@@ -547,9 +547,9 @@ if (!response.success) {
 ### Server Errors
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -576,9 +576,9 @@ if (response.statusCode >= 500 && !response.success) {
 Some requests may succeed on retry after initial failures:
 
 ```javascript
-const {tools: {APIRequest, DebugAndLog}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest, DebugAndLog}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -610,9 +610,9 @@ if (response.success && response.metadata?.retries?.occurred) {
 Each retry attempt respects the timeout setting:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   options: {
@@ -665,9 +665,9 @@ Currently, retries happen immediately without delay. Future enhancement will add
 Retry works seamlessly with pagination:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -689,9 +689,9 @@ const response = await request.send();
 Retry attempts are tracked in X-Ray subsegments:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -709,7 +709,7 @@ const response = await request.send();
 
 ## Migration from DAO-Level Retry
 
-If you have existing retry logic in your DAO classes, you can migrate to APIRequest retry:
+If you have existing retry logic in your DAO classes, you can migrate to ApiRequest retry:
 
 ### Before (DAO-level retry)
 
@@ -721,7 +721,7 @@ class MyDAO {
     
     while (attempts < maxAttempts) {
       try {
-        const request = new APIRequest({
+        const request = new ApiRequest({
           host: 'api.example.com',
           path: '/data'
         });
@@ -753,12 +753,12 @@ class MyDAO {
 }
 ```
 
-### After (APIRequest retry)
+### After (ApiRequest retry)
 
 ```javascript
 class MyDAO {
   async fetchData() {
-    const request = new APIRequest({
+    const request = new ApiRequest({
       host: 'api.example.com',
       path: '/data',
       retry: {
@@ -791,12 +791,12 @@ If retry isn't working:
 4. **Enable logging**: Set `LOG_LEVEL=WARN` to see retry attempts
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 // Enable warning logging
 process.env.LOG_LEVEL = 'WARN';
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -814,9 +814,9 @@ const response = await request.send();
 If requests are retrying too many times:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -831,9 +831,9 @@ const request = new APIRequest({
 If the wrong conditions trigger retries:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -854,9 +854,9 @@ const request = new APIRequest({
 If retries are causing timeouts:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   options: {
@@ -896,7 +896,7 @@ The following enhancements are planned for future releases:
 
 ## Related Documentation
 
-- [APIRequest Pagination Guide](./api-request-pagination.md) - Automatic pagination functionality
-- [APIRequest X-Ray Guide](./api-request-xray.md) - X-Ray tracing enhancements
+- [ApiRequest Pagination Guide](./api-request-pagination.md) - Automatic pagination functionality
+- [ApiRequest X-Ray Guide](./api-request-xray.md) - X-Ray tracing enhancements
 - [Tools Module](./README.md) - Complete tools documentation
 - [Endpoint Module](../endpoint/README.md) - HTTP request handling

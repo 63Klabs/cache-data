@@ -1,13 +1,13 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import https from 'https';
 
-describe('APIRequest - Response Metadata', () => {
-	let APIRequest;
+describe('ApiRequest - Response Metadata', () => {
+	let ApiRequest;
 
 	beforeEach(async () => {
 		// Import fresh module for each test
-		const module = await import('../../src/lib/tools/APIRequest.class.js');
-		APIRequest = module.default;
+		const module = await import('../../src/lib/tools/ApiRequest.class.js');
+		ApiRequest = module.default;
 		jest.clearAllMocks();
 	});
 
@@ -67,7 +67,7 @@ describe('APIRequest - Response Metadata', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify metadata is present
@@ -145,7 +145,7 @@ describe('APIRequest - Response Metadata', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify pagination worked
@@ -196,7 +196,7 @@ describe('APIRequest - Response Metadata', () => {
 				path: '/test'
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify metadata is NOT present
@@ -254,7 +254,7 @@ describe('APIRequest - Response Metadata', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify retry metadata structure
@@ -331,7 +331,7 @@ describe('APIRequest - Response Metadata', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify pagination metadata structure
@@ -430,7 +430,7 @@ describe('APIRequest - Response Metadata', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify both metadata types are present
@@ -475,7 +475,7 @@ describe('APIRequest - Response Metadata', () => {
 				path: '/test'
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify standard response format is maintained
@@ -539,7 +539,7 @@ describe('APIRequest - Response Metadata', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify standard fields are still accessible

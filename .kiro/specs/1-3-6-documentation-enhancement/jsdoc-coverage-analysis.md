@@ -52,7 +52,7 @@ These functions have no JSDoc comments at all and require complete documentation
 #### Medium Priority - Supporting Classes
 
 7. **CachedParameterSecrets class** (`lib/tools/CachedParametersSecrets.classes.js`)
-8. **CachedSSMParameter class** (`lib/tools/CachedParametersSecrets.classes.js`)
+8. **CachedSsmParameter class** (`lib/tools/CachedParametersSecrets.classes.js`)
 9. **CachedSecret class** (`lib/tools/CachedParametersSecrets.classes.js`)
 10. **_ConfigSuperClass.settings method** (`lib/tools/index.js`)
 
@@ -116,7 +116,7 @@ The audit script identified potential parameter mismatches that need manual revi
 **Priority:** High  
 **Files:** `src/lib/tools/`
 
-1. Request classes (APIRequest, ClientRequest, RequestInfo)
+1. Request classes (ApiRequest, ClientRequest, RequestInfo)
 2. AWS and parameter classes
 3. Connection classes (Connections, Connection, ConnectionRequest, ConnectionAuthentication)
 

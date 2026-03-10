@@ -1,19 +1,19 @@
 import { expect } from 'chai';
-import { CachedParameterSecrets, CachedSecret, CachedSSMParameter } from '../../src/lib/tools/index.js';
+import { CachedParameterSecrets, CachedSecret, CachedSsmParameter } from '../../src/lib/tools/index.js';
 
 /* 
-Create a test that creates 3 CachedSecret and 3 CachedSSMParameter
+Create a test that creates 3 CachedSecret and 3 CachedSsmParameter
 Then check the name and instance of the cached secret and cached SSM parameter
 */
 
-describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
+describe("CachedParameterSecret, CachedSsmParameter, CachedSecret", () => {
 
 	const cachedSecret1 = new CachedSecret("test-secret-1", {refreshAfter: 500});
 	const cachedSecret2 = new CachedSecret("test-secret-2", {refreshAfter: 800});
 	const cachedSecret3 = new CachedSecret("test-secret-3", {refreshAfter: 1200});
-	const cachedSSMParameter1 = new CachedSSMParameter("test-ssm-parameter-1", {refreshAfter: 500});
-	const cachedSSMParameter2 = new CachedSSMParameter("test-ssm-parameter-2", {refreshAfter: 800});
-	const cachedSSMParameter3 = new CachedSSMParameter("test-ssm-parameter-3", {refreshAfter: 1200});
+	const cachedSSMParameter1 = new CachedSsmParameter("test-ssm-parameter-1", {refreshAfter: 500});
+	const cachedSSMParameter2 = new CachedSsmParameter("test-ssm-parameter-2", {refreshAfter: 800});
+	const cachedSSMParameter3 = new CachedSsmParameter("test-ssm-parameter-3", {refreshAfter: 1200});
 
 	describe("CachedParameterSecrets class", () => {
 		it("toObject()", async () => {
@@ -26,9 +26,9 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 			expect(CachedParameterSecrets.getNameTags()[0]).to.equal("test-secret-1 [CachedSecret]");
 			expect(CachedParameterSecrets.getNameTags()[1]).to.equal("test-secret-2 [CachedSecret]");
 			expect(CachedParameterSecrets.getNameTags()[2]).to.equal("test-secret-3 [CachedSecret]");
-			expect(CachedParameterSecrets.getNameTags()[3]).to.equal("test-ssm-parameter-1 [CachedSSMParameter]");
-			expect(CachedParameterSecrets.getNameTags()[4]).to.equal("test-ssm-parameter-2 [CachedSSMParameter]");
-			expect(CachedParameterSecrets.getNameTags()[5]).to.equal("test-ssm-parameter-3 [CachedSSMParameter]");
+			expect(CachedParameterSecrets.getNameTags()[3]).to.equal("test-ssm-parameter-1 [CachedSsmParameter]");
+			expect(CachedParameterSecrets.getNameTags()[4]).to.equal("test-ssm-parameter-2 [CachedSsmParameter]");
+			expect(CachedParameterSecrets.getNameTags()[5]).to.equal("test-ssm-parameter-3 [CachedSsmParameter]");
 		});
 
 		it("getNames()", () => {
@@ -62,18 +62,18 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 
 	})
 
-	describe("CachedSSMParameter class", () => {
+	describe("CachedSsmParameter class", () => {
 
-		it("Check name and instance of CachedSSMParameter", async () => {
+		it("Check name and instance of CachedSsmParameter", async () => {
 			expect(CachedParameterSecrets.get("test-ssm-parameter-1").getName()).to.equal("test-ssm-parameter-1");
 			expect(CachedParameterSecrets.get("test-ssm-parameter-2").getName()).to.equal("test-ssm-parameter-2");
 			expect(CachedParameterSecrets.get("test-ssm-parameter-3").getName()).to.equal("test-ssm-parameter-3");
-			expect(CachedParameterSecrets.get("test-ssm-parameter-1").getNameTag()).to.equal("test-ssm-parameter-1 [CachedSSMParameter]");
-			expect(CachedParameterSecrets.get("test-ssm-parameter-2").getNameTag()).to.equal("test-ssm-parameter-2 [CachedSSMParameter]");
-			expect(CachedParameterSecrets.get("test-ssm-parameter-3").getNameTag()).to.equal("test-ssm-parameter-3 [CachedSSMParameter]");
+			expect(CachedParameterSecrets.get("test-ssm-parameter-1").getNameTag()).to.equal("test-ssm-parameter-1 [CachedSsmParameter]");
+			expect(CachedParameterSecrets.get("test-ssm-parameter-2").getNameTag()).to.equal("test-ssm-parameter-2 [CachedSsmParameter]");
+			expect(CachedParameterSecrets.get("test-ssm-parameter-3").getNameTag()).to.equal("test-ssm-parameter-3 [CachedSsmParameter]");
 		});
 
-		it("Check object cache properties of CachedSSMParameter", () => {
+		it("Check object cache properties of CachedSsmParameter", () => {
 			expect(CachedParameterSecrets.get("test-ssm-parameter-1").toObject().cache.refreshAfter).to.equal(500);
 			expect(CachedParameterSecrets.get("test-ssm-parameter-2").toObject().cache.refreshAfter).to.equal(800);
 			expect(CachedParameterSecrets.get("test-ssm-parameter-3").toObject().cache.refreshAfter).to.equal(1200);

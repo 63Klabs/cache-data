@@ -114,7 +114,7 @@ const DebugAndLog = require('./DebugAndLog.class.js');
 
 /**
  * @typedef {object} APIResponse
- * @description Standard response object returned by APIRequest.send()
+ * @description Standard response object returned by ApiRequest.send()
  * 
  * @property {boolean} success - Whether the request was successful (statusCode < 400)
  * @property {number} statusCode - HTTP status code
@@ -143,12 +143,12 @@ const xRayProxy = (AWSXRay !== null) ? AWS.XRay.getSegment() : {
 };
 
 /**
- * An internal tools function used by APIRequest. https.get does not work well
+ * An internal tools function used by ApiRequest. https.get does not work well
  * inside a class object (specifically doesn't like this.*), so we make it 
  * external to the class and pass the class as a reference to be updated either 
  * with a response or redirect uri.
  * @param {object} options The options object for https.get()
- * @param {APIRequest} requestObject The APIRequest object that contains internal functions, request info (including uri) and redirects. This object will be updated with any redirects and responses
+ * @param {ApiRequest} requestObject The ApiRequest object that contains internal functions, request info (including uri) and redirects. This object will be updated with any redirects and responses
  * @returns A promise that will resolve to a boolean denoting whether or not the response is considered complete (no unresolved redirects). The boolean does not mean "error free." Even if we receive errors it is considered complete.
  */ 
 const _httpGetExecute = async function (options, requestObject, xRaySegment = xRayProxy) {
@@ -202,7 +202,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 
 					- ELSE We will produce an error of too many redirects.
 					*/
-					if ( redirects < APIRequest.MAX_REDIRECTS ) {
+					if ( redirects < ApiRequest.MAX_REDIRECTS ) {
 
 						// we'll gather variables to use in logging
 						let newLocation = res.headers.location;
@@ -232,8 +232,8 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 						addRedirect(newLocation);
 
 					} else {
-						DebugAndLog.warn(`Too many redirects. Limit of ${APIRequest.MAX_REDIRECTS}`);
-						setResponse(APIRequest.responseFormat(false, 500, "Too many redirects"));
+						DebugAndLog.warn(`Too many redirects. Limit of ${ApiRequest.MAX_REDIRECTS}`);
+						setResponse(ApiRequest.responseFormat(false, 500, "Too many redirects"));
 					}
 
 				} else {
@@ -247,7 +247,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 					if (res.statusCode === 304) {
 						// 304 not modified
 						DebugAndLog.debug("304 Not Modified. Setting body to null");
-						setResponse(APIRequest.responseFormat(
+						setResponse(ApiRequest.responseFormat(
 							true, 
 							res.statusCode, 
 							"SUCCESS", 
@@ -312,7 +312,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 									// xRaySegment.close(); // we are handling in calling func
 								}
 
-								setResponse(APIRequest.responseFormat(
+								setResponse(ApiRequest.responseFormat(
 									success, 
 									res.statusCode, 
 									(success ? "SUCCESS" : "FAIL"), 
@@ -322,7 +322,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 							} catch (error) {
 								DebugAndLog.error(`Error during http get callback for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
 								xRaySegment.addError(error);
-								setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
+								setResponse(ApiRequest.responseFormat(false, 500, "https.get resulted in error"));
 							}
 						});
 
@@ -330,7 +330,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 							DebugAndLog.error(`API error during request/response for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
 							xRaySegment.addError(error);
 							// xRaySegment.close(); // we are handling in calling func
-							setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
+							setResponse(ApiRequest.responseFormat(false, 500, "https.get resulted in error"));
 						});
 
 					}                                          
@@ -339,7 +339,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 			} catch (error) {
 				DebugAndLog.error(`Error during http get callback for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
 				xRaySegment.addError(error);
-				setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
+				setResponse(ApiRequest.responseFormat(false, 500, "https.get resulted in error"));
 			}
 
 		});
@@ -350,7 +350,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 			xRaySegment.addFaultFlag();
 			xRaySegment.addError(new Error("Endpoint request timeout reached"));
 			// xRaySegment.close(); // we are handling in calling func
-			setResponse(APIRequest.responseFormat(false, 504, "https.request resulted in timeout"));
+			setResponse(ApiRequest.responseFormat(false, 504, "https.request resulted in timeout"));
 			req.destroy(); //req.end()
 
 		});
@@ -360,7 +360,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
 			xRaySegment.addFaultFlag();
 			xRaySegment.addError(error);
 			// xRaySegment.close(); // we are handling in calling func
-			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
+			setResponse(ApiRequest.responseFormat(false, 500, "https.request resulted in error"));
 		});
 
 		if ( requestObject.getMethod() === "POST" && requestObject.getBody() !== null ) {
@@ -387,18 +387,18 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
  * async call() {
  *   var response = null;
  *   try {
- *     var apiRequest = new tools.APIRequest(this.request);
+ *     var apiRequest = new tools.ApiRequest(this.request);
  *     response = await apiRequest.send();
  *   } catch (error) {
  *     DebugAndLog.error(`Error in call: ${error.message}`, error.stack);
- *     response = tools.APIRequest.responseFormat(false, 500, "Error in call()");
+ *     response = tools.ApiRequest.responseFormat(false, 500, "Error in call()");
  *   }
  *   return response;
  * }
  * 
  * @example
  * // Using pagination feature
- * const apiRequest = new tools.APIRequest({
+ * const apiRequest = new tools.ApiRequest({
  *   host: 'api.example.com',
  *   path: '/data',
  *   pagination: {
@@ -412,7 +412,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
  * 
  * @example
  * // Using retry feature
- * const apiRequest = new tools.APIRequest({
+ * const apiRequest = new tools.ApiRequest({
  *   host: 'api.example.com',
  *   path: '/data',
  *   retry: {
@@ -425,7 +425,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
  * 
  * @example
  * // Using both pagination and retry
- * const apiRequest = new tools.APIRequest({
+ * const apiRequest = new tools.ApiRequest({
  *   host: 'api.example.com',
  *   path: '/data',
  *   pagination: { enabled: true },
@@ -438,7 +438,7 @@ const _httpGetExecute = async function (options, requestObject, xRaySegment = xR
  *   console.log('Pagination:', response.metadata.pagination);
  * }
  */
-class APIRequest {
+class ApiRequest {
 
 	static MAX_REDIRECTS = 5;
 
@@ -489,7 +489,7 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Basic request without pagination or retry
-	 * const request = new APIRequest({
+	 * const request = new ApiRequest({
 	 *   host: 'api.example.com',
 	 *   path: '/users',
 	 *   parameters: { limit: 10 }
@@ -498,7 +498,7 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Request with minimal pagination configuration (uses all defaults)
-	 * const request = new APIRequest({
+	 * const request = new ApiRequest({
 	 *   host: 'api.example.com',
 	 *   path: '/data',
 	 *   pagination: { enabled: true }
@@ -508,7 +508,7 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Request with custom pagination labels
-	 * const request = new APIRequest({
+	 * const request = new ApiRequest({
 	 *   host: 'api.example.com',
 	 *   path: '/data',
 	 *   pagination: {
@@ -524,7 +524,7 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Request with minimal retry configuration (uses all defaults)
-	 * const request = new APIRequest({
+	 * const request = new ApiRequest({
 	 *   host: 'api.example.com',
 	 *   path: '/data',
 	 *   retry: { enabled: true }
@@ -534,7 +534,7 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Request with custom retry configuration
-	 * const request = new APIRequest({
+	 * const request = new ApiRequest({
 	 *   host: 'api.example.com',
 	 *   path: '/data',
 	 *   retry: {
@@ -551,7 +551,7 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Request with both pagination and retry
-	 * const request = new APIRequest({
+	 * const request = new ApiRequest({
 	 *   host: 'api.example.com',
 	 *   path: '/data',
 	 *   pagination: { enabled: true },
@@ -1024,7 +1024,7 @@ class APIRequest {
 
 	/**
 	 * Fetch a single page of paginated results. This private method creates a new
-	 * APIRequest instance for a specific page offset and retrieves that page's data.
+	 * ApiRequest instance for a specific page offset and retrieves that page's data.
 	 * If X-Ray is available, it creates a subsegment to track the page request.
 	 * 
 	 * @private
@@ -1060,7 +1060,7 @@ class APIRequest {
 		
 		// Create subsegment for this paginated request if X-Ray is available
 		if (AWSXRay) {
-			const subsegmentName = `APIRequest/${this.getHost()}/Page-${offset}`;
+			const subsegmentName = `ApiRequest/${this.getHost()}/Page-${offset}`;
 			
 			return await AWSXRay.captureAsyncFunc(subsegmentName, async (subsegment) => {
 				try {
@@ -1077,8 +1077,8 @@ class APIRequest {
 						parentNote: this.#request.note
 					});
 					
-					// Create new APIRequest instance for this page
-					const pageApiRequest = new APIRequest(pageRequest);
+					// Create new ApiRequest instance for this page
+					const pageApiRequest = new ApiRequest(pageRequest);
 					const response = await pageApiRequest.send();
 					
 					subsegment.addAnnotation('success', response.success ? "true" : "false");
@@ -1095,7 +1095,7 @@ class APIRequest {
 			});
 		} else {
 			// No X-Ray available, just create and send the request
-			const pageApiRequest = new APIRequest(pageRequest);
+			const pageApiRequest = new ApiRequest(pageRequest);
 			return await pageApiRequest.send();
 		}
 	}
@@ -1215,13 +1215,13 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Basic request
-	 * const apiRequest = new APIRequest({ host: 'api.example.com', path: '/users' });
+	 * const apiRequest = new ApiRequest({ host: 'api.example.com', path: '/users' });
 	 * const response = await apiRequest.send();
 	 * console.log(response.body);
 	 * 
 	 * @example
 	 * // Request with pagination
-	 * const apiRequest = new APIRequest({
+	 * const apiRequest = new ApiRequest({
 	 *   host: 'api.example.com',
 	 *   path: '/data',
 	 *   pagination: { enabled: true }
@@ -1233,7 +1233,7 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Request with retry
-	 * const apiRequest = new APIRequest({
+	 * const apiRequest = new ApiRequest({
 	 *   host: 'api.example.com',
 	 *   path: '/data',
 	 *   retry: { enabled: true, maxRetries: 2 }
@@ -1327,7 +1327,7 @@ class APIRequest {
 					if (AWSXRay) {
 
 						// Use timestamp to ensure unique subsegment names for each request
-						const subsegmentName = `APIRequest/${this.getHost()}/${Date.now()}`;
+						const subsegmentName = `ApiRequest/${this.getHost()}/${Date.now()}`;
 
 						await AWSXRay.captureAsyncFunc(subsegmentName, async (subsegment) => {
 
@@ -1384,7 +1384,7 @@ class APIRequest {
 								
 								return true;
 							} catch (error) {
-								DebugAndLog.error(`Error in APIRequest call to remote endpoint (${this.getNote()}): ${error.message}`, error.stack);
+								DebugAndLog.error(`Error in ApiRequest call to remote endpoint (${this.getNote()}): ${error.message}`, error.stack);
 								subsegment.addError(error);
 								throw error;
 							} finally {
@@ -1438,12 +1438,12 @@ class APIRequest {
 					resolve( this.#response );
 				}
 				catch (error) {
-					DebugAndLog.error(`Error in APIRequest call to _httpGetExecute (${this.getNote()}): ${error.message}`, error.stack);
-					resolve(APIRequest.responseFormat(false, 500, "Error during send request"));
+					DebugAndLog.error(`Error in ApiRequest call to _httpGetExecute (${this.getNote()}): ${error.message}`, error.stack);
+					resolve(ApiRequest.responseFormat(false, 500, "Error during send request"));
 				}				
 			} catch (error) {
-				DebugAndLog.error(`API error while trying request for host ${this.getHost()} ${this.getNote()} ${error.message}`, { APIRequest: this.toObject(), trace: error.stack } );
-				resolve(APIRequest.responseFormat(false, 500, "Error during send request"));
+				DebugAndLog.error(`API error while trying request for host ${this.getHost()} ${this.getNote()} ${error.message}`, { ApiRequest: this.toObject(), trace: error.stack } );
+				resolve(ApiRequest.responseFormat(false, 500, "Error during send request"));
 			
 			}
 		});	
@@ -1461,7 +1461,7 @@ class APIRequest {
 	toObject() {
 
 		return {
-			MAX_REDIRECTS: APIRequest.MAX_REDIRECTS,
+			MAX_REDIRECTS: ApiRequest.MAX_REDIRECTS,
 			request: this.#request,
 			requestComplete: this.#requestComplete,
 			redirects: this.#redirects,
@@ -1489,12 +1489,12 @@ class APIRequest {
 	 * 
 	 * @example
 	 * // Basic response format
-	 * const response = APIRequest.responseFormat(true, 200, "SUCCESS", headers, body);
+	 * const response = ApiRequest.responseFormat(true, 200, "SUCCESS", headers, body);
 	 * // { success: true, statusCode: 200, headers: {...}, body: "...", message: "SUCCESS" }
 	 * 
 	 * @example
 	 * // Error response format
-	 * const response = APIRequest.responseFormat(false, 500, "Internal Server Error");
+	 * const response = ApiRequest.responseFormat(false, 500, "Internal Server Error");
 	 * // { success: false, statusCode: 500, headers: null, body: null, message: "Internal Server Error" }
 	 * 
 	 * @example
@@ -1525,4 +1525,4 @@ class APIRequest {
 	};
 };
 
-module.exports = APIRequest;
+module.exports = ApiRequest;

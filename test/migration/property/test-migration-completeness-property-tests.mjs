@@ -123,7 +123,7 @@ describe('Test Migration Phase 2 - Property-Based Tests', () => {
 	 */
 	it('Property 7: Source Code Immutability - Source files unchanged during migration', () => {
 		const sourceFiles = [
-			'src/lib/tools/APIRequest.class.js',
+			'src/lib/tools/ApiRequest.class.js',
 			'src/lib/dao-endpoint.js',
 			'src/lib/tools/AWS.classes.js'
 		];

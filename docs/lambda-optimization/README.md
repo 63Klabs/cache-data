@@ -114,7 +114,7 @@ The recommended pattern for cache-data is to implement initialization in a separ
 ```javascript
 // config.js
 const { 
-  tools: {AppConfig, CachedSSMParameter, CachedParameterSecrets},
+  tools: {AppConfig, CachedSsmParameter, CachedParameterSecrets},
   cache: {Cache, CacheableDataAccess} } = require('@63klabs/cache-data');
 
 class Config extends AppConfig {
@@ -125,7 +125,7 @@ class Config extends AppConfig {
 
     // Cache settings
     Cache.init({
-      secureDataKey: new CachedSSMParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
+      secureDataKey: new CachedSsmParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
       useInMemoryCache: true, // CACHE_USE_IN_MEMORY
     });
 

@@ -417,7 +417,7 @@ When creating tests:
 
 ## Comparison with Other Modules
 
-- **APIRequest.class.js**: 20 existing tests
+- **ApiRequest.class.js**: 20 existing tests
 - **dao-endpoint.js**: 8 existing tests
 - **AWS.classes.js**: 0 existing tests (CRITICAL GAP)
 

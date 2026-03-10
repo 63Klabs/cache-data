@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan breaks down the enhancement of the APIRequest class into discrete, manageable tasks. The implementation will add pagination, retry logic, and improved X-Ray subsegment tracking while maintaining complete backwards compatibility.
+This implementation plan breaks down the enhancement of the ApiRequest class into discrete, manageable tasks. The implementation will add pagination, retry logic, and improved X-Ray subsegment tracking while maintaining complete backwards compatibility.
 
 ## Tasks
 
@@ -76,7 +76,7 @@ This implementation plan breaks down the enhancement of the APIRequest class int
     - Update note to include offset
     - Disable pagination for sub-requests (prevent infinite loops)
     - Keep retry configuration
-    - Create new APIRequest instance
+    - Create new ApiRequest instance
     - Call send() and return response
     - _Requirements: 1.1, 1.3_
   
@@ -104,7 +104,7 @@ This implementation plan breaks down the enhancement of the APIRequest class int
 
 - [x] 4. Enhance X-Ray subsegment tracking
   - [x] 4.1 Update send_get() method for unique subsegments
-    - Change subsegment name to include timestamp: `APIRequest/${host}/${Date.now()}`
+    - Change subsegment name to include timestamp: `ApiRequest/${host}/${Date.now()}`
     - Add retry configuration to subsegment metadata (if enabled)
     - Add pagination configuration to subsegment metadata (if enabled)
     - Call _handleRetries() instead of direct _httpGetExecute()
@@ -239,7 +239,7 @@ This implementation plan breaks down the enhancement of the APIRequest class int
     - Provide examples of X-Ray traces
     - _Requirements: 3.1-3.10_
   
-  - [x] 8.4 Update APIRequest README/documentation
+  - [x] 8.4 Update ApiRequest README/documentation
     - Add pagination section
     - Add retry section
     - Add X-Ray enhancements section

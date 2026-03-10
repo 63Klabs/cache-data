@@ -1,8 +1,8 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import APIRequest from '../../src/lib/tools/APIRequest.class.js';
+import ApiRequest from '../../src/lib/tools/ApiRequest.class.js';
 import https from 'https';
 
-describe('APIRequest Retry Logic', () => {
+describe('ApiRequest Retry Logic', () => {
 	
 	let mockRequest;
 	let mockResponse;
@@ -79,7 +79,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(3); // 1 initial + 2 retries
@@ -108,7 +108,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(1); // Only initial attempt
@@ -150,7 +150,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(2); // 1 initial + 1 retry
@@ -207,7 +207,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(2); // 1 initial + 1 retry
@@ -246,7 +246,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(2); // 1 initial + 1 retry
@@ -284,7 +284,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(2); // 1 initial + 1 retry
@@ -320,7 +320,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(1); // Only initial attempt
@@ -355,7 +355,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(1); // Only initial attempt
@@ -398,7 +398,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(2); // 1 initial + 1 retry
@@ -434,7 +434,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(3); // 1 initial + 2 retries
@@ -477,7 +477,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(3); // 1 initial + 2 retries
@@ -518,7 +518,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			// Note: Metadata will be added in a future task
@@ -554,7 +554,7 @@ describe('APIRequest Retry Logic', () => {
 				return mockRequest;
 			});
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(attemptCount).toBe(1); // Only initial attempt

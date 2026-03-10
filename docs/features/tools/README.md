@@ -18,7 +18,7 @@ The tools module provides a comprehensive set of utility classes and functions f
 
 ### Request and Response Handling
 
-- **[APIRequest](#apirequest-class)**: HTTP request handling
+- **[ApiRequest](#apirequest-class)**: HTTP request handling
 - **[ClientRequest](#clientrequest-class)**: Client request parsing and validation
 - **[RequestInfo](#requestinfo-class)**: Request information extraction
 - **[Response](#response-class)**: HTTP response formatting
@@ -661,12 +661,12 @@ These functions provide an interface to the [AWS Parameters and Secrets Lambda E
 
 You will want to set your secrets and parameters during an initialization phase outside of your Lambda handler. This is typically done during a configuration initialization.
 
-### CachedSSMParameter
+### CachedSsmParameter
 
 ```javascript
-const { tools: {CachedSSMParameter} } = require('@63klabs/cache-data');
+const { tools: {CachedSsmParameter} } = require('@63klabs/cache-data');
 
-const apiKey = new CachedSSMParameter('/path/to/parameter/paramName', {
+const apiKey = new CachedSsmParameter('/path/to/parameter/paramName', {
   refreshAfter: 43200 // Cache for 12 hours
 });
 
@@ -691,16 +691,16 @@ const password = await dbPassword.getValue();
 
 ### CachedParameterSecrets
 
-When you create a `new CachedSecret` or `new CachedSSMParameter` they are automatically added to the CachedParameterSecrets. However, if you want to manage them as a group you can do so as well.
+When you create a `new CachedSecret` or `new CachedSsmParameter` they are automatically added to the CachedParameterSecrets. However, if you want to manage them as a group you can do so as well.
 
 Manage multiple cached parameters and secrets:
 
 ```javascript
-const { tools: {CachedParameterSecrets, CachedSSMParameter, CachedSecret} } = require('@63klabs/cache-data');
+const { tools: {CachedParameterSecrets, CachedSsmParameter, CachedSecret} } = require('@63klabs/cache-data');
 
 const secrets = new CachedParameterSecrets();
 
-secrets.add(new CachedSSMParameter({ name: '/app/apiKey' }));
+secrets.add(new CachedSsmParameter({ name: '/app/apiKey' }));
 secrets.add(new CachedSecret({ name: 'prod/db/password' }));
 
 // Prime all at once
@@ -797,16 +797,16 @@ delete config.timeout; // Error!
 
 ## Request and Response Classes
 
-### APIRequest Class
+### ApiRequest Class
 
 Handle HTTP requests to external APIs with automatic pagination, retry logic, and X-Ray tracing.
 
 #### Basic Usage
 
 ```javascript
-const { tools: {APIRequest} } = require('@63klabs/cache-data');
+const { tools: {ApiRequest} } = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   method: 'GET',
   uri: 'https://api.example.com/data',
   headers: { 'Authorization': 'Bearer token' }
@@ -821,9 +821,9 @@ console.log(response.statusCode, response.body);
 Automatically fetch all pages from paginated APIs:
 
 ```javascript
-const { tools: {APIRequest} } = require('@63klabs/cache-data');
+const { tools: {ApiRequest} } = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/users',
   parameters: {
@@ -859,9 +859,9 @@ if (response.metadata?.pagination?.occurred) {
 Automatically retry failed requests with configurable conditions:
 
 ```javascript
-const { tools: {APIRequest} } = require('@63klabs/cache-data');
+const { tools: {ApiRequest} } = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -891,9 +891,9 @@ if (response.metadata?.retries?.occurred) {
 Automatic AWS X-Ray tracing for monitoring and debugging:
 
 ```javascript
-const { tools: {APIRequest} } = require('@63klabs/cache-data');
+const { tools: {ApiRequest} } = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch analytics data',  // Appears in X-Ray
@@ -927,9 +927,9 @@ const response = await request.send();
 Use pagination, retry, and X-Ray together:
 
 ```javascript
-const { tools: {APIRequest} } = require('@63klabs/cache-data');
+const { tools: {ApiRequest} } = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/orders',
   parameters: {
@@ -1199,7 +1199,7 @@ class Config extends AppConfig {
 
       // Cache settings
       Cache.init({
-        secureDataKey: new CachedSSMParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
+        secureDataKey: new CachedSsmParameter(process.env.PARAM_STORE_PATH+'CacheData_SecureDataKey', {refreshAfter: 43200}), // 12 hours
       });
 
     } catch (error) {
@@ -1378,7 +1378,7 @@ For detailed API documentation including all methods, parameters, and return typ
 - **Timer class**: `src/lib/tools/Timer.class.js`
 - **DebugAndLog class**: `src/lib/tools/DebugAndLog.class.js`
 - **Response classes**: `src/lib/tools/Response.class.js`, `src/lib/tools/ResponseDataModel.class.js`
-- **Request classes**: `src/lib/tools/APIRequest.class.js`, `src/lib/tools/ClientRequest.class.js`, `src/lib/tools/RequestInfo.class.js`
+- **Request classes**: `src/lib/tools/ApiRequest.class.js`, `src/lib/tools/ClientRequest.class.js`, `src/lib/tools/RequestInfo.class.js`
 - **AWS classes**: `src/lib/tools/AWS.classes.js`
 - **Parameter/Secret classes**: `src/lib/tools/CachedParametersSecrets.classes.js`
 - **Connection classes**: `src/lib/tools/Connections.classes.js`

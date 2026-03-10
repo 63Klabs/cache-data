@@ -3,7 +3,7 @@
 ## Overview
 
 This specification covers the migration of Mocha tests to Jest for three critical modules:
-- APIRequest.class.js
+- ApiRequest.class.js
 - dao-endpoint.js
 - AWS.classes.js
 
@@ -15,7 +15,7 @@ All tasks have been completed successfully. Both Mocha and Jest test suites are 
 
 ## What Was Migrated
 
-### 1. APIRequest.class.js Tests
+### 1. ApiRequest.class.js Tests
 **Source:** `test/endpoint/api-request-tests.mjs` (Mocha)  
 **Target:** `test/endpoint/api-request-tests.jest.mjs` (Jest)
 
@@ -205,7 +205,7 @@ All property tests are located in `test/migration/property/`.
 - [Requirements Document](requirements.md)
 - [Design Document](design.md)
 - [Implementation Tasks](tasks.md)
-- [APIRequest Analysis](analysis-2.1-api-request.md)
+- [ApiRequest Analysis](analysis-2.1-api-request.md)
 - [dao-endpoint Analysis](analysis-2.2-dao-endpoint.md)
 - [AWS.classes Analysis](analysis-2.3-aws-classes.md)
 

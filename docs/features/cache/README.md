@@ -210,13 +210,13 @@ cache.Cache.init({
 }); // Use SSM Parameter store or Secrets Manager to load the key! See tools.CachedParameterSecrets
 ```
 
-Using `tools.CachedSSMParameter`:
+Using `tools.CachedSsmParameter`:
 
 ```javascript
 const { cache, tools } = require('@63klabs/cache-data');
 
 cache.Cache.init({
-  secureDataKey: new CachedSSMParameter('/param/store/path/CacheData_SecureDataKey')
+  secureDataKey: new CachedSsmParameter('/param/store/path/CacheData_SecureDataKey')
 });
 ```
 
@@ -231,7 +231,7 @@ const {cache: {Cache}} = require('@63klabs/cache-data');
 
 Cache.init({
   // Required parameters
-  secureDataKey: new CachedSSMParameter('/param/store/path/CacheData_SecureDataKey'), // no environment var
+  secureDataKey: new CachedSsmParameter('/param/store/path/CacheData_SecureDataKey'), // no environment var
 
   // Required parameters if no corresponding environment variable set
   dynamoDbTable: 'some_table', // CACHE_DATA_DYNAMO_DB_TABLE

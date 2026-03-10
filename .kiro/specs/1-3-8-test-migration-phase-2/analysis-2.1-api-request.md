@@ -1,13 +1,13 @@
-# APIRequest.class Test Coverage Analysis
+# ApiRequest.class Test Coverage Analysis
 
 ## Test Count Summary
 
 **Total Test Cases in test/endpoint/api-request-tests.mjs: 20**
 
 ### Breakdown by Test Suite:
-- **Call test endpoint using tools APIRequest class**: 10 tests
+- **Call test endpoint using tools ApiRequest class**: 10 tests
 - **Test ConnectionAuthentication class**: 8 tests
-- **Test APIRequest class**: 2 tests
+- **Test ApiRequest class**: 2 tests
 
 ## Test Coverage Areas
 
@@ -63,12 +63,12 @@
 - ✅ Body-based authentication
 - ✅ Body authentication with existing body
 
-### 9. APIRequest Class Methods (Covered)
+### 9. ApiRequest Class Methods (Covered)
 - ✅ Getter methods (getMethod, getBody, getTimeOutInMilliseconds)
 - ✅ Setter methods (constructor)
 - ✅ Minimum timeout validation
 
-## Untested Code Paths in src/lib/tools/APIRequest.class.js
+## Untested Code Paths in src/lib/tools/ApiRequest.class.js
 
 ### Critical Untested Paths:
 

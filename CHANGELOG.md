@@ -92,14 +92,14 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
   - Production dependencies remain secure (0 vulnerabilities)
 
 ### Added
-- **APIRequest Pagination, Retry, and X-Ray Enhancements** [Spec: 1-3-8-api-request-pagination-retries-xray](.kiro/specs/1-3-8-api-request-pagination-retries-xray/) addresses [#171](https://github.com/63Klabs/cache-data/issues/171), [#172](https://github.com/63Klabs/cache-data/issues/172), [#173](https://github.com/63Klabs/cache-data/issues/173)
-  - **Automatic Pagination**: APIRequest now supports automatic pagination for APIs that return paginated results
+- **ApiRequest Pagination, Retry, and X-Ray Enhancements** [Spec: 1-3-8-api-request-pagination-retries-xray](.kiro/specs/1-3-8-api-request-pagination-retries-xray/) addresses [#171](https://github.com/63Klabs/cache-data/issues/171), [#172](https://github.com/63Klabs/cache-data/issues/172), [#173](https://github.com/63Klabs/cache-data/issues/173)
+  - **Automatic Pagination**: ApiRequest now supports automatic pagination for APIs that return paginated results
     - Configurable pagination labels for different API response structures
     - Batch processing for concurrent page requests
     - Support for both offset-based and token-based pagination
     - Automatic result combination into single response
     - Pagination metadata in response (total pages, total items, incomplete status)
-  - **Automatic Retry Logic**: APIRequest now includes built-in retry functionality for transient failures
+  - **Automatic Retry Logic**: ApiRequest now includes built-in retry functionality for transient failures
     - Configurable retry attempts (default: 1 retry after initial attempt)
     - Automatic retry on network errors, empty responses, parse errors, and 5xx status codes
     - Optional retry on 4xx status codes (disabled by default)
@@ -275,9 +275,9 @@ While `DebugAndLog` has also been optimized, there is no change to its results. 
 
 ## 1.1.4 (2025-03-18) Added XRay sub-segment for API requests
 
-- Feature: Added XRay Segment for APIRequest class
+- Feature: Added XRay Segment for ApiRequest class
 
-When using the tools.APIRequest class, each remote request is now annotated and provided meta data.
+When using the tools.ApiRequest class, each remote request is now annotated and provided meta data.
 
 ## 1.1.3 (2025-02-17) Additional Options for Sending Parameters via Query String
 

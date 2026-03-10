@@ -1,13 +1,13 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import https from 'https';
 
-describe('APIRequest - Integration Tests', () => {
-	let APIRequest;
+describe('ApiRequest - Integration Tests', () => {
+	let ApiRequest;
 
 	beforeEach(async () => {
 		// Import fresh modules for each test
-		const apiModule = await import('../../src/lib/tools/APIRequest.class.js');
-		APIRequest = apiModule.default;
+		const apiModule = await import('../../src/lib/tools/ApiRequest.class.js');
+		ApiRequest = apiModule.default;
 	});
 
 	afterEach(() => {
@@ -99,7 +99,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -199,7 +199,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -274,7 +274,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify pagination worked correctly
@@ -342,7 +342,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify retry worked correctly
@@ -429,7 +429,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Verify both features worked correctly
@@ -519,7 +519,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -592,7 +592,7 @@ describe('APIRequest - Integration Tests', () => {
 				parameters: { limit: 10 }
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -668,7 +668,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Should return partial results
@@ -760,7 +760,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -826,7 +826,7 @@ describe('APIRequest - Integration Tests', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Should return partial results

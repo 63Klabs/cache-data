@@ -1,11 +1,11 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import https from 'https';
 
-// Import APIRequest
+// Import ApiRequest
 const tools = await import('../../src/lib/tools/index.js');
-const APIRequest = tools.default.APIRequest;
+const ApiRequest = tools.default.ApiRequest;
 
-describe('APIRequest X-Ray Enhancements', () => {
+describe('ApiRequest X-Ray Enhancements', () => {
 	beforeEach(() => {
 		// Mock https.request to return successful responses
 		jest.spyOn(https, 'request').mockImplementation((uri, options, callback) => {
@@ -51,8 +51,8 @@ describe('APIRequest X-Ray Enhancements', () => {
 				method: 'GET'
 			};
 
-			const apiRequest1 = new APIRequest(request1);
-			const apiRequest2 = new APIRequest(request2);
+			const apiRequest1 = new ApiRequest(request1);
+			const apiRequest2 = new ApiRequest(request2);
 
 			const response1 = await apiRequest1.send();
 			const response2 = await apiRequest2.send();
@@ -73,7 +73,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -92,7 +92,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -135,7 +135,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Should succeed after retry
@@ -156,7 +156,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -217,7 +217,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Should succeed with combined results
@@ -243,7 +243,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -307,7 +307,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Should succeed with paginated results
@@ -367,7 +367,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Should have made multiple requests
@@ -392,7 +392,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			expect(response.success).toBe(true);
@@ -456,7 +456,7 @@ describe('APIRequest X-Ray Enhancements', () => {
 				}
 			};
 
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 
 			// Should succeed after retry and pagination

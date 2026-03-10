@@ -1,8 +1,8 @@
-# APIRequest X-Ray Tracking Guide
+# ApiRequest X-Ray Tracking Guide
 
 ## Overview
 
-The APIRequest class provides enhanced AWS X-Ray tracing for monitoring and debugging API requests in Lambda functions. X-Ray subsegments track individual API calls with detailed metadata about retries, pagination, and request/response information, enabling comprehensive observability of external API interactions.
+The ApiRequest class provides enhanced AWS X-Ray tracing for monitoring and debugging API requests in Lambda functions. X-Ray subsegments track individual API calls with detailed metadata about retries, pagination, and request/response information, enabling comprehensive observability of external API interactions.
 
 ## What is AWS X-Ray?
 
@@ -14,9 +14,9 @@ AWS X-Ray is a distributed tracing service that helps you analyze and debug dist
 - **Service maps**: Visualize application architecture and dependencies
 - **Subsegments**: Track individual operations within a request
 
-## X-Ray in APIRequest
+## X-Ray in ApiRequest
 
-APIRequest automatically creates X-Ray subsegments for each API request when running in a Lambda environment with X-Ray enabled. These subsegments include:
+ApiRequest automatically creates X-Ray subsegments for each API request when running in a Lambda environment with X-Ray enabled. These subsegments include:
 
 - **Unique naming**: Each request gets a unique subsegment name
 - **Request metadata**: Method, host, path, and custom notes
@@ -32,9 +32,9 @@ APIRequest automatically creates X-Ray subsegments for each API request when run
 X-Ray tracking is automatic when your Lambda function has X-Ray enabled:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch user data'  // Appears in X-Ray subsegment
@@ -43,7 +43,7 @@ const request = new APIRequest({
 const response = await request.send();
 
 // X-Ray subsegment automatically created with:
-// - Unique name: APIRequest/api.example.com/1234567890
+// - Unique name: ApiRequest/api.example.com/1234567890
 // - Annotations: method, host, path, note, status code
 // - Timing: Request duration
 ```
@@ -83,23 +83,23 @@ Resources:
 
 ### Unique Subsegment Names
 
-Each APIRequest creates a unique subsegment name to distinguish multiple requests to the same endpoint:
+Each ApiRequest creates a unique subsegment name to distinguish multiple requests to the same endpoint:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request1 = new APIRequest({
+const request1 = new ApiRequest({
   host: 'api.example.com',
   path: '/users'
 });
 
-const request2 = new APIRequest({
+const request2 = new ApiRequest({
   host: 'api.example.com',
   path: '/users'
 });
 
-await request1.send();  // Subsegment: APIRequest/api.example.com/1234567890
-await request2.send();  // Subsegment: APIRequest/api.example.com/1234567891
+await request1.send();  // Subsegment: ApiRequest/api.example.com/1234567890
+await request2.send();  // Subsegment: ApiRequest/api.example.com/1234567891
 
 // Different timestamps ensure unique names
 ```
@@ -107,10 +107,10 @@ await request2.send();  // Subsegment: APIRequest/api.example.com/1234567891
 ### Subsegment Name Format
 
 ```
-APIRequest/{host}/{timestamp}
+ApiRequest/{host}/{timestamp}
 ```
 
-Example: `APIRequest/api.example.com/1705234567890`
+Example: `ApiRequest/api.example.com/1705234567890`
 
 This ensures that:
 - Multiple requests to the same endpoint are tracked separately
@@ -123,12 +123,12 @@ Annotations are indexed fields that can be used to filter and search traces in X
 
 ### Standard Annotations
 
-Every APIRequest subsegment includes these annotations:
+Every ApiRequest subsegment includes these annotations:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   method: 'GET',
   host: 'api.example.com',
   path: '/users',
@@ -150,9 +150,9 @@ const response = await request.send();
 When retries occur, additional annotations are added:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -172,9 +172,9 @@ const response = await request.send();
 When pagination occurs, additional annotations are added:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -209,9 +209,9 @@ Metadata provides detailed information about the request but is not indexed for 
 When retry or pagination is enabled, configuration is stored in metadata:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   retry: {
@@ -268,9 +268,9 @@ Detailed pagination information is stored in metadata:
 ### Example 1: Basic X-Ray Tracking
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/users',
   note: 'Fetch users for dashboard'
@@ -279,7 +279,7 @@ const request = new APIRequest({
 const response = await request.send();
 
 // X-Ray subsegment created with:
-// Name: APIRequest/api.example.com/1705234567890
+// Name: ApiRequest/api.example.com/1705234567890
 // Annotations:
 //   - request_method: GET
 //   - request_host: api.example.com
@@ -292,9 +292,9 @@ const response = await request.send();
 ### Example 2: X-Ray with Retry Tracking
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch analytics data',
@@ -317,9 +317,9 @@ const response = await request.send();
 ### Example 3: X-Ray with Pagination Tracking
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/orders',
   note: 'Fetch all orders',
@@ -343,9 +343,9 @@ const response = await request.send();
 ### Example 4: X-Ray with Retry + Pagination
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/logs',
   note: 'Fetch application logs',
@@ -375,7 +375,7 @@ const response = await request.send();
 ### Example 5: Multiple Requests with Unique Subsegments
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 // Make multiple requests to the same endpoint
 const requests = [
@@ -387,7 +387,7 @@ const requests = [
 const responses = []; // we will submit and collect all responses async
 
 for (const config of requests) {
-  const request = new APIRequest({
+  const request = new ApiRequest({
     host: 'api.example.com',
     ...config
   });
@@ -398,9 +398,9 @@ for (const config of requests) {
 await Promise.all(responses); // wait for all to complete
 
 // X-Ray creates three unique subsegments:
-// 1. APIRequest/api.example.com/1705234567890
-// 2. APIRequest/api.example.com/1705234567891
-// 3. APIRequest/api.example.com/1705234567892
+// 1. ApiRequest/api.example.com/1705234567890
+// 2. ApiRequest/api.example.com/1705234567891
+// 3. ApiRequest/api.example.com/1705234567892
 
 // Each can be traced independently in X-Ray console
 ```
@@ -413,7 +413,7 @@ await Promise.all(responses); // wait for all to complete
 2. Navigate to "Traces"
 3. Filter by service name (your Lambda function)
 4. Click on a trace to see details
-5. Expand subsegments to see APIRequest details
+5. Expand subsegments to see ApiRequest details
 
 ### Filtering Traces
 
@@ -443,7 +443,7 @@ annotation.request_host = "api.example.com" AND annotation.response_status >= 50
 
 The X-Ray service map shows:
 - Your Lambda function
-- External API dependencies (from APIRequest subsegments)
+- External API dependencies (from ApiRequest subsegments)
 - Request volume and error rates
 - Average latency
 
@@ -452,9 +452,9 @@ The X-Ray service map shows:
 When pagination occurs, each page request creates its own subsegment:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch all data',
@@ -466,11 +466,11 @@ const request = new APIRequest({
 const response = await request.send();
 
 // X-Ray trace structure:
-// └─ APIRequest/api.example.com/1705234567890 (main request)
-//    ├─ APIRequest/api.example.com/1705234567891 [Offset 200]
-//    ├─ APIRequest/api.example.com/1705234567892 [Offset 400]
-//    ├─ APIRequest/api.example.com/1705234567893 [Offset 600]
-//    └─ APIRequest/api.example.com/1705234567894 [Offset 800]
+// └─ ApiRequest/api.example.com/1705234567890 (main request)
+//    ├─ ApiRequest/api.example.com/1705234567891 [Offset 200]
+//    ├─ ApiRequest/api.example.com/1705234567892 [Offset 400]
+//    ├─ ApiRequest/api.example.com/1705234567893 [Offset 600]
+//    └─ ApiRequest/api.example.com/1705234567894 [Offset 800]
 
 // Each subsegment includes:
 // - Unique timestamp
@@ -536,9 +536,9 @@ Compare request duration with and without pagination:
 When a request fails, X-Ray provides:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch data',
@@ -563,9 +563,9 @@ const response = await request.send();
 When pagination fails partway through:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -617,7 +617,7 @@ Resources:
   MySamplingRule:
     Type: AWS::XRay::SamplingRule
     Properties:
-      RuleName: APIRequestSampling
+      RuleName: ApiRequestSampling
       Priority: 1000
       Version: 1
       ReservoirSize: 1
@@ -635,9 +635,9 @@ Resources:
 Correlate X-Ray traces with CloudWatch logs:
 
 ```javascript
-const {tools: {APIRequest, DebugAndLog}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest, DebugAndLog}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetch data'
@@ -685,8 +685,8 @@ X-Ray pricing is based on:
 
 ## Related Documentation
 
-- [APIRequest Pagination Guide](./api-request-pagination.md) - Automatic pagination functionality
-- [APIRequest Retry Guide](./api-request-retry.md) - Automatic retry functionality
+- [ApiRequest Pagination Guide](./api-request-pagination.md) - Automatic pagination functionality
+- [ApiRequest Retry Guide](./api-request-retry.md) - Automatic retry functionality
 - [Tools Module](./README.md) - Complete tools documentation
 - [AWS X-Ray Documentation](https://docs.aws.amazon.com/xray/) - Official AWS X-Ray docs
 - [X-Ray SDK for Node.js](https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-nodejs.html) - X-Ray SDK documentation

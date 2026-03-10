@@ -2,13 +2,13 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import fc from 'fast-check';
 import https from 'https';
 
-describe('APIRequest - Metadata Property Tests', () => {
-	let APIRequest;
+describe('ApiRequest - Metadata Property Tests', () => {
+	let ApiRequest;
 
 	beforeEach(async () => {
 		// Import fresh module for each test
-		const module = await import('../../../src/lib/tools/APIRequest.class.js');
-		APIRequest = module.default;
+		const module = await import('../../../src/lib/tools/ApiRequest.class.js');
+		ApiRequest = module.default;
 		jest.clearAllMocks();
 	});
 
@@ -103,7 +103,7 @@ describe('APIRequest - Metadata Property Tests', () => {
 							} : { enabled: false }
 						};
 
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						const response = await apiRequest.send();
 
 						// Property: Metadata should only be present when retries or pagination occur
@@ -198,7 +198,7 @@ describe('APIRequest - Metadata Property Tests', () => {
 							} : { enabled: false }
 						};
 
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						const response = await apiRequest.send();
 
 						// Property: Standard response fields must always be present

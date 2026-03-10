@@ -2,24 +2,24 @@
 
 ## Overview
 
-This design enhances the APIRequest class with three new capabilities: automatic pagination, retry logic, and improved AWS X-Ray subsegment tracking. These features are currently implemented in production DAO classes but need to be moved into APIRequest for reusability while maintaining complete backwards compatibility.
+This design enhances the ApiRequest class with three new capabilities: automatic pagination, retry logic, and improved AWS X-Ray subsegment tracking. These features are currently implemented in production DAO classes but need to be moved into ApiRequest for reusability while maintaining complete backwards compatibility.
 
-The design follows the existing APIRequest patterns and ensures that all current functionality remains unchanged when the new features are not used.
+The design follows the existing ApiRequest patterns and ensures that all current functionality remains unchanged when the new features are not used.
 
 ## Architecture
 
-### Current APIRequest Structure
+### Current ApiRequest Structure
 
-The APIRequest class currently handles:
+The ApiRequest class currently handles:
 - HTTP/HTTPS request construction from connection objects
 - Query string building with support for array parameters
 - Redirect handling (up to MAX_REDIRECTS)
 - Basic X-Ray subsegment creation
 - Response formatting
 
-### Enhanced APIRequest Structure
+### Enhanced ApiRequest Structure
 
-The enhanced APIRequest will add:
+The enhanced ApiRequest will add:
 - **Pagination Handler**: Internal method to handle paginated responses
 - **Retry Handler**: Internal method to handle retry logic
 - **Enhanced X-Ray Tracking**: Unique subsegments for each request with metadata
@@ -28,7 +28,7 @@ The enhanced APIRequest will add:
 
 1. **Backwards Compatibility**: All new features are opt-in via configuration
 2. **Single Responsibility**: Each enhancement is a separate concern
-3. **Existing Patterns**: Follow current APIRequest patterns for consistency
+3. **Existing Patterns**: Follow current ApiRequest patterns for consistency
 4. **No Breaking Changes**: Default behavior remains unchanged
 5. **Metadata Return**: Return metadata about retries and pagination for calling code
 
@@ -461,8 +461,8 @@ async _fetchPage(offset, offsetLabel, limitLabel) {
         retry: this.#request.retry
     };
     
-    // Create new APIRequest instance for this page
-    const pageApiRequest = new APIRequest(pageRequest);
+    // Create new ApiRequest instance for this page
+    const pageApiRequest = new ApiRequest(pageRequest);
     return await pageApiRequest.send();
 }
 ```
@@ -477,7 +477,7 @@ The existing X-Ray subsegment creation will be enhanced to:
 ```javascript
 // In send_get() method, enhance subsegment creation:
 
-const subsegmentName = `APIRequest/${this.getHost()}/${Date.now()}`;
+const subsegmentName = `ApiRequest/${this.getHost()}/${Date.now()}`;
 
 await AWSXRay.captureAsyncFunc(subsegmentName, async (subsegment) => {
     subsegment.namespace = 'remote';
@@ -699,19 +699,19 @@ Based on the prework analysis, here are the correctness properties for this feat
 ### Backwards Compatibility Properties
 
 **Property 20: Constructor Compatibility**
-*For any* request object that worked with the previous APIRequest version, the constructor should accept it without errors.
+*For any* request object that worked with the previous ApiRequest version, the constructor should accept it without errors.
 **Validates: Requirements 4.1**
 
 **Property 21: Response Format Compatibility**
-*For any* request without pagination or retry options, the response format should match the previous APIRequest version exactly.
+*For any* request without pagination or retry options, the response format should match the previous ApiRequest version exactly.
 **Validates: Requirements 4.2**
 
 **Property 22: Static Method Compatibility**
-*For any* call to APIRequest.responseFormat(), the method should work identically to the previous version.
+*For any* call to ApiRequest.responseFormat(), the method should work identically to the previous version.
 **Validates: Requirements 4.3**
 
 **Property 23: Public API Compatibility**
-*For any* public method on APIRequest, the method signature and behavior should match the previous version when new features are not used.
+*For any* public method on ApiRequest, the method signature and behavior should match the previous version when new features are not used.
 **Validates: Requirements 4.4**
 
 ### Configuration Properties
@@ -829,7 +829,7 @@ node --experimental-vm-modules node_modules/jest/bin/jest.js test/request/api-re
 - Mock X-Ray subsegments for testing
 - Mock API responses with various pagination structures
 - Mock network errors and timeouts
-- Do NOT modify existing APIRequest tests (Mocha or Jest versions)
+- Do NOT modify existing ApiRequest tests (Mocha or Jest versions)
 
 ### Integration Testing
 

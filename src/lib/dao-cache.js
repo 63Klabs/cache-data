@@ -510,7 +510,7 @@ class CacheData {
 	 * @param {string} [parameters.dynamoDbTable] DynamoDB table name (or use CACHE_DATA_DYNAMO_DB_TABLE env var)
 	 * @param {string} [parameters.s3Bucket] S3 bucket name (or use CACHE_DATA_S3_BUCKET env var)
 	 * @param {string} [parameters.secureDataAlgorithm='aes-256-cbc'] Encryption algorithm (or use CACHE_DATA_SECURE_DATA_ALGORITHM env var)
-	 * @param {string|Buffer|tools.Secret|tools.CachedSSMParameter|tools.CachedSecret} parameters.secureDataKey Encryption key (required, no env var for security)
+	 * @param {string|Buffer|tools.Secret|tools.CachedSsmParameter|tools.CachedSecret} parameters.secureDataKey Encryption key (required, no env var for security)
 	 * @param {number} [parameters.DynamoDbMaxCacheSize_kb=10] Max size in KB for DynamoDB storage (or use CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB env var)
 	 * @param {number} [parameters.purgeExpiredCacheEntriesAfterXHours=24] Hours after expiration to purge entries (or use CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS env var)
 	 * @param {string} [parameters.timeZoneForInterval='Etc/UTC'] Timezone for interval calculations (or use CACHE_DATA_TIME_ZONE_FOR_INTERVAL env var)
@@ -1513,7 +1513,7 @@ class Cache {
 	 * @param {string} parameters.dynamoDbTable Can also be set with environment variable CACHE_DATA_DYNAMO_DB_TABLE
 	 * @param {string} parameters.s3Bucket Can also be set with environment variable CACHE_DATA_S3_BUCKET
 	 * @param {string} parameters.secureDataAlgorithm Can also be set with environment variable CACHE_DATA_SECURE_DATA_ALGORITHM
-	 * @param {string|Buffer|tools.Secret|tools.CachedSSMParameter|tools.CachedSecret} parameters.secureDataKey Must be passed, will not accept an environment variable for security reasons.
+	 * @param {string|Buffer|tools.Secret|tools.CachedSsmParameter|tools.CachedSecret} parameters.secureDataKey Must be passed, will not accept an environment variable for security reasons.
 	 * @param {number} parameters.DynamoDbMaxCacheSize_kb Can also be set with environment variable CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB
 	 * @param {number} parameters.purgeExpiredCacheEntriesAfterXHours Can also be set with environment variable CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS
 	 * @param {string} parameters.timeZoneForInterval Can also be set with environment variable CACHE_DATA_TIME_ZONE_FOR_INTERVAL

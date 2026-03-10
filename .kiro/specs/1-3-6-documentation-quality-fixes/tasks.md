@@ -43,7 +43,7 @@ This implementation plan systematically fixes 186+ documentation quality issues 
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
 
 - [x] 2. Remove hallucinated parameters from Tools module (36 issues)
-  - [x] 2.1 Fix APIRequest class hallucinated parameters
+  - [x] 2.1 Fix ApiRequest class hallucinated parameters
     - Parse constructor and method signatures
     - Identify @param tags that don't match actual parameters
     - Remove hallucinated @param tags

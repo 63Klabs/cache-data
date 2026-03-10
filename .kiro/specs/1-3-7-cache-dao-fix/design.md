@@ -23,7 +23,7 @@ Cache.read()
   → getHeader() returns undefined (key exists but value is undefined)
   → CacheableDataAccess checks: getLastModified() !== null (passes!)
   → connection.headers['if-modified-since'] = undefined
-  → APIRequest sends request with undefined header value
+  → ApiRequest sends request with undefined header value
   → HTTP error: "Invalid value 'undefined' for header"
 ```
 
@@ -37,7 +37,7 @@ Cache.read()
   → getHeader() returns null
   → CacheableDataAccess checks: getLastModified() !== null (fails)
   → Header assignment skipped
-  → APIRequest sends request without if-modified-since header
+  → ApiRequest sends request without if-modified-since header
   → Request succeeds
 ```
 
@@ -385,9 +385,9 @@ export default {
 4. **CacheableDataAccess.getData():**
    - Missing: header assignment with undefined values
    - Missing: header assignment with null values
-   - Missing: integration with APIRequest
+   - Missing: integration with ApiRequest
 
-5. **APIRequest:**
+5. **ApiRequest:**
    - Missing: validation of header values before HTTP request
    - Missing: error handling for invalid header types
 
@@ -402,7 +402,7 @@ export default {
 
 - **Integration Tests:** 10-12 tests
   - Cache → CacheableDataAccess: 4 tests
-  - CacheableDataAccess → APIRequest: 4 tests
+  - CacheableDataAccess → ApiRequest: 4 tests
   - End-to-end with AWS mocks: 4 tests
 
 - **Property-Based Tests:** 5 tests

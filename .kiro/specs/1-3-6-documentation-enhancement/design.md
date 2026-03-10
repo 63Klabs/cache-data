@@ -69,7 +69,7 @@ From `src/lib/dao-endpoint.js`:
 - Any other exported functions
 
 From `src/lib/tools/index.js`:
-- All exported classes: `Timer`, `DebugAndLog`, `Response`, `ResponseDataModel`, `ClientRequest`, `RequestInfo`, `APIRequest`, `ImmutableObject`, `CachedParameterSecrets`, `CachedParameterSecret`, `CachedSSMParameter`, `CachedSecret`, `Connections`, `Connection`, `ConnectionRequest`, `ConnectionAuthentication`
+- All exported classes: `Timer`, `DebugAndLog`, `Response`, `ResponseDataModel`, `ClientRequest`, `RequestInfo`, `ApiRequest`, `ImmutableObject`, `CachedParameterSecrets`, `CachedParameterSecret`, `CachedSsmParameter`, `CachedSecret`, `Connections`, `Connection`, `ConnectionRequest`, `ConnectionAuthentication`
 - All exported functions: `printMsg`, `sanitize`, `obfuscate`, `hashThisData`
 - All exported response generators: `jsonGenericResponse`, `htmlGenericResponse`, `xmlGenericResponse`, `rssGenericResponse`, `textGenericResponse`
 - Configuration class: `_ConfigSuperClass`

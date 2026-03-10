@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
-import APIRequest from '../../src/lib/tools/APIRequest.class.js';
+import ApiRequest from '../../src/lib/tools/ApiRequest.class.js';
 
-describe('APIRequest Configuration Defaults and Merging', () => {
+describe('ApiRequest Configuration Defaults and Merging', () => {
 	
 	describe('Default Configuration', () => {
 		it('should apply default pagination configuration when not provided', () => {
@@ -10,7 +10,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				path: '/test'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.pagination).toBeDefined();
@@ -31,7 +31,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				path: '/test'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.retry).toBeDefined();
@@ -56,7 +56,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.pagination.enabled).toBe(true);
@@ -76,7 +76,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.pagination.enabled).toBe(true);
@@ -103,7 +103,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.pagination.enabled).toBe(true);
@@ -128,7 +128,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.retry.enabled).toBe(true);
@@ -147,7 +147,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.retry.enabled).toBe(true);
@@ -170,7 +170,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.retry.enabled).toBe(true);
@@ -195,7 +195,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.retry.retryOn.networkError).toBe(true);
@@ -221,7 +221,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			// Verify pagination
@@ -244,7 +244,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				method: 'GET'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.pagination.enabled).toBe(false);
@@ -263,7 +263,7 @@ describe('APIRequest Configuration Defaults and Merging', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.options.timeout).toBe(5000);

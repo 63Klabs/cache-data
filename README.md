@@ -134,13 +134,13 @@ console.log("API Response:", response.body);
 console.log("Status Code:", response.statusCode);
 ```
 
-### Using APIRequest with Pagination and Retry
+### Using ApiRequest with Pagination and Retry
 
 ```javascript
-const { tools: {APIRequest} } = require("@63klabs/cache-data");
+const { tools: {ApiRequest} } = require("@63klabs/cache-data");
 
 // Make a request with automatic pagination and retry
-const request = new tools.APIRequest({
+const request = new tools.ApiRequest({
   host: "api.example.com",
   path: "/users",
   parameters: {

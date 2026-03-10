@@ -1,15 +1,15 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import fc from 'fast-check';
-import APIRequest from '../../../src/lib/tools/APIRequest.class.js';
+import ApiRequest from '../../../src/lib/tools/ApiRequest.class.js';
 import https from 'https';
 
 /**
- * APIRequest Retry Property-Based Tests
+ * ApiRequest Retry Property-Based Tests
  * Feature: api-request-pagination-retries-xray
  * 
  * These tests validate universal properties of the retry logic across all valid inputs.
  */
-describe('APIRequest Retry - Property-Based Tests', () => {
+describe('ApiRequest Retry - Property-Based Tests', () => {
 	
 	let mockRequest;
 	let mockResponse;
@@ -91,7 +91,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							}
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						await apiRequest.send();
 						
 						// Total attempts should be initial + maxRetries
@@ -140,7 +140,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							retry: retryConfig
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						await apiRequest.send();
 						
 						expect(attemptCount).toBe(1);
@@ -185,7 +185,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							}
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						await apiRequest.send();
 						
 						expect(attemptCount).toBe(maxRetries + 1);
@@ -236,7 +236,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							}
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						await apiRequest.send();
 						
 						expect(attemptCount).toBe(maxRetries + 1);
@@ -287,7 +287,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							}
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						await apiRequest.send();
 						
 						expect(attemptCount).toBe(maxRetries + 1);
@@ -339,7 +339,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							}
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						await apiRequest.send();
 						
 						// Should only make one attempt
@@ -385,7 +385,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							}
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						await apiRequest.send();
 						
 						// Should retry
@@ -436,7 +436,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							}
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						await apiRequest.send();
 						
 						// Verify attempt count matches expected
@@ -497,7 +497,7 @@ describe('APIRequest Retry - Property-Based Tests', () => {
 							}
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						const response = await apiRequest.send();
 						
 						// Should succeed on the specified attempt

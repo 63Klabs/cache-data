@@ -1,8 +1,8 @@
 import { describe, it, expect, jest, afterEach } from '@jest/globals';
 import fc from 'fast-check';
-import APIRequest from '../../../src/lib/tools/APIRequest.class.js';
+import ApiRequest from '../../../src/lib/tools/ApiRequest.class.js';
 
-describe('APIRequest Backwards Compatibility Property Tests', () => {
+describe('ApiRequest Backwards Compatibility Property Tests', () => {
 	
 	afterEach(() => {
 		jest.restoreAllMocks();
@@ -13,7 +13,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 			/**
 			 * **Feature: api-request-pagination-retries-xray, Property 20: Constructor Compatibility**
 			 * 
-			 * For any request object that worked with the previous APIRequest version,
+			 * For any request object that worked with the previous ApiRequest version,
 			 * the constructor should accept it without errors.
 			 * 
 			 * **Validates: Requirements 4.1**
@@ -79,9 +79,9 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 					}, { requiredKeys: ['host'] }),
 					(request) => {
 						// Constructor should not throw for any valid old-style request
-						expect(() => new APIRequest(request)).not.toThrow();
+						expect(() => new ApiRequest(request)).not.toThrow();
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						const requestObj = apiRequest.toObject();
 						
 						// Verify basic structure is preserved
@@ -109,7 +109,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 			 * **Feature: api-request-pagination-retries-xray, Property 21: Response Format Compatibility**
 			 * 
 			 * For any request without pagination or retry options, the response format
-			 * should match the previous APIRequest version exactly (no metadata field).
+			 * should match the previous ApiRequest version exactly (no metadata field).
 			 * 
 			 * **Validates: Requirements 4.2**
 			 */
@@ -137,7 +137,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 					}),
 					(responseData) => {
 						// Use static responseFormat method
-						const response = APIRequest.responseFormat(
+						const response = ApiRequest.responseFormat(
 							responseData.success,
 							responseData.statusCode,
 							responseData.message,
@@ -175,7 +175,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 			/**
 			 * **Feature: api-request-pagination-retries-xray, Property 22: Static Method Compatibility**
 			 * 
-			 * For any call to APIRequest.responseFormat(), the method should work
+			 * For any call to ApiRequest.responseFormat(), the method should work
 			 * identically to the previous version.
 			 * 
 			 * **Validates: Requirements 4.3**
@@ -195,7 +195,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 					),
 					fc.oneof(fc.constant(null), fc.string({ maxLength: 200 })),
 					(success, statusCode, message, headers, body) => {
-						const response = APIRequest.responseFormat(
+						const response = ApiRequest.responseFormat(
 							success,
 							statusCode,
 							message,
@@ -230,8 +230,8 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 			 * 
 			 * **Validates: Requirements 4.3**
 			 */
-			expect(APIRequest.MAX_REDIRECTS).toBe(5);
-			expect(typeof APIRequest.MAX_REDIRECTS).toBe('number');
+			expect(ApiRequest.MAX_REDIRECTS).toBe(5);
+			expect(typeof ApiRequest.MAX_REDIRECTS).toBe('number');
 		});
 	});
 
@@ -240,7 +240,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 			/**
 			 * **Feature: api-request-pagination-retries-xray, Property 23: Public API Compatibility**
 			 * 
-			 * For any public method on APIRequest, the method signature and behavior
+			 * For any public method on ApiRequest, the method signature and behavior
 			 * should match the previous version when new features are not used.
 			 * 
 			 * **Validates: Requirements 4.4**
@@ -258,7 +258,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 						}, { requiredKeys: [] })
 					}, { requiredKeys: ['host'] }),
 					(request) => {
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						
 						// Verify all public methods exist
 						const publicMethods = [
@@ -328,7 +328,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 					),
 					(host, path, parameters) => {
 						const request = { host, path, parameters };
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						
 						const uriWithQuery = apiRequest.getURI(true);
 						const uriWithoutQuery = apiRequest.getURI(false);
@@ -367,7 +367,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 					fc.array(fc.webUrl(), { minLength: 1, maxLength: 5 }),
 					(host, redirectUrls) => {
 						const request = { host, path: '/test' };
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						
 						// Initially no redirects
 						expect(apiRequest.getNumberOfRedirects()).toBe(0);
@@ -404,14 +404,14 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 					fc.array(fc.webUrl(), { minLength: 1, maxLength: 3 }),
 					(host, redirectUrls) => {
 						const request = { host, path: '/test' };
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						
 						// Add some redirects
 						redirectUrls.forEach(url => apiRequest.addRedirect(url));
 						expect(apiRequest.getNumberOfRedirects()).toBeGreaterThan(0);
 						
 						// Set a response
-						const response = APIRequest.responseFormat(true, 200, 'OK');
+						const response = ApiRequest.responseFormat(true, 200, 'OK');
 						apiRequest.setResponse(response);
 						
 						// Reset
@@ -455,7 +455,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 					),
 					(host, parameters) => {
 						const request = { host, path: '/test', parameters };
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						
 						const uri = apiRequest.getURI(true);
 						
@@ -500,7 +500,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 							options: { separateDuplicateParameters }
 						};
 						
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						const uri = apiRequest.getURI(true);
 						
 						// Should contain parameter key
@@ -547,7 +547,7 @@ describe('APIRequest Backwards Compatibility Property Tests', () => {
 					}, { requiredKeys: [] }),
 					(host, options) => {
 						const request = { host, path: '/test', options };
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						const requestObj = apiRequest.toObject();
 						
 						// Verify provided options are set

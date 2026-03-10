@@ -90,7 +90,7 @@ This implementation plan systematically enhances documentation for the @63klabs/
     - Document response structure and status codes
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.9_
   
-  - [x] 4.4 Document Request classes (APIRequest.class.js, ClientRequest.class.js, RequestInfo.class.js)
+  - [x] 4.4 Document Request classes (ApiRequest.class.js, ClientRequest.class.js, RequestInfo.class.js)
     - Add complete JSDoc to all three classes and their public methods
     - Document connection parameters and options
     - Include examples for making requests

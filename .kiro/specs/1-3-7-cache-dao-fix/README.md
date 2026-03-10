@@ -5,17 +5,17 @@ All tests pass, but none really go over cache-dao which uses AWS resources.
 The error that comes up is:
 
 ```
-2026-02-05T21:55:55.144Z	cc38c8d4-aee4-4feb-ac6c-06441bbd63cb	ERROR	[ERROR] Error in APIRequest call to remote endpoint (Get data from endpoint): Invalid value "undefined" for header "if-modified-since" | {
+2026-02-05T21:55:55.144Z	cc38c8d4-aee4-4feb-ac6c-06441bbd63cb	ERROR	[ERROR] Error in ApiRequest call to remote endpoint (Get data from endpoint): Invalid value "undefined" for header "if-modified-since" | {
   value: 'TypeError [ERR_HTTP_INVALID_HEADER_VALUE]: Invalid value "undefined" for header "if-modified-since"\n' +
     '    at ClientRequest.setHeader (node:_http_outgoing:645:3)\n' +
     '    at new ClientRequest (node:_http_client:355:14)\n' +
     '    at request (node:https:633:10)\n' +
     '    at captureOutgoingHTTPs (/var/task/node_modules/aws-xray-sdk-core/dist/lib/patchers/http_p.js:134:19)\n' +
     '    at Object.captureHTTPsRequest [as request] (/var/task/node_modules/aws-xray-sdk-core/dist/lib/patchers/http_p.js:175:16)\n' +
-    '    at /var/task/node_modules/@63klabs/cache-data/src/lib/tools/APIRequest.class.js:57:19\n' +
+    '    at /var/task/node_modules/@63klabs/cache-data/src/lib/tools/ApiRequest.class.js:57:19\n' +
     '    at new Promise (<anonymous>)\n' +
-    '    at _httpGetExecute (/var/task/node_modules/@63klabs/cache-data/src/lib/tools/APIRequest.class.js:39:9)\n' +
-    '    at /var/task/node_modules/@63klabs/cache-data/src/lib/tools/APIRequest.class.js:586:31\n' +
+    '    at _httpGetExecute (/var/task/node_modules/@63klabs/cache-data/src/lib/tools/ApiRequest.class.js:39:9)\n' +
+    '    at /var/task/node_modules/@63klabs/cache-data/src/lib/tools/ApiRequest.class.js:586:31\n' +
     '    at /var/task/node_modules/aws-xray-sdk-core/dist/lib/capture.js:95:25'
 }
 ```

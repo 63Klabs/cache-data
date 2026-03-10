@@ -1,8 +1,8 @@
-# APIRequest Pagination Guide
+# ApiRequest Pagination Guide
 
 ## Overview
 
-The APIRequest class provides automatic pagination support for APIs that return results in multiple pages. When enabled, APIRequest will automatically fetch all pages and combine them into a single response, eliminating the need for manual pagination logic in your code.
+The ApiRequest class provides automatic pagination support for APIs that return results in multiple pages. When enabled, ApiRequest will automatically fetch all pages and combine them into a single response, eliminating the need for manual pagination logic in your code.
 
 ## When to Use Pagination
 
@@ -19,9 +19,9 @@ Use pagination when:
 Enable pagination with default settings by passing `{ enabled: true }`:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/users',
   parameters: {
@@ -41,9 +41,9 @@ console.log(`Retrieved ${allUsers.length} total users`);
 
 ### How It Works
 
-1. APIRequest makes the initial request
+1. ApiRequest makes the initial request
 2. If the response contains pagination indicators (`totalItems` and `items` by default), pagination begins
-3. APIRequest calculates how many additional pages are needed
+3. ApiRequest calculates how many additional pages are needed
 4. Remaining pages are fetched in concurrent batches (default: 5 at a time)
 5. All results are combined into a single response
 6. The combined response includes metadata about the pagination
@@ -73,9 +73,9 @@ const defaultPaginationConfig = {
 If your API uses different field names, customize the labels:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/products',
   parameters: {
@@ -98,9 +98,9 @@ const response = await request.send();
 Control how many pages are fetched concurrently:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -121,9 +121,9 @@ const request = new APIRequest({
 Set the default number of items per page if not specified in parameters:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   // No 'limit' parameter specified
@@ -141,10 +141,10 @@ const request = new APIRequest({
 When pagination completes successfully, the response includes metadata:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 // use conn with no pagination enabled
-const request = new APIRequest(conn);
+const request = new ApiRequest(conn);
 const successfulPaginationResponse = request.send();
 
 console.log(incompletePaginationResponse);
@@ -174,9 +174,9 @@ console.log(incompletePaginationResponse);
 If an error occurs while fetching subsequent pages, partial results are returned:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest(conn);
+const request = new ApiRequest(conn);
 const incompletePaginationResponse = request.send();
 
 console.log(incompletePaginationResponse);
@@ -206,10 +206,10 @@ console.log(incompletePaginationResponse);
 If pagination is not enabled or not needed, no metadata is included:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 // use conn with no pagination enabled
-const request = new APIRequest(conn);
+const request = new ApiRequest(conn);
 const noPaginationResponse = request.send();
 
 console.log(noPaginationResponse);
@@ -230,9 +230,9 @@ console.log(noPaginationResponse);
 GitHub's API uses `total_count` and `items`:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.github.com',
   path: '/search/repositories',
   parameters: {
@@ -260,9 +260,9 @@ console.log(`Found ${repos.length} repositories`);
 ### Example 2: REST API with Standard Pagination
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/v1/orders',
   parameters: {
@@ -291,9 +291,9 @@ if (response.metadata?.pagination?.incomplete) {
 ### Example 3: Custom Pagination Labels
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/products',
   parameters: {
@@ -317,9 +317,9 @@ const products = JSON.parse(response.body).data;
 ### Example 4: Handling Pagination Metadata
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/logs',
   parameters: {
@@ -378,9 +378,9 @@ Pagination will NOT occur when:
 If your request already includes an offset parameter, pagination is automatically disabled to prevent infinite loops:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   parameters: {
@@ -419,9 +419,9 @@ if (response.metadata?.pagination?.incomplete) {
 If a page returns invalid JSON:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest(connectionWithPagination);
+const request = new ApiRequest(connectionWithPagination);
 const response = await request.send();
 
 if (response.metadata?.pagination?.incomplete) {
@@ -435,9 +435,9 @@ if (response.metadata?.pagination?.incomplete) {
 If the API response doesn't include pagination indicators:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({host: 'api.example.com', path: '/api/users'});
+const request = new ApiRequest({host: 'api.example.com', path: '/api/users'});
 const response = await request.send();
 
 // No metadata.pagination field - pagination didn't occur
@@ -451,10 +451,10 @@ const response = await request.send();
 Pagination loads all pages into memory. For large datasets:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 // Be cautious with large datasets
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/large-dataset',
   parameters: {
@@ -480,10 +480,10 @@ const response = await request.send();
 Respect API rate limits by adjusting batch size:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 // For APIs with strict rate limits
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -513,9 +513,9 @@ Resources:
 Pagination works seamlessly with retry logic:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -536,9 +536,9 @@ const response = await request.send();
 Pagination is tracked in X-Ray subsegments:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -556,7 +556,7 @@ const response = await request.send();
 
 ## Migration from DAO-Level Pagination
 
-If you have existing pagination logic in your DAO classes, you can migrate to APIRequest pagination:
+If you have existing pagination logic in your DAO classes, you can migrate to ApiRequest pagination:
 
 ### Before (DAO-level pagination)
 
@@ -569,7 +569,7 @@ class MyDAO {
     let hasMore = true;
     
     while (hasMore) {
-      const request = new APIRequest({
+      const request = new ApiRequest({
         host: 'api.example.com',
         path: '/data',
         parameters: { offset, limit }
@@ -588,12 +588,12 @@ class MyDAO {
 }
 ```
 
-### After (APIRequest pagination)
+### After (ApiRequest pagination)
 
 ```javascript
 class MyDAO {
   async getAllData() {
-    const request = new APIRequest({
+    const request = new ApiRequest({
       host: 'api.example.com',
       path: '/data',
       parameters: { limit: 200 },
@@ -626,12 +626,12 @@ If pagination isn't working:
 5. **Enable logging**: Set `LOG_LEVEL=DEBUG` to see pagination decisions
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 // Enable debug logging
 process.env.LOG_LEVEL = 'DEBUG';
 
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: { enabled: true }
@@ -663,10 +663,10 @@ if (response.metadata?.pagination?.incomplete) {
 If the API uses different field names:
 
 ```javascript
-const {tools: {APIRequest}} = require('@63klabs/cache-data');
+const {tools: {ApiRequest}} = require('@63klabs/cache-data');
 
 // Check the actual API response structure
-const testRequest = new APIRequest({
+const testRequest = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   parameters: { limit: 10 }
@@ -676,7 +676,7 @@ const testResponse = await testRequest.send();
 console.log('API response structure:', JSON.parse(testResponse.body));
 
 // Then configure pagination with correct labels
-const request = new APIRequest({
+const request = new ApiRequest({
   host: 'api.example.com',
   path: '/data',
   pagination: {
@@ -700,7 +700,7 @@ const request = new APIRequest({
 
 ## Related Documentation
 
-- [APIRequest Retry Guide](./api-request-retry.md) - Automatic retry functionality
-- [APIRequest X-Ray Guide](./api-request-xray.md) - X-Ray tracing enhancements
+- [ApiRequest Retry Guide](./api-request-retry.md) - Automatic retry functionality
+- [ApiRequest X-Ray Guide](./api-request-xray.md) - X-Ray tracing enhancements
 - [Tools Module](./README.md) - Complete tools documentation
 - [Endpoint Module](../endpoint/README.md) - HTTP request handling

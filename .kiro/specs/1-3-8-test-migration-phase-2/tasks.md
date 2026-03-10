@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan outlines the tasks for migrating Mocha tests to Jest for three modules: APIRequest.class.js, dao-endpoint.js, and AWS.classes.js. The migration will maintain backwards compatibility, ensure no breaking changes, and run both test frameworks in parallel during the transition period.
+This implementation plan outlines the tasks for migrating Mocha tests to Jest for three modules: ApiRequest.class.js, dao-endpoint.js, and AWS.classes.js. The migration will maintain backwards compatibility, ensure no breaking changes, and run both test frameworks in parallel during the transition period.
 
 ## Tasks
 
@@ -14,10 +14,10 @@ This implementation plan outlines the tasks for migrating Mocha tests to Jest fo
   - _Requirements: 6.1, 6.6, 8.1_
 
 - [x] 2. Analyze existing Mocha tests and identify coverage gaps
-  - [x] 2.1 Analyze APIRequest.class tests
+  - [x] 2.1 Analyze ApiRequest.class tests
     - Count existing test cases in test/endpoint/api-request-tests.mjs
     - Document test coverage areas (GET, POST, redirects, timeouts, headers, parameters, body)
-    - Identify untested code paths in src/lib/tools/APIRequest.class.js
+    - Identify untested code paths in src/lib/tools/ApiRequest.class.js
     - Document missing test cases needed for complete coverage
     - _Requirements: 1.1, 4.1, 4.5, 4.6_
   
@@ -36,7 +36,7 @@ This implementation plan outlines the tasks for migrating Mocha tests to Jest fo
     - Identify untested code paths
     - _Requirements: 3.1, 4.3, 4.5, 4.6_
 
-- [x] 3. Migrate APIRequest.class tests to Jest
+- [x] 3. Migrate ApiRequest.class tests to Jest
   - [x] 3.1 Create test/endpoint/api-request-tests.jest.mjs
     - Add file header with migration documentation
     - Add imports for Jest and module under test
@@ -80,7 +80,7 @@ This implementation plan outlines the tasks for migrating Mocha tests to Jest fo
     - Verify tests pass
     - _Requirements: 1.2, 1.5, 8.3, 8.4, 8.7, 10.5_
   
-  - [x] 3.7 Migrate APIRequest class method tests
+  - [x] 3.7 Migrate ApiRequest class method tests
     - Migrate "Testing setter and getter functions" test
     - Migrate "Testing min value of timeOutInMilliseconds" test
     - Convert Chai assertions to Jest assertions
@@ -93,14 +93,14 @@ This implementation plan outlines the tasks for migrating Mocha tests to Jest fo
     - Verify tests pass
     - _Requirements: 1.2, 1.5, 8.2_
   
-  - [x] 3.9 Add missing test cases for APIRequest coverage gaps
+  - [x] 3.9 Add missing test cases for ApiRequest coverage gaps
     - Add tests for identified untested code paths from task 2.1
     - Add tests for error handling scenarios
     - Add tests for edge cases
     - Verify all tests pass
     - _Requirements: 4.4, 4.5, 4.6_
   
-  - [x] 3.10 Verify APIRequest migration completeness
+  - [x] 3.10 Verify ApiRequest migration completeness
     - Run both Mocha and Jest tests: npm run test:all
     - Verify test counts match between frameworks
     - Verify all tests pass in both frameworks
@@ -283,7 +283,7 @@ This implementation plan outlines the tasks for migrating Mocha tests to Jest fo
 
 - [-] 7. Verify backwards compatibility and no breaking changes
   - [x] 7.1 Verify source files unchanged
-    - Run git diff on src/lib/tools/APIRequest.class.js
+    - Run git diff on src/lib/tools/ApiRequest.class.js
     - Run git diff on src/lib/dao-endpoint.js
     - Run git diff on src/lib/tools/AWS.classes.js
     - Verify no changes to source code

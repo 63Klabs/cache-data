@@ -250,7 +250,7 @@ async function getData() {
 **Cache.init() Settings:**
 - `dynamoDbTable`: DynamoDB table name for cache storage
 - `s3Bucket`: S3 bucket name for large cached items
-- `secureDataKey`: Encryption key (Buffer or CachedSSMParameter)
+- `secureDataKey`: Encryption key (Buffer or CachedSsmParameter)
 - `secureDataAlgorithm`: Encryption algorithm (default: "aes-256-cbc")
 - `DynamoDbMaxCacheSize_kb`: Max size for DynamoDB (larger items go to S3)
 - `purgeExpiredCacheEntriesAfterXHours`: Retention time for expired entries
@@ -289,10 +289,10 @@ Resources:
 2. **Use CachedSsmParameter** in your code:
 
 ```javascript
-const { tools: {CachedSSMParameter}, cache: {Cache} } = require('@63klabs/cache-data');
+const { tools: {CachedSsmParameter}, cache: {Cache} } = require('@63klabs/cache-data');
 
 // Create cached parameter reference
-const secureKey = new CachedSSMParameter(
+const secureKey = new CachedSsmParameter(
   '/apps/my-app/crypt_secureDataKey',
   { refreshAfter: 3600 } // 5 min
 );
@@ -301,7 +301,7 @@ const secureKey = new CachedSSMParameter(
 Cache.init({
   dynamoDbTable: process.env.CACHE_TABLE,
   s3Bucket: process.env.CACHE_BUCKET,
-  secureDataKey: secureKey, // Pass CachedSSMParameter directly
+  secureDataKey: secureKey, // Pass CachedSsmParameter directly
   secureDataAlgorithm: "aes-256-cbc"
 });
 ```

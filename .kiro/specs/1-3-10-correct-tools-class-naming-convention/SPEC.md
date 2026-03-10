@@ -1,6 +1,6 @@
 # Correct Tools Class Naming Convention
 
-Some classes with acronyms in their names have the acronyms in all upper case. Such as APIRequest, AWS, AWSXRay, and CachedSSMParameter.
+Some classes with acronyms in their names have the acronyms in all upper case. Such as ApiRequest, AWS, AWSXRay, and CachedSsmParameter.
 
 These need to become ApiRequest, Aws, AwsXRay, and CachedSsmParameter respectively.
 
@@ -11,13 +11,13 @@ We now need to make rename the Class and references to it using the proper namin
 For example:
 
 ```js
-class CachedSSMParameter {
+class CachedSsmParameter {
     // code
 }
 
 module.exports = {
-    CachedSSMParameter, 
-    CachedSsmParameter: CachedSSMParameter // alias
+    CachedSsmParameter, 
+    CachedSsmParameter: CachedSsmParameter // alias
 };
 ```
 
@@ -30,11 +30,11 @@ class CachedSsmParameter {
 
 module.exports = {
     CachedSsmParameter, 
-    CachedSSMParameter: CachedSsmParameter // alias
+    CachedSsmParameter: CachedSsmParameter // alias
 };
 ```
 
-Also, APIRequest.class.js needs to be renamed ApiRequest.class.js but still retain APIRequest.class.js for backward compatibility. APIRequest.class.js should just import and export the ApiRequest class (along with the APIRequest alias.) Same with Aws.classes.js
+Also, ApiRequest.class.js needs to be renamed ApiRequest.class.js but still retain ApiRequest.class.js for backward compatibility. ApiRequest.class.js should just import and export the ApiRequest class (along with the ApiRequest alias.) Same with Aws.classes.js
 
 Maintaining backwards compatibility is of utmost importance. All current tests should pass. Current tests should only be updated at the end of the process.
 

@@ -8,7 +8,7 @@
  * 
  * The class can be used as a template and modified to provide additional
  * logic, query, filtering, and manipulation before/after data is sent/received
- * via the APIRequest class.
+ * via the ApiRequest class.
  * 
  * The class itself is not exposed, instead various functions can be used
  * to access the class. For exmaple, get(connection, data)
@@ -221,7 +221,7 @@ class Endpoint {
 	/**
 	 * Executes the HTTP request and returns the response.
 	 * 
-	 * This method sends the configured request to the remote endpoint using the APIRequest
+	 * This method sends the configured request to the remote endpoint using the ApiRequest
 	 * class. It automatically attempts to parse the response body as JSON. If the body is
 	 * not valid JSON, it is kept as text. The method caches the response so subsequent
 	 * calls return the same result without making additional requests.
@@ -285,14 +285,14 @@ class Endpoint {
 	}
 
 	/**
-	 * Internal method that makes the actual HTTP request using the APIRequest class.
+	 * Internal method that makes the actual HTTP request using the ApiRequest class.
 	 * 
-	 * This method creates an APIRequest instance with the configured request settings
+	 * This method creates an ApiRequest instance with the configured request settings
 	 * and sends the request. It handles errors by logging them and returning a formatted
 	 * error response. This method is called internally by the get() method.
 	 * 
-	 * @returns {Promise<{success: boolean, statusCode: number, body: Object|string|null, headers: Object}>} Response object from the APIRequest
-	 * @throws {Error} Throws an error if the APIRequest instantiation or send operation fails
+	 * @returns {Promise<{success: boolean, statusCode: number, body: Object|string|null, headers: Object}>} Response object from the ApiRequest
+	 * @throws {Error} Throws an error if the ApiRequest instantiation or send operation fails
 	 * 
 	 * @example
 	 * // Internal usage (not typically called directly)
@@ -303,12 +303,12 @@ class Endpoint {
 		var response = null;
 
 		try {
-			var apiRequest = new tools.APIRequest(this.request);
+			var apiRequest = new tools.ApiRequest(this.request);
 			response = await apiRequest.send();
 
 		} catch (error) {
 			tools.DebugAndLog.error(`Error in call (${this.request.note}): ${error.message}`, error.stack);
-			response = tools.APIRequest.responseFormat(false, 500, "Error in call()");
+			response = tools.ApiRequest.responseFormat(false, 500, "Error in call()");
 		}
 
 		return response;

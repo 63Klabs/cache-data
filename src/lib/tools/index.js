@@ -20,7 +20,7 @@
 
 const { nodeVer, nodeVerMajor, nodeVerMinor, nodeVerMajorMinor } = require('./vars');
 const { AWS, AWSXRay } = require('./AWS.classes');
-const APIRequest = require("./APIRequest.class");
+const ApiRequest = require("./ApiRequest.class");
 const RequestInfo = require("./RequestInfo.class");
 const ClientRequest = require("./ClientRequest.class");
 const ResponseDataModel = require("./ResponseDataModel.class");
@@ -34,7 +34,7 @@ const xmlGenericResponse = require('./generic.response.xml');
 const rssGenericResponse = require('./generic.response.rss');
 const textGenericResponse = require('./generic.response.text');
 const { printMsg, sanitize, obfuscate, hashThisData} = require('./utils');
-const { CachedParameterSecrets, CachedParameterSecret, CachedSSMParameter, CachedSecret } = require('./CachedParametersSecrets.classes')
+const { CachedParameterSecrets, CachedParameterSecret, CachedSsmParameter, CachedSecret } = require('./CachedParametersSecrets.classes')
 const { Connections, Connection, ConnectionRequest, ConnectionAuthentication } = require('./Connections.classes')
 
 /*
@@ -534,8 +534,8 @@ module.exports = {
 	Aws: AWS,
 	AWSXRay,
 	AwsXRay: AWSXRay, // Alias
-	APIRequest,
-	ApiRequest: APIRequest, // Alias
+	ApiRequest,
+	APIRequest: ApiRequest, // Alias
 	ImmutableObject,
 	Timer,
 	DebugAndLog,
@@ -549,8 +549,8 @@ module.exports = {
 	Response,
 	AppConfig,
 	_ConfigSuperClass: AppConfig, // Alias
-	CachedSSMParameter,
-	CachedSsmParameter: CachedSSMParameter, // Alias
+	CachedSsmParameter,
+	CachedSSMParameter: CachedSsmParameter, // Alias
 	CachedSecret,
 	CachedParameterSecret,
 	CachedParameterSecrets,

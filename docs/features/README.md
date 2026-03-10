@@ -40,7 +40,7 @@ The tools module provides utility classes and functions for logging, timing, AWS
 - **Data utilities**: Sanitization, obfuscation, hashing, and immutable objects
 - **Connection management**: Configuration and authentication for external services
 
-**New APIRequest Features:**
+**New ApiRequest Features:**
 - **Automatic Pagination**: Fetch all pages from paginated APIs automatically
 - **Automatic Retry**: Retry failed requests with configurable conditions
 - **Enhanced X-Ray Tracing**: Detailed monitoring and debugging with AWS X-Ray

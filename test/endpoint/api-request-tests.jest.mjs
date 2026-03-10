@@ -1,5 +1,5 @@
 /**
- * Jest tests for APIRequest.class
+ * Jest tests for ApiRequest.class
  * Migrated from: test/endpoint/api-request-tests.mjs
  * 
  * Tests HTTP/HTTPS request handling, redirect management, timeout handling,
@@ -9,17 +9,17 @@
  */
 
 import { jest } from '@jest/globals';
-import { APIRequest, Connection, ConnectionAuthentication } from '../../src/lib/tools/index.js';
+import { ApiRequest, Connection, ConnectionAuthentication } from '../../src/lib/tools/index.js';
 
 describe("Call test endpoint", () => {
 
-	describe('Call test endpoint using tools APIRequest class', () => {
+	describe('Call test endpoint using tools ApiRequest class', () => {
 		
 		/**
 		 * Validates: Requirements 1.2, 1.5
 		 */
 		it('Passing uri results in success with a hidden game listed', async () => {
-			let req = new APIRequest({uri: 'https://api.chadkluck.net/games/'})
+			let req = new ApiRequest({uri: 'https://api.chadkluck.net/games/'})
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
 			
@@ -35,7 +35,7 @@ describe("Call test endpoint", () => {
 		 * Validates: Requirements 1.2, 1.5
 		 */
 		it('Passing host and path results in success with a hidden game listed', async () => {
-			let req = new APIRequest({host: 'api.chadkluck.net', path: '/games/'})
+			let req = new ApiRequest({host: 'api.chadkluck.net', path: '/games/'})
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
 			expect(result.statusCode).toBe(200);
@@ -58,7 +58,7 @@ describe("Call test endpoint", () => {
 				'x-my-custom-header': "hello world",
 				'User-Agent': "My User Agent"
 			};
-			let req = new APIRequest({
+			let req = new ApiRequest({
 				method: "POST",
 				host: "api.chadkluck.net",
 				path: "/echo/",
@@ -99,7 +99,7 @@ describe("Call test endpoint", () => {
 				keywords: "international+greetings"
 			}
 
-			let req = new APIRequest({
+			let req = new ApiRequest({
 				method: "POST",
 				host: "api.chadkluck.net",
 				path: "/echo/",
@@ -138,7 +138,7 @@ describe("Call test endpoint", () => {
 				keywords: "international+greetings"
 			}
 
-			let req = new APIRequest({
+			let req = new ApiRequest({
 				method: "POST",
 				host: "api.chadkluck.net",
 				path: "/echo/",
@@ -179,7 +179,7 @@ describe("Call test endpoint", () => {
 
 			let body = "Hello, Earth!";
 
-			let req = new APIRequest({
+			let req = new ApiRequest({
 				method: "POST",
 				host: "api.chadkluck.net",
 				path: "/echo/",
@@ -211,7 +211,7 @@ describe("Call test endpoint", () => {
 				param1: "hello"
 			}
 
-			let req = new APIRequest({
+			let req = new ApiRequest({
 				method: "GET",
 				host: "api.chadkluck.net",
 				path: "/echo/",
@@ -235,7 +235,7 @@ describe("Call test endpoint", () => {
 		 * Validates: Requirements 1.2, 1.5
 		 */
 		it('Passing host and path and an empty uri results in success with a hidden game listed', async () => {
-			let req = new APIRequest({host: 'api.chadkluck.net', path: '/games/', uri: ''})
+			let req = new ApiRequest({host: 'api.chadkluck.net', path: '/games/', uri: ''})
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
 			expect(result.statusCode).toBe(200);
@@ -250,7 +250,7 @@ describe("Call test endpoint", () => {
 		 * Validates: Requirements 1.2, 1.5
 		 */
 		it('Passing uri results in 404', async () => {
-			let req = new APIRequest({uri: 'https://api.chadkluck.net/echo/?status=404'})
+			let req = new ApiRequest({uri: 'https://api.chadkluck.net/echo/?status=404'})
 			const result = await req.send()
 			expect(result.statusCode).toBe(404);
 			expect(result.success).toBe(false);
@@ -262,7 +262,7 @@ describe("Call test endpoint", () => {
 		 * Validates: Requirements 1.2, 1.5
 		 */
 		it('Passing uri results in no redirect', async () => {
-			let req = new APIRequest({uri: 'https://api.chadkluck.net/games/'})
+			let req = new ApiRequest({uri: 'https://api.chadkluck.net/games/'})
 			const result = await req.send()
 			expect(result.statusCode).toBe(200);
 			expect(req.toObject().redirects.length).toBe(0)
@@ -429,7 +429,7 @@ describe("Call test endpoint", () => {
 
 	});
 
-	describe('Test APIRequest class', () => {
+	describe('Test ApiRequest class', () => {
 
 		afterEach(() => {
 			jest.restoreAllMocks();
@@ -438,7 +438,7 @@ describe("Call test endpoint", () => {
 		/**
 		 * Validates: Requirements 1.2, 1.5
 		 */
-		it('Testing setter and getter functions of APIRequest without sending', async () => {
+		it('Testing setter and getter functions of ApiRequest without sending', async () => {
 			let obj = {
 				method: "GET",
 				host: "api.chadkluck.net",
@@ -451,7 +451,7 @@ describe("Call test endpoint", () => {
 				options: { timeout: 2000}
 			};
 
-			let req = new APIRequest(obj);
+			let req = new ApiRequest(obj);
 
 			expect(req.getMethod()).toBe(obj.method);
 			expect(req.getBody()).toBe(obj.body);
@@ -475,7 +475,7 @@ describe("Call test endpoint", () => {
 				options: { timeout: 0}
 			};
 
-			let req = new APIRequest(obj);
+			let req = new ApiRequest(obj);
 
 			expect(req.getMethod()).toBe(obj.method);
 			expect(req.getBody()).toBe(obj.body);
@@ -502,7 +502,7 @@ describe("Call test endpoint", () => {
 				options: { timeout: 2}
 			};
 		
-			let req = new APIRequest(obj);
+			let req = new ApiRequest(obj);
 			const result = await req.send();
 	
 			// Separate the assertions
@@ -544,7 +544,7 @@ describe("Call test endpoint", () => {
 				options: null
 			};
 
-			let req = new APIRequest(obj);
+			let req = new ApiRequest(obj);
 
 			expect(req.getTimeOutInMilliseconds()).toBe(8000);
 		});
@@ -565,7 +565,7 @@ describe("Call test endpoint", () => {
 				options: { timeout: -100 }
 			};
 
-			let req = new APIRequest(obj);
+			let req = new ApiRequest(obj);
 
 			expect(req.getTimeOutInMilliseconds()).toBe(8000);
 		});
@@ -575,7 +575,7 @@ describe("Call test endpoint", () => {
 		 * Tests edge case: empty parameters object
 		 */
 		it('Testing empty parameters object', async () => {
-			let req = new APIRequest({
+			let req = new ApiRequest({
 				method: "GET",
 				host: "api.chadkluck.net",
 				path: "/echo/",
@@ -595,7 +595,7 @@ describe("Call test endpoint", () => {
 		 * Tests edge case: null body in POST request
 		 */
 		it('Testing null body in POST request', async () => {
-			let req = new APIRequest({
+			let req = new ApiRequest({
 				method: "POST",
 				host: "api.chadkluck.net",
 				path: "/echo/",
@@ -615,7 +615,7 @@ describe("Call test endpoint", () => {
 		 * Tests edge case: empty headers object
 		 */
 		it('Testing empty headers object', async () => {
-			let req = new APIRequest({
+			let req = new ApiRequest({
 				method: "GET",
 				host: "api.chadkluck.net",
 				path: "/echo/",
@@ -646,7 +646,7 @@ describe("Call test endpoint", () => {
 				parameters: {test: "value"}
 			};
 
-			let req = new APIRequest(obj);
+			let req = new ApiRequest(obj);
 			const reqObj = req.toObject();
 
 			expect(reqObj).toHaveProperty('request');

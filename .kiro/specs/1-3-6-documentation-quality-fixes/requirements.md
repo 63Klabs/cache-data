@@ -38,7 +38,7 @@ This specification focuses ONLY on documentation fixes - no functional code chan
 1. WHEN JSDoc documents a parameter, THE Documentation_System SHALL verify that parameter exists in the actual function signature
 2. WHEN a parameter does not exist in the function signature, THE Documentation_System SHALL remove it from JSDoc
 3. THE Documentation_System SHALL resolve all 73 hallucinated parameter issues across Tools module (36), dao-cache.js (35), and dao-endpoint.js (2)
-4. WHEN reviewing APIRequest class, THE Documentation_System SHALL ensure only actual constructor parameters are documented
+4. WHEN reviewing ApiRequest class, THE Documentation_System SHALL ensure only actual constructor parameters are documented
 5. WHEN reviewing CachedParametersSecrets class, THE Documentation_System SHALL ensure only actual method parameters are documented
 
 ### Requirement 3: Fix JSDoc Parameter Accuracy

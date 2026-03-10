@@ -173,7 +173,7 @@ src/
 │   ├── tools/              # Tools module
 │   │   ├── index.js        # Tools entry point
 │   │   ├── AWS.classes.js  # AWS SDK wrappers
-│   │   ├── APIRequest.class.js
+│   │   ├── ApiRequest.class.js
 │   │   ├── ClientRequest.class.js
 │   │   ├── Response.class.js
 │   │   ├── ResponseDataModel.class.js
@@ -243,7 +243,7 @@ src/
 - **`src/lib/tools/`**: Public API classes and utilities
   - Classes exported in `src/lib/tools/index.js`
   - User-facing functionality
-  - Examples: `DebugAndLog`, `Timer`, `Response`, `APIRequest`
+  - Examples: `DebugAndLog`, `Timer`, `Response`, `ApiRequest`
 
 - **`src/lib/utils/`**: Internal implementation classes
   - Classes NOT exported in public API
@@ -393,7 +393,7 @@ static async doCleanup(opts) {
 ```javascript
 class CacheData { }
 class S3Cache { }
-class APIRequest { }
+class ApiRequest { }
 ```
 
 **Functions/Methods**: camelCase

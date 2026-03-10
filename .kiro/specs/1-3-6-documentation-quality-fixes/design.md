@@ -45,7 +45,7 @@ Based on test failures, the following modules require documentation fixes:
    - DynamoDbCache class
 
 2. **Tools Module** (36 hallucinated parameters)
-   - APIRequest class
+   - ApiRequest class
    - CachedParametersSecrets class
    - ClientRequest class
    - Response class
@@ -509,7 +509,7 @@ Fix 86 completeness issues in dao-cache.js:
 ### Phase 2: Hallucinated Parameter Removal
 
 Fix 73 hallucinated parameter issues:
-- Tools module: 36 issues (APIRequest, CachedParametersSecrets, ClientRequest, Response)
+- Tools module: 36 issues (ApiRequest, CachedParametersSecrets, ClientRequest, Response)
 - dao-cache.js: 35 issues (write, init, read, getData functions)
 - dao-endpoint.js: 2 issues (constructor)
 

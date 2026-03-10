@@ -2,11 +2,11 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import fc from 'fast-check';
 import https from 'https';
 
-// Import APIRequest
+// Import ApiRequest
 const tools = await import('../../../src/lib/tools/index.js');
-const APIRequest = tools.default.APIRequest;
+const ApiRequest = tools.default.ApiRequest;
 
-describe('APIRequest X-Ray Property-Based Tests', () => {
+describe('ApiRequest X-Ray Property-Based Tests', () => {
 	beforeEach(() => {
 		// Mock https.request to return successful responses
 		jest.spyOn(https, 'request').mockImplementation((uri, options, callback) => {
@@ -79,7 +79,7 @@ describe('APIRequest X-Ray Property-Based Tests', () => {
 							note: `Request ${i}`
 						};
 
-						const apiRequest = new APIRequest(request);
+						const apiRequest = new ApiRequest(request);
 						requests.push(apiRequest.send());
 					}
 
@@ -121,7 +121,7 @@ describe('APIRequest X-Ray Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Should complete successfully regardless of retry configuration
@@ -162,7 +162,7 @@ describe('APIRequest X-Ray Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Should complete successfully regardless of pagination configuration
@@ -214,7 +214,7 @@ describe('APIRequest X-Ray Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Should complete successfully with any configuration
@@ -267,7 +267,7 @@ describe('APIRequest X-Ray Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Should always succeed
@@ -321,7 +321,7 @@ describe('APIRequest X-Ray Property-Based Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Should succeed with pagination

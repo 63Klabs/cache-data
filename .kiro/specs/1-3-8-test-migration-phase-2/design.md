@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design outlines the approach for migrating existing Mocha tests to Jest for three modules: APIRequest.class.js, dao-endpoint.js, and AWS.classes.js. The migration will maintain backwards compatibility, ensure no breaking changes, and run both test frameworks in parallel during the transition period. The design also addresses test coverage gaps and establishes patterns for future test migrations.
+This design outlines the approach for migrating existing Mocha tests to Jest for three modules: ApiRequest.class.js, dao-endpoint.js, and AWS.classes.js. The migration will maintain backwards compatibility, ensure no breaking changes, and run both test frameworks in parallel during the transition period. The design also addresses test coverage gaps and establishes patterns for future test migrations.
 
 ### Migration Strategy
 
@@ -15,7 +15,7 @@ The migration follows a parallel execution strategy where both Mocha and Jest te
 
 ### Modules in Scope
 
-1. **APIRequest.class.js** (`src/lib/tools/APIRequest.class.js`)
+1. **ApiRequest.class.js** (`src/lib/tools/ApiRequest.class.js`)
    - HTTP/HTTPS request handling
    - Redirect management
    - Timeout handling
@@ -110,13 +110,13 @@ graph TD
 ```javascript
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { APIRequest } from '../../src/lib/tools/index.js';
+import { ApiRequest } from '../../src/lib/tools/index.js';
 ```
 
 **Jest (ESM):**
 ```javascript
 import { jest } from '@jest/globals';
-import { APIRequest } from '../../src/lib/tools/index.js';
+import { ApiRequest } from '../../src/lib/tools/index.js';
 ```
 
 ### Test Structure Components
@@ -258,7 +258,7 @@ This consolidation reduces ~30 potential properties to ~15 unique, comprehensive
 ### Correctness Properties
 
 **Property 1: Test Migration Completeness**
-*For any* module in scope (APIRequest.class, dao-endpoint, AWS.classes), the number of test cases in the Jest test file should equal the number of test cases in the corresponding Mocha test file.
+*For any* module in scope (ApiRequest.class, dao-endpoint, AWS.classes), the number of test cases in the Jest test file should equal the number of test cases in the corresponding Mocha test file.
 **Validates: Requirements 1.1, 2.1, 3.1**
 
 **Property 2: Test Execution Equivalence**
@@ -282,7 +282,7 @@ This consolidation reduces ~30 potential properties to ~15 unique, comprehensive
 **Validates: Requirements 4.6**
 
 **Property 7: Source Code Immutability**
-*For any* source file in scope (APIRequest.class.js, dao-endpoint.js, AWS.classes.js), the file content hash before migration should equal the file content hash after migration.
+*For any* source file in scope (ApiRequest.class.js, dao-endpoint.js, AWS.classes.js), the file content hash before migration should equal the file content hash after migration.
 **Validates: Requirements 5.1, 5.2, 5.3**
 
 **Property 8: Function Signature Preservation**
@@ -544,7 +544,7 @@ Each test file must include:
 **Example**:
 ```javascript
 /**
- * Jest tests for APIRequest.class
+ * Jest tests for ApiRequest.class
  * Migrated from: test/endpoint/api-request-tests.mjs
  * 
  * Tests HTTP/HTTPS request handling, redirect management, timeout handling,
@@ -553,7 +553,7 @@ Each test file must include:
  * Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5
  */
 
-describe('APIRequest', () => {
+describe('ApiRequest', () => {
     describe('send()', () => {
         /**
          * Validates: Requirements 1.1
@@ -585,7 +585,7 @@ For each module:
 
 ### Module-Specific Considerations
 
-#### APIRequest.class.js
+#### ApiRequest.class.js
 
 **Key Testing Areas**:
 - HTTP GET and POST requests
@@ -614,7 +614,7 @@ For each module:
 - Header passing
 
 **Mock Requirements**:
-- APIRequest class
+- ApiRequest class
 - Console.error and console.warn
 - External API endpoints (use test API)
 

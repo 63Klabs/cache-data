@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import APIRequest from '../../src/lib/tools/APIRequest.class.js';
+import ApiRequest from '../../src/lib/tools/ApiRequest.class.js';
 
-describe('APIRequest Backwards Compatibility', () => {
+describe('ApiRequest Backwards Compatibility', () => {
 	
 	afterEach(() => {
 		jest.restoreAllMocks();
@@ -22,9 +22,9 @@ describe('APIRequest Backwards Compatibility', () => {
 				}
 			};
 			
-			expect(() => new APIRequest(request)).not.toThrow();
+			expect(() => new ApiRequest(request)).not.toThrow();
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.method).toBe('GET');
@@ -40,9 +40,9 @@ describe('APIRequest Backwards Compatibility', () => {
 				path: '/test'
 			};
 			
-			expect(() => new APIRequest(request)).not.toThrow();
+			expect(() => new ApiRequest(request)).not.toThrow();
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.method).toBe('GET');
@@ -54,9 +54,9 @@ describe('APIRequest Backwards Compatibility', () => {
 				uri: 'https://api.example.com/users?id=123'
 			};
 			
-			expect(() => new APIRequest(request)).not.toThrow();
+			expect(() => new ApiRequest(request)).not.toThrow();
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.uri).toBe('https://api.example.com/users?id=123');
@@ -71,9 +71,9 @@ describe('APIRequest Backwards Compatibility', () => {
 				headers: { 'Content-Type': 'application/json' }
 			};
 			
-			expect(() => new APIRequest(request)).not.toThrow();
+			expect(() => new ApiRequest(request)).not.toThrow();
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.method).toBe('POST');
@@ -93,9 +93,9 @@ describe('APIRequest Backwards Compatibility', () => {
 				}
 			};
 			
-			expect(() => new APIRequest(request)).not.toThrow();
+			expect(() => new ApiRequest(request)).not.toThrow();
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.uri).toContain('tags=');
@@ -110,7 +110,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 5000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			// Old format fields
@@ -137,7 +137,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 5000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response).toHaveProperty('success');
@@ -153,7 +153,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 5000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response).toHaveProperty('success');
@@ -164,9 +164,9 @@ describe('APIRequest Backwards Compatibility', () => {
 
 	describe('Static Method Compatibility', () => {
 		it('should have responseFormat static method unchanged', () => {
-			expect(typeof APIRequest.responseFormat).toBe('function');
+			expect(typeof ApiRequest.responseFormat).toBe('function');
 			
-			const response = APIRequest.responseFormat(
+			const response = ApiRequest.responseFormat(
 				true,
 				200,
 				'SUCCESS',
@@ -184,7 +184,7 @@ describe('APIRequest Backwards Compatibility', () => {
 		});
 
 		it('should handle responseFormat with minimal parameters', () => {
-			const response = APIRequest.responseFormat(false, 500);
+			const response = ApiRequest.responseFormat(false, 500);
 			
 			expect(response).toEqual({
 				success: false,
@@ -196,9 +196,9 @@ describe('APIRequest Backwards Compatibility', () => {
 		});
 
 		it('should have MAX_REDIRECTS static property', () => {
-			expect(APIRequest.MAX_REDIRECTS).toBeDefined();
-			expect(typeof APIRequest.MAX_REDIRECTS).toBe('number');
-			expect(APIRequest.MAX_REDIRECTS).toBe(5);
+			expect(ApiRequest.MAX_REDIRECTS).toBeDefined();
+			expect(typeof ApiRequest.MAX_REDIRECTS).toBe('number');
+			expect(ApiRequest.MAX_REDIRECTS).toBe(5);
 		});
 	});
 
@@ -210,7 +210,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				note: 'Test note'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			
 			// Check all public methods exist
 			expect(typeof apiRequest.send).toBe('function');
@@ -234,7 +234,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				uri: 'https://api.example.com/users?id=123&token=secret'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			
 			// With query string
 			expect(apiRequest.getURI(true)).toBe('https://api.example.com/users?id=123&token=secret');
@@ -244,10 +244,10 @@ describe('APIRequest Backwards Compatibility', () => {
 		});
 
 		it('should have getMethod return correct method', () => {
-			const getRequest = new APIRequest({ host: 'api.example.com', path: '/test' });
+			const getRequest = new ApiRequest({ host: 'api.example.com', path: '/test' });
 			expect(getRequest.getMethod()).toBe('GET');
 			
-			const postRequest = new APIRequest({ 
+			const postRequest = new ApiRequest({ 
 				method: 'POST', 
 				host: 'api.example.com', 
 				path: '/test' 
@@ -261,7 +261,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				path: '/test'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			expect(apiRequest.getHost()).toBe('api.example.com');
 		});
 
@@ -272,7 +272,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				note: 'My test note'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			expect(apiRequest.getNote()).toBe('My test note');
 		});
 
@@ -283,7 +283,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 10000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			expect(apiRequest.getTimeOutInMilliseconds()).toBe(10000);
 		});
 
@@ -296,7 +296,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				body: body
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			expect(apiRequest.getBody()).toBe(body);
 		});
 
@@ -307,7 +307,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				note: 'Test'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const obj = apiRequest.toObject();
 			
 			expect(obj).toHaveProperty('MAX_REDIRECTS');
@@ -329,7 +329,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 5000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response.success).toBe(true);
@@ -348,7 +348,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 5000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response.success).toBe(true);
@@ -365,7 +365,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 5000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response.success).toBe(true);
@@ -381,7 +381,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 5000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response.success).toBe(true);
@@ -396,7 +396,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 5000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response.success).toBe(false);
@@ -411,7 +411,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				options: { timeout: 1000 }
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response.success).toBe(false);
@@ -431,7 +431,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const uri = apiRequest.getURI();
 			
 			expect(uri).toContain('q=test%20query');
@@ -451,7 +451,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const uri = apiRequest.getURI();
 			
 			expect(uri).toContain('tags=javascript,nodejs');
@@ -469,7 +469,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const uri = apiRequest.getURI();
 			
 			expect(uri).toContain('tags=javascript');
@@ -485,7 +485,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const uri = apiRequest.getURI();
 			
 			expect(uri).toContain('q=test%20%26%20special%20%3D%20chars');
@@ -499,7 +499,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				path: '/test'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			
 			expect(apiRequest.getNumberOfRedirects()).toBe(0);
 			
@@ -516,7 +516,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				path: '/test'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const originalUri = apiRequest.getURI();
 			
 			const newUri = 'https://api.example.com/redirected';
@@ -538,7 +538,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.options.timeout).toBe(15000);
@@ -552,7 +552,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				path: '/test'
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.options.timeout).toBe(8000);
@@ -567,7 +567,7 @@ describe('APIRequest Backwards Compatibility', () => {
 				}
 			};
 			
-			const apiRequest = new APIRequest(request);
+			const apiRequest = new ApiRequest(request);
 			const requestObj = apiRequest.toObject();
 			
 			expect(requestObj.request.options.timeout).toBe(3000);

@@ -2,13 +2,13 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import fc from 'fast-check';
 import https from 'https';
 
-describe('APIRequest - Integration Property Tests', () => {
-	let APIRequest;
+describe('ApiRequest - Integration Property Tests', () => {
+	let ApiRequest;
 
 	beforeEach(async () => {
 		// Import fresh module for each test
-		const module = await import('../../../src/lib/tools/APIRequest.class.js');
-		APIRequest = module.default;
+		const module = await import('../../../src/lib/tools/ApiRequest.class.js');
+		ApiRequest = module.default;
 	});
 
 	afterEach(() => {
@@ -103,7 +103,7 @@ describe('APIRequest - Integration Property Tests', () => {
 						};
 					}
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Request should succeed regardless of feature combination
@@ -236,7 +236,7 @@ describe('APIRequest - Integration Property Tests', () => {
 						retry: retryConfig
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Request should succeed with partial configs
@@ -329,7 +329,7 @@ describe('APIRequest - Integration Property Tests', () => {
 						}
 					};
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Request should succeed with custom values
@@ -438,7 +438,7 @@ describe('APIRequest - Integration Property Tests', () => {
 						request.retry = { enabled: true };
 					}
 
-					const apiRequest = new APIRequest(request);
+					const apiRequest = new ApiRequest(request);
 					const response = await apiRequest.send();
 
 					// Request should succeed with minimal config

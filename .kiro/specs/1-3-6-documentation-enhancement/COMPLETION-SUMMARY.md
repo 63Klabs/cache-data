@@ -61,7 +61,7 @@ When accounting for audit script parser false positives:
 
 ### 4. Missing @example Tags Added (Tasks 5-6)
 ✅ Added comprehensive @example tags to 11 classes:
-- CachedParameterSecrets, CachedSSMParameter, CachedSecret
+- CachedParameterSecrets, CachedSsmParameter, CachedSecret
 - ClientRequest
 - Connections, Connection, ConnectionAuthentication, ConnectionRequest
 - ImmutableObject
@@ -119,7 +119,7 @@ The audit script reports 34 "missing JSDoc" items, but detailed analysis shows:
 6. **Non-existent Methods** (4 items): Parser errors (verified with grep)
 
 ### Verified Non-Issues
-- `can.call` and `object.call` in APIRequest.class.js: Do not exist (grep verified)
+- `can.call` and `object.call` in ApiRequest.class.js: Do not exist (grep verified)
 - `CachedParameterSecret.write`: Does not exist in code
 - All "for", "with", "and", "as", "is", "that" classes: Parser artifacts
 

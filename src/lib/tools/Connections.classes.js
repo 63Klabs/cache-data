@@ -132,7 +132,7 @@ class Connections {
  * The Connection object provides the base for requests but does not carry
  * the request. myConnection.get() will return an object (associative array) 
  * that can then be used to generate and submit a request to a DAO class or 
- * APIRequest object.
+ * ApiRequest object.
  * You can store and manage multiple connections using the Connections object.
  * @example
  * // Create a simple connection

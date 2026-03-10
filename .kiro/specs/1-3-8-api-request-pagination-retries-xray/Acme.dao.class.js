@@ -151,7 +151,7 @@ class Acme {
 	
 					// Should never be empty or null
 					if (response.body === null) {
-						response = tools.APIRequest.responseFormat(false, 500, "FAIL", response.headers);
+						response = tools.ApiRequest.responseFormat(false, 500, "FAIL", response.headers);
 						tools.DebugAndLog.error(`Acme Returned Empty or Null Body (${this.request.note})`, response);
 						// Continue to next retry if we have attempts left
 						if (attempt < maxRetries) continue;
@@ -163,7 +163,7 @@ class Acme {
 				} catch (error) {
 					tools.DebugAndLog.warn(`Acme Response that resulted in Error (${this.request.note}) - Attempt ${attempt + 1}/${maxRetries + 1}:`, response);
 					
-					response = tools.APIRequest.responseFormat(false, 500, "FAIL", response.headers);
+					response = tools.ApiRequest.responseFormat(false, 500, "FAIL", response.headers);
 					tools.DebugAndLog.error(`Acme JSON Parse Error (${this.request.note}): ${error.message}`, error.stack);
 					
 					// Continue to next retry if we have attempts left
@@ -171,7 +171,7 @@ class Acme {
 				}
 	
 			} catch (error) {
-				response = tools.APIRequest.responseFormat(false, 500, "FAIL", response?.headers);
+				response = tools.ApiRequest.responseFormat(false, 500, "FAIL", response?.headers);
 				tools.DebugAndLog.error(`Error in call to Acme remote endpoint (Attempt ${attempt + 1}/${maxRetries + 1}): ${error.message}`, error.stack);
 				
 				// Continue to next retry if we have attempts left
@@ -188,12 +188,12 @@ class Acme {
 
 		try {
 			tools.DebugAndLog.debug(`Acme _call: ${this.request.note}`, this.request);
-			const apiRequest = new tools.APIRequest(this.request);
+			const apiRequest = new tools.ApiRequest(this.request);
 			response = await apiRequest.send();
 
 		} catch (error) {
 			tools.DebugAndLog.error(`Error in Acme _call: ${error.message}`, error.stack);
-			response = tools.APIRequest.responseFormat(false, 500, "Error in call()");
+			response = tools.ApiRequest.responseFormat(false, 500, "Error in call()");
 		}
 
 		return response;
