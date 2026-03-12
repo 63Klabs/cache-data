@@ -698,7 +698,7 @@ class ClientRequest extends RequestInfo {
 	 * Parameter validations
 	 * @returns {{
 	 * 	pathParameters?: object,
-	 * 	queryParameters?: object,
+	 * 	queryStringParameters?: object,
 	 * 	headerParameters?: object,
 	 * 	cookieParameters?: object,
 	 * 	bodyParameters?: object

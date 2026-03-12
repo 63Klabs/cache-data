@@ -118,7 +118,7 @@ module.exports = {
 		pathParameters: {
 			id: idPathParameter,
 		},
-		queryParameters: {
+		queryStringParameters: {
 			players: playersQueryParameter,
 			BY_ROUTE: [{route: "GET:api/example?plyrs", validate: playersQueryParameter}]
 		},
