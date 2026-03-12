@@ -96,7 +96,7 @@ const process = async (event, context) => {
 			use the response to get the data. */
 			const cacheObj = await CacheableDataAccess.getData(
 				cacheProfile, 
-				endpoint.get, // function to call if cache miss
+				endpoint.send, // function to call if cache miss
 				conn, 
 				null
 			);

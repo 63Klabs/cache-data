@@ -206,19 +206,19 @@ class Config extends AppConfig {
 module.exports = {Config}
 ```
 
-Use in your application with `endpoint.get`, `CacheableDataAccess.getData` or your own custom function:
+Use in your application with `endpoint.send`, `CacheableDataAccess.getData` or your own custom function:
 
 ```javascript
 const { endpoint, cache: {CacheableDataAccess} } = require("@63klabs/cache-data");
 const { Config } = require("./config.js");
 
 const conn1 = Config.getConn("games");
-const data1 = await endpoint.get(conn1);
+const data1 = await endpoint.send(conn1);
 
 const {conn, cacheProfile} = Config.getConnCacheProfile("games", "default");
 const cacheObj = await CacheableDataAccess.getData(
   cacheProfile,
-  endpoint.get,
+  endpoint.send,
   conn,
   null
 )

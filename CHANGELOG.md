@@ -8,7 +8,7 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
-## v1.3.9 (unreleased)
+## v1.3.10 (unreleased)
 
 ### Changes
 
@@ -19,6 +19,8 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
   - `CachedSSMParameter` is now aliased to `CachedSsmParameter` and will still work. 
   - While there is no timeframe to deprecate and remove the old naming, it will happen with a future **major** version update.
   - New code should use the new conventions. Old code should be updated.
+- **tools.endpoint.get()** deprecated in favor of **tools.endpoint.send()**
+  - `tools.endpoint.send()` removes any confusion about it accepting more than just `GET` requests and that it will send immediately when called.
 
 ## v1.3.9 (2026-03-09)
 

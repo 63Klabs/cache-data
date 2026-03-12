@@ -17,7 +17,7 @@ async function getUserData(userId) {
   // Fetch data (from cache if available, otherwise from endpoint)
   const cacheObj = await CacheableDataAccess.getData(
     cacheProfile,
-    endpoint.get,
+    endpoint.send,
     conn,
     null
   );
@@ -45,7 +45,7 @@ class UsersDAO {
       headers: { 'Authorization': `Bearer ${process.env.API_TOKEN}` }
     };
     
-    const response = await endpoint.get(connection);
+    const response = await endpoint.send(connection);
     
     if (!response.success) {
       throw new Error(`Failed to fetch user: ${response.statusCode}`);
@@ -63,7 +63,7 @@ class UsersDAO {
       parameters: { limit, page }
     };
     
-    const response = await endpoint.get(connection);
+    const response = await endpoint.send(connection);
     return response.body;
   }
   
@@ -79,7 +79,7 @@ class UsersDAO {
       }
     };
     
-    const response = await endpoint.get(connection);
+    const response = await endpoint.send(connection);
     
     if (response.statusCode !== 201) {
       throw new Error(`Failed to create user: ${response.statusCode}`);
@@ -151,7 +151,7 @@ class CachedUsersDAO {
     // Use CacheableDataAccess for automatic caching
     const cacheObj = await cache.CacheableDataAccess.getData(
       cacheProfile,
-      endpoint.get,
+      endpoint.send,
       connection,
       null
     );
@@ -173,7 +173,7 @@ class CachedUsersDAO {
     
     const cacheObj = await cache.CacheableDataAccess.getData(
       cacheProfile,
-      endpoint.get,
+      endpoint.send,
       connection,
       query
     );
@@ -205,7 +205,7 @@ class UsersDAO {
       path: `/users/${userId}`
     };
     
-    const response = await endpoint.get(connection);
+    const response = await endpoint.send(connection);
     return response.body;
   }
   

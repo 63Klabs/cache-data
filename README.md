@@ -116,7 +116,7 @@ cache.Cache.init({
 // Retrieve cached data
 const conn = { host: "api.example.com", path: "api/users"};
 const cacheProfile = {/* cache parameters */};
-const cachedData = await CacheableDataAccess.getData(cacheProfile, endpoint.get, conn);
+const cachedData = await CacheableDataAccess.getData(cacheProfile, endpoint.send, conn);
 const data = cachedData.getBody(true);
 ```
 
@@ -126,7 +126,7 @@ const data = cachedData.getBody(true);
 const { endpoint } = require("@63klabs/cache-data");
 
 // Make a simple GET request to an API
-const response = await endpoint.get(
+const response = await endpoint.send(
   { host: "api.example.com", path: "/data", parameters: { q: "search-term" } }
 );
 

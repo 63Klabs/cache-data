@@ -58,7 +58,7 @@ const { cache, endpoint, tools } = require('@63klabs/cache-data');
 cache.Cache.init({ /* config */ });
 
 // Use endpoint module
-const response = await endpoint.get({ host: 'api.example.com', path: '/data' });
+const response = await endpoint.send({ host: 'api.example.com', path: '/data' });
 
 // Use tools module
 tools.DebugAndLog.info('Application started');

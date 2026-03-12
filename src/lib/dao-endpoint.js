@@ -11,7 +11,7 @@
  * via the ApiRequest class.
  * 
  * The class itself is not exposed, instead various functions can be used
- * to access the class. For exmaple, get(connection, data)
+ * to access the class. For example, send(connection, data)
  * 
  * The connection parameter is used to pass connection information to the 
  * API (host, path, query, etc).
@@ -21,8 +21,8 @@
  * 
  * @example
  *  // access function that utilizes the class
- *  const get = async (connection, data = null) => {
- *      return (new Endpoint(connection).get());
+ *  const send = async (connection, data = null) => {
+ *      return (new Endpoint(connection).send());
  *  };
  */
 
@@ -53,10 +53,11 @@
  * -----------------------------------------------------------------------------
  */
 
-const tools = require("./tools/index.js");
+const DebugAndLog = require("./tools/DebugAndLog.class.js");
+const ApiRequest = require("./tools/ApiRequest.class.js");
 
 /**
- * Makes a GET request to a remote endpoint with the specified connection configuration.
+ * Makes a request to a remote endpoint with the specified connection configuration.
  * 
  * This function provides a simple interface for making HTTP requests to external APIs
  * or services. It supports both URI-based and component-based (protocol/host/path) 
@@ -68,12 +69,11 @@ const tools = require("./tools/index.js");
  * @param {ConnectionObject} connection - Connection configuration object specifying the endpoint details
  * @param {Object} [query={}] - Additional query data to merge with connection parameters. If query.parameters is provided, it will be merged with connection.parameters
  * @returns {Promise<{success: boolean, statusCode: number, body: Object|string|null, headers: Object}>} Response object containing success status, HTTP status code, parsed body, and response headers
- * @throws {Error} Throws an error if the request fails due to network issues or invalid configuration
  * 
  * @example
  * // Using separate host and path
  * const { endpoint } = require("@63klabs/cache-data");
- * const response = await endpoint.get(
+ * const response = await endpoint.send(
  *   { host: "api.example.com", path: "/data" },
  *   { parameters: { q: "Chicago" } }
  * );
@@ -82,7 +82,7 @@ const tools = require("./tools/index.js");
  * @example
  * // Using complete URI
  * const { endpoint } = require("@63klabs/cache-data");
- * const response = await endpoint.get(
+ * const response = await endpoint.send(
  *   { uri: "https://api.example.com/data" },
  *   { parameters: { q: "Chicago" } }
  * );
@@ -91,7 +91,7 @@ const tools = require("./tools/index.js");
  * @example
  * // With custom headers and timeout
  * const { endpoint } = require("@63klabs/cache-data");
- * const response = await endpoint.get({
+ * const response = await endpoint.send({
  *   host: "api.example.com",
  *   path: "/secure/data",
  *   headers: { "Authorization": "Bearer token123" },
@@ -101,19 +101,36 @@ const tools = require("./tools/index.js");
  * @example
  * // POST request with body
  * const { endpoint } = require("@63klabs/cache-data");
- * const response = await endpoint.get({
+ * const response = await endpoint.send({
  *   method: "POST",
  *   uri: "https://api.example.com/submit",
  *   body: JSON.stringify({ name: "John", age: 30 }),
  *   headers: { "Content-Type": "application/json" }
  * });
  */
-const get = async (connection, query = {}) => {
+const send = async (connection, query = {}) => {
 	if (query === null) { query = {} };
-	return (new Endpoint(connection, query).get());
+	return (new Endpoint(connection, query).send());
 };
 
 /**
+ * @deprecated Use send() instead. This function is maintained for backwards compatibility.
+ * @see send
+ */
+const get = async (connection, query = {}) => {
+	return send(connection, query);
+};
+
+/**
+ * @deprecated Use send() instead. This function is maintained for backwards compatibility.
+ * @see send
+ */
+const getDataDirectFromURI = async (connection, query = {}) => {
+	return send(connection, query);
+};
+
+/**
+ * @class Endpoint
  * Endpoint request class for making HTTP requests to remote APIs.
  * 
  * This class provides a bare-bones implementation for making API requests and can be used
@@ -122,19 +139,19 @@ const get = async (connection, query = {}) => {
  * merging, and automatic JSON parsing of responses.
  * 
  * The class is typically not instantiated directly but accessed through convenience functions
- * like `endpoint.get()`. However, it can be extended to add custom pre/post-processing logic.
+ * like `endpoint.send()`. However, it can be extended to add custom pre/post-processing logic.
  * 
  * @example
  * // Direct instantiation (advanced usage)
  * const endpoint = new Endpoint({ host: "api.example.com", path: "/data" });
- * const response = await endpoint.get();
+ * const response = await endpoint.send();
  * 
  * @example
  * // Extending for custom logic
  * class CustomEndpoint extends Endpoint {
- *   async get() {
+ *   async send() {
  *     // Custom pre-processing
- *     const response = await super.get();
+ *     const response = await super.send();
  *     // Custom post-processing
  *     return response;
  *   }
@@ -165,6 +182,9 @@ class Endpoint {
 	 */
 	constructor(connection, query = {}) {
 
+		/**
+		 * @property {Object|null} response - Configured response object
+		 */	
 		this.response = null;
 
 		// if query has parameters property then we will combine with connection parameters
@@ -178,6 +198,9 @@ class Endpoint {
 			}
 		}
 
+		/**
+		 * @property {Object} request - Configured request object
+		 */		
 		this.request = {
 			method: this._setRequestSetting(connection, "method", "GET"),
 			uri: this._setRequestSetting(connection, "uri", ""),
@@ -199,6 +222,8 @@ class Endpoint {
 	 * If the key exists, it returns the value; otherwise, it sets the key to the
 	 * default value and returns that default. This ensures all request settings
 	 * have valid values.
+	 * 
+	 * @private
 	 * 
 	 * @param {ConnectionObject} connection - The connection object to check for the key
 	 * @param {string} key - The property key to check for and retrieve
@@ -230,12 +255,11 @@ class Endpoint {
 	 * request) or post-processing (after the response) logic.
 	 * 
 	 * @returns {Promise<{success: boolean, statusCode: number, body: Object|string|null, headers: Object}>} Response object with success status, HTTP status code, parsed body, and headers
-	 * @throws {Error} Throws an error if the request fails due to network issues, timeout, or invalid configuration
 	 * 
 	 * @example
-	 * // Basic usage through the get() function
+	 * // Basic usage through the send() function
 	 * const endpoint = new Endpoint({ host: "api.example.com", path: "/data" });
-	 * const response = await endpoint.get();
+	 * const response = await endpoint.send();
 	 * if (response.success) {
 	 *   console.log(response.body);
 	 * }
@@ -244,20 +268,20 @@ class Endpoint {
 	 * // Handling errors
 	 * try {
 	 *   const endpoint = new Endpoint({ uri: "https://api.example.com/data" });
-	 *   const response = await endpoint.get();
+	 *   const response = await endpoint.send();
 	 *   console.log(response.statusCode, response.body);
 	 * } catch (error) {
 	 *   console.error("Request failed:", error.message);
 	 * }
 	 */
-	async get() {
+	async send() {
 
 		if (this.response === null) {
 
 			// send the call
 			try {
 
-				tools.DebugAndLog.debug("Sending call", this.request);
+				DebugAndLog.debug("Sending call", this.request);
 				this.response = await this._call();                
 
 				// if it is not JSON we don't convert
@@ -272,11 +296,11 @@ class Endpoint {
 					this.response.body = body;
 
 				} catch (error) {
-					tools.DebugAndLog.debug("This isn't JSON so we'll keep as text and do nothing. This isn't a true error.");
+					DebugAndLog.debug("This isn't JSON so we'll keep as text and do nothing. This isn't a true error.");
 				}
 
 			} catch (error) {
-				tools.DebugAndLog.error(`Error in call to remote endpoint (${this.request.note}): ${error.message}`, error.stack);
+				DebugAndLog.error(`Error in call to remote endpoint (${this.request.note}): ${error.message}`, error.stack);
 			}
 
 		}
@@ -289,10 +313,11 @@ class Endpoint {
 	 * 
 	 * This method creates an ApiRequest instance with the configured request settings
 	 * and sends the request. It handles errors by logging them and returning a formatted
-	 * error response. This method is called internally by the get() method.
+	 * error response. This method is called internally by the send() method.
 	 * 
 	 * @returns {Promise<{success: boolean, statusCode: number, body: Object|string|null, headers: Object}>} Response object from the ApiRequest
-	 * @throws {Error} Throws an error if the ApiRequest instantiation or send operation fails
+	 * 
+	 * @private
 	 * 
 	 * @example
 	 * // Internal usage (not typically called directly)
@@ -303,12 +328,12 @@ class Endpoint {
 		var response = null;
 
 		try {
-			var apiRequest = new tools.ApiRequest(this.request);
+			var apiRequest = new ApiRequest(this.request);
 			response = await apiRequest.send();
 
 		} catch (error) {
-			tools.DebugAndLog.error(`Error in call (${this.request.note}): ${error.message}`, error.stack);
-			response = tools.ApiRequest.responseFormat(false, 500, "Error in call()");
+			DebugAndLog.error(`Error in call (${this.request.note}): ${error.message}`, error.stack);
+			response = ApiRequest.responseFormat(false, 500, "Error in call()");
 		}
 
 		return response;
@@ -317,7 +342,14 @@ class Endpoint {
 
 };
 
+/**
+ * @module dao-endpoint
+ * @description Provides endpoint request functionality for making HTTP requests
+ */
 module.exports = {
-	getDataDirectFromURI: get, // deprecated alias
-	get
+	/** @deprecated Use send() instead */
+	getDataDirectFromURI,
+	/** @deprecated Use send() instead */
+	get,
+	send
 };

@@ -295,7 +295,7 @@ class AppConfig {
 	 * const conn = Config.getConn('myConnection');
 	 * const cacheObj = await CacheableDataAccess.getData(
 	 *    cacheProfile,
-	 *    endpoint.get
+	 *    endpoint.send
 	 *    conn
 	 * )
 	 * */
@@ -322,7 +322,7 @@ class AppConfig {
 	 * const { conn, cacheProfile } = Config.getConnCacheProfile('myConnection', 'myCacheProfile');
 	 * const cacheObj = await CacheableDataAccess.getData(
 	 *    cacheProfile,
-	 *    endpoint.get
+	 *    endpoint.send
 	 *    conn
 	 * )
 	 */
@@ -535,6 +535,7 @@ module.exports = {
 	AWSXRay,
 	AwsXRay: AWSXRay, // Alias
 	ApiRequest,
+	/** @deprecated Use ApiRequest instead */
 	APIRequest: ApiRequest, // Alias
 	ImmutableObject,
 	Timer,
@@ -548,8 +549,10 @@ module.exports = {
 	ResponseDataModel,
 	Response,
 	AppConfig,
+	/** @deprecated Use AppConfig instead */
 	_ConfigSuperClass: AppConfig, // Alias
 	CachedSsmParameter,
+	/** @deprecated Use CachedSsmParameter instead */
 	CachedSSMParameter: CachedSsmParameter, // Alias
 	CachedSecret,
 	CachedParameterSecret,

@@ -148,7 +148,7 @@ class UsersDAO {
         
     const cacheObj = await CacheableDataAccess.getData(
       cacheProfile,
-      endpoint.get,
+      endpoint.send,
       conn,
       null
     );
@@ -169,7 +169,7 @@ class UsersDAO {
         
     const cacheObj = await CacheableDataAccess.getData(
       cacheProfile,
-      endpoint.get,
+      endpoint.send,
       conn,
       query
     );

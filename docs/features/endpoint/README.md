@@ -21,7 +21,7 @@ The endpoint module provides a simple, flexible interface for making HTTP reques
 const { endpoint } = require('@63klabs/cache-data');
 
 // Using separate host and path
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/data'
 });
@@ -34,7 +34,7 @@ console.log(response.body);
 ```javascript
 const { endpoint } = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   uri: 'https://api.example.com/data'
 });
 
@@ -47,14 +47,14 @@ console.log(response.body);
 const { endpoint } = require('@63klabs/cache-data');
 
 // Parameters in connection object
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/search',
   parameters: { q: 'javascript', limit: 10 }
 });
 
 // Or pass as second argument
-const response2 = await endpoint.get(
+const response2 = await endpoint.send(
   { host: 'api.example.com', path: '/search' },
   { parameters: { q: 'javascript', limit: 10 } }
 );
@@ -76,7 +76,7 @@ HTTP method to use for the request.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   method: 'POST',
   uri: 'https://api.example.com/submit'
 });
@@ -89,7 +89,7 @@ Complete URI including protocol, host, and path. When provided, overrides `proto
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   uri: 'https://api.example.com/data?key=value'
 });
 ```
@@ -104,7 +104,7 @@ Protocol to use for the request.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   protocol: 'https',
   host: 'api.example.com',
   path: '/data'
@@ -118,7 +118,7 @@ Hostname or IP address of the endpoint.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/data'
 });
@@ -131,7 +131,7 @@ Path portion of the URL.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/api/v1/users'
 });
@@ -146,7 +146,7 @@ Request body for POST/PUT requests. Should be a string (use `JSON.stringify()` f
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   method: 'POST',
   uri: 'https://api.example.com/submit',
   body: JSON.stringify({ name: 'John', age: 30 })
@@ -162,7 +162,7 @@ Query string parameters as key-value pairs. Automatically encoded and appended t
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/search',
   parameters: {
@@ -183,7 +183,7 @@ HTTP headers as key-value pairs.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/secure/data',
   headers: {
@@ -202,7 +202,7 @@ Additional request options.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/data',
   options: {
@@ -230,7 +230,7 @@ Descriptive note for logging purposes. Helps identify requests in logs.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/data',
   note: 'Fetching user profile data'
@@ -250,7 +250,7 @@ Indicates whether the request was successful (status code 200-299).
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({ uri: 'https://api.example.com/data' });
+const response = await endpoint.send({ uri: 'https://api.example.com/data' });
 if (response.success) {
   console.log('Request succeeded');
 }
@@ -263,7 +263,7 @@ HTTP status code from the response.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({ uri: 'https://api.example.com/data' });
+const response = await endpoint.send({ uri: 'https://api.example.com/data' });
 console.log(`Status: ${response.statusCode}`); // e.g., 200, 404, 500
 ```
 
@@ -274,7 +274,7 @@ Response body. Automatically parsed as JSON if possible, otherwise returned as t
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({ uri: 'https://api.example.com/data' });
+const response = await endpoint.send({ uri: 'https://api.example.com/data' });
 console.log(response.body); // Parsed JSON object or text string
 ```
 
@@ -285,7 +285,7 @@ Response headers as key-value pairs.
 ```javascript
 const {endpoint} = require('@63klabs/cache-data');
 
-const response = await endpoint.get({ uri: 'https://api.example.com/data' });
+const response = await endpoint.send({ uri: 'https://api.example.com/data' });
 console.log(response.headers['content-type']);
 ```
 
@@ -296,7 +296,7 @@ console.log(response.headers['content-type']);
 ```javascript
 const { endpoint } = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   method: 'POST',
   uri: 'https://api.example.com/users',
   body: JSON.stringify({
@@ -318,7 +318,7 @@ if (response.success) {
 ```javascript
 const { endpoint } = require('@63klabs/cache-data');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   host: 'api.example.com',
   path: '/secure/data',
   headers: {
@@ -335,7 +335,7 @@ console.log(response.body);
 const { endpoint } = require('@63klabs/cache-data');
 
 try {
-  const response = await endpoint.get({
+  const response = await endpoint.send({
     uri: 'https://slow-api.example.com/data',
     options: {
       timeout: 3000  // 3 second timeout
@@ -362,7 +362,7 @@ const connection = {
 };
 
 // Add more parameters via query argument
-const response = await endpoint.get(
+const response = await endpoint.send(
   connection,
   { parameters: { q: 'javascript', limit: 10 } }
 );
@@ -376,7 +376,7 @@ const response = await endpoint.get(
 const { endpoint } = require('@63klabs/cache-data');
 
 try {
-  const response = await endpoint.get({
+  const response = await endpoint.send({
     uri: 'https://api.example.com/data'
   });
   
@@ -449,7 +449,7 @@ const cacheProfile = {
 // Use CacheableDataAccess to fetch with caching
 const cacheObj = await cache.CacheableDataAccess.getData(
   cacheProfile,
-  endpoint.get,
+  endpoint.send,
   connection
 );
 
@@ -486,7 +486,7 @@ module.exports = {
 const { endpoint } = require('@63klabs/cache-data');
 const config = require('./config');
 
-const response = await endpoint.get({
+const response = await endpoint.send({
   ...config.apiConnection,
   path: '/specific/endpoint'
 });
@@ -499,7 +499,7 @@ const {endpoint} = require('@63klabs/cache-data');
 
 async function fetchData(path) {
   try {
-    const response = await endpoint.get({
+    const response = await endpoint.send({
       host: 'api.example.com',
       path: path,
       options: { timeout: 5000 }

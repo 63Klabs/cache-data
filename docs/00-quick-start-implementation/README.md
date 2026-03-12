@@ -66,30 +66,30 @@ For more details, see [tools.DebugAndLog](../features/tools/README.md#toolsdebug
 
 ## Making Endpoint Requests
 
-Make HTTP requests to external APIs using `endpoint.get()`:
+Make HTTP requests to external APIs using `endpoint.send()`:
 
 ```javascript
 const { endpoint } = require('@63klabs/cache-data');
 
 // Simple GET request with complete URI
-const data = await endpoint.get({ 
+const data = await endpoint.send({ 
   uri: "https://api.example.com/data?q=Chicago" 
 });
 
 // Separate query parameters
-const data2 = await endpoint.get(
+const data2 = await endpoint.send(
   { uri: "https://api.example.com/data" },
   { parameters: { q: "Chicago" } }
 );
 
 // Separate host and path
-const data3 = await endpoint.get(
+const data3 = await endpoint.send(
   { host: "api.example.com", path: "/data" },
   { parameters: { q: "Chicago" } }
 );
 
 // POST request with body
-const data4 = await endpoint.get({
+const data4 = await endpoint.send({
   method: "POST",
   uri: "https://api.example.com/submit",
   body: JSON.stringify({ name: "John", age: 30 }),
@@ -108,7 +108,7 @@ console.log(data.headers);    // response headers
 ```javascript
 const {endpoint} = require("@63klabs/cache-data");
 
-const data = await endpoint.get({
+const data = await endpoint.send({
   host: "api.example.com",
   path: "/data",
   headers: { "Authorization": "Bearer token123" },
@@ -226,7 +226,7 @@ async function getData() {
   // Get data (from cache if available, otherwise from endpoint)
   const cacheObj = await CacheableDataAccess.getData(
     cacheProfile,
-    endpoint.get,
+    endpoint.send,
     conn,
     null
   );

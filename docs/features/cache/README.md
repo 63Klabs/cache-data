@@ -36,7 +36,7 @@ Example structure:
 ```javascript
 const {endpoint, cache: {CacheableDataAccess}} = require('@63klabs/cache-data');
 
-const cacheObj = await CacheableDataAccess( cacheProfile, endpoint.get, conn, null);
+const cacheObj = await CacheableDataAccess( cacheProfile, endpoint.send, conn, null);
 const response = cacheObj.getResponse(true); // true = parse JSON
 
 console.log(response);
@@ -57,7 +57,7 @@ By using the `true` option you will receive it as an object (parsed from a JSON 
 ```javascript
 const {endpoint, cache: {CacheableDataObject}} = require('@63klabs/cache-data');
 
-const cacheObject = await CacheableDataObject(cacheProfile, endpoint.get, conn, null);
+const cacheObject = await CacheableDataObject(cacheProfile, endpoint.send, conn, null);
 
 const data = cacheObject.getBody(false); // leave data as string
 const data2 = cacheObject.getBody(true); // parse JSON data
@@ -75,7 +75,7 @@ const cacheProfile = { defaultExpirationInSeconds: 60 };
 
 const cacheObj = await CacheableDataAccess.getData(
   cacheProfile, 
-	endpoint.get, // this is a provided function for simple API requests
+	endpoint.send, // this is a provided function for simple API requests
 	conn, 
 	null
 );
@@ -114,7 +114,7 @@ const cacheProfile = {
 
 ##### Fetch Function parameter for `CacheableDataAccess.getData()`
 
-The cache-data package supplies a simple `endpoint.get` method for performing basic HTTP requests.
+The cache-data package supplies a simple `endpoint.send` method for performing basic HTTP requests.
 
 However, for more complex requests, or if you are performing database access, AWS SDK queries, or more, you can create your own fetch function to wrap your official request in.
 
@@ -366,7 +366,7 @@ const cacheProfile = { defaultExpirationInSeconds: 60 };
 
 const cacheObj = await cache.CacheableDataAccess.getData(
   cacheProfile, 
-	endpoint.get,
+	endpoint.send,
 	conn, 
 	null
 );
@@ -413,7 +413,7 @@ The cache status is also included in the response headers via `x-cprxy-data-sour
 ```javascript
 const {endpoint, cache: {CacheableDataAccess}} = require('@63klabs/cache-data');
 
-const cacheObj = await CacheableDataAccess(cacheProfile, endpoint.get, conn, null);
+const cacheObj = await CacheableDataAccess(cacheProfile, endpoint.send, conn, null);
 const response = cacheObj.getResponse();
 console.log(response.headers['x-cprxy-data-source']); // "cache:memory"
 ```

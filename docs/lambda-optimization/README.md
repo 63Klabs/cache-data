@@ -154,7 +154,7 @@ exports.handler = async (event, context) => {
 	await Config.prime();
   
   // Now use cache-data components
-  const result = await endpoint.get(Config.getConn('myApi'));
+  const result = await endpoint.send(Config.getConn('myApi'));
   
   return {
     statusCode: 200,
@@ -199,9 +199,9 @@ When you need data from multiple endpoints and the requests are independent, dis
 ```javascript
 // ❌ Sequential (slow) - each request waits for the previous
 async function fetchSequential() {
-  const user = await endpoint.get(userConnection);
-  const orders = await endpoint.get(ordersConnection);
-  const inventory = await endpoint.get(inventoryConnection);
+  const user = await endpoint.send(userConnection);
+  const orders = await endpoint.send(ordersConnection);
+  const inventory = await endpoint.send(inventoryConnection);
   // Total time: sum of all three requests
   return { user, orders, inventory };
 }
@@ -209,9 +209,9 @@ async function fetchSequential() {
 // ✅ Parallel (fast) - all requests run simultaneously
 async function fetchParallel() {
   const [user, orders, inventory] = await Promise.all([
-    endpoint.get(userConnection),
-    endpoint.get(ordersConnection),
-    endpoint.get(inventoryConnection)
+    endpoint.send(userConnection),
+    endpoint.send(ordersConnection),
+    endpoint.send(inventoryConnection)
   ]);
   // Total time: longest single request
   return { user, orders, inventory };
@@ -236,7 +236,7 @@ exports.handler = async (event, context) => {
 	await Config.prime();
   
   // Use initialized components
-  const result = await endpoint.get(Config.getConn('api'));
+  const result = await endpoint.send(Config.getConn('api'));
   
   return result;
 };
@@ -420,7 +420,7 @@ const { endpoint, tools: {Timer} } = require('@63klabs/cache-data');
 const timer = new Timer();
 
 timer.start('apiCall');
-const result = await endpoint.get(connection);
+const result = await endpoint.send(connection);
 timer.stop('apiCall');
 
 console.log(timer.report()); // Logs execution time
@@ -512,7 +512,7 @@ const connection = {
 
 exports.handler = async (event) => {
   // Reuses connection from previous invocations
-  const result = await endpoint.get(connection);
+  const result = await endpoint.send(connection);
   return result;
 };
 ```

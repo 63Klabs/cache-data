@@ -58,8 +58,13 @@ class S3Cache {
 	static #bucket = null;
 	static #objPath = "cache/";
 
-	constructor () {
-	};
+	/**
+	 * Create a new S3Cache instance.
+	 * Private constructor - instances should be created through static methods.
+	 *
+	 * @private
+	 */
+	constructor () {};
 
 	/**
 	 * Get the S3 bucket name configured for cache storage.
@@ -107,7 +112,6 @@ class S3Cache {
 	 * process.env.CACHE_DATA_S3_BUCKET = 'my-cache-bucket';
 	 * S3Cache.init();
 	 */
-
 	static init(bucket = null) {
 		if ( S3Cache.getBucket() === null ) {
 			bucket = (bucket === null) ? process.env?.CACHE_DATA_S3_BUCKET || null : bucket;
@@ -3086,7 +3090,7 @@ class CacheableDataAccess {
 	 *
 	 * const cache = await CacheableDataAccess.getData(
 	 *   cachePolicy,
-	 *   endpoint.get,
+	 *   endpoint.send,
 	 *   connection,
 	 *   null,
 	 *   {path: 'users', id: '123'}

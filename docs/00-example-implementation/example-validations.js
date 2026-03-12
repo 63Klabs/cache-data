@@ -105,9 +105,11 @@ const playersQueryParameter = (players) => {
  * 4. Global parameter name
  * 
  * @example
+ * const {tools: {ClientRequest}} = require('@63klabs/cache-data');
  * const validations = require('./validations');
  * ClientRequest.init(validations);
  * @example
+ * const {tools: {AppConfig}} = require('@63klabs/cache-data');
  * const validations = require('./validations');
  * AppConfig.init({validations});
  */

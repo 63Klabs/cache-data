@@ -149,7 +149,7 @@ All public APIs must have complete JSDoc documentation. See [JSDoc Documentation
  * @example
  * const result = await CacheableDataAccess.getData(
  *   cacheProfile,
- *   endpoint.get,
+ *   endpoint.send,
  *   connection
  * );
  * console.log(result.data);

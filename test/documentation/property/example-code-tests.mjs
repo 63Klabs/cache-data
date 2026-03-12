@@ -85,7 +85,9 @@ function getCloudFormationTemplates() {
  */
 function hasDeprecatedAPI(code) {
 	const deprecatedPatterns = [
-		/getDataDirectFromURI/,  // Deprecated alias for endpoint.get
+		/getDataDirectFromURI/,  // Deprecated alias for endpoint.send
+		/endpoint\.get/,  // Deprecated alias for endpoint.send
+		/APIRequest/, // Deprecated class name for ApiRequest
 		// Add more deprecated patterns as they are identified
 	];
 

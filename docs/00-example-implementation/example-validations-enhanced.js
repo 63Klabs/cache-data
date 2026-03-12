@@ -375,7 +375,7 @@ const productionValidations = {
 // ============================================================================
 
 // Initialize ClientRequest with one of the validation configurations
-const { ClientRequest } = require('@63klabs/cache-data');
+const { tools: {ClientRequest} } = require('@63klabs/cache-data');
 
 // Use legacy validations (backwards compatible)
 ClientRequest.init(legacyValidations);

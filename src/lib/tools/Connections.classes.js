@@ -32,7 +32,7 @@ const { safeClone } = require('./utils');
  * 
  * // Use with endpoint requests
  * const dbConn = connections.get('database');
- * const result = await endpoint.get(dbConn);
+ * const result = await endpoint.send(dbConn);
  */
 class Connections {
 	
@@ -145,7 +145,7 @@ class Connections {
  * 
  * // Get connection object for use with endpoint
  * const connObj = apiConnection.get();
- * const users = await endpoint.get(connObj);
+ * const users = await endpoint.send(connObj);
  * 
  * @example
  * // Create connection with authentication
@@ -581,7 +581,7 @@ class ConnectionAuthentication {
  * request.addParameter('page', 1);
  * 
  * // Make the request
- * const result = await endpoint.get(request);
+ * const result = await endpoint.send(request);
  * 
  * @example
  * // Build a request dynamically in a DAO
@@ -597,7 +597,7 @@ class ConnectionAuthentication {
  *       'Content-Type': 'application/json'
  *     });
  *     
- *     return await endpoint.get(request);
+ *     return await endpoint.send(request);
  *   }
  * }
  */
