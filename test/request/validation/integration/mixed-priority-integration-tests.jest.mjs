@@ -339,7 +339,11 @@ describe('ClientRequest - Mixed Priority Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'users/{userId}/products/{productId}',
-								validate: (value) => /^[0-9]+$/.test(value) || /^P-[0-9]+$/.test(value) // Priority 2: Accept numeric or P- prefix
+								validate: ({ userId, productId }) => {
+									// Accept numeric userId and either numeric or P- prefix for productId
+									return /^[0-9]+$/.test(userId) && 
+									       (/^[0-9]+$/.test(productId) || /^P-[0-9]+$/.test(productId));
+								}
 							}
 						]
 					}

@@ -488,7 +488,23 @@ ClientRequest.init({
 
 ## Troubleshooting
 
-### Recent Bug Fixes (v1.3.9)
+### Recent Bug Fixes
+
+#### Version 1.3.10
+
+The following critical parameter extraction bug was fixed in version 1.3.10:
+
+**Parameter Extraction Bug**: Fixed critical bug where validated parameters were not being extracted and returned by parameter getter methods (`getQueryStringParameters()`, `getHeaderParameters()`, `getBodyParameters()`, `getPathParameters()`). When validation rules existed and validation passed, the getter methods would return empty objects instead of the validated parameter values.
+
+This fix ensures that:
+- Multi-parameter validation rules correctly extract all specified parameters
+- BY_ROUTE validation with multiple placeholders correctly extracts all path parameters
+- Method-and-route patterns correctly extract validated parameters
+- Validation priority order correctly extracts parameters using the highest-priority matching rule
+
+If you experienced issues where `isValid()` returned `true` but parameter getter methods returned empty objects, upgrading to v1.3.10 or later will resolve this issue.
+
+#### Version 1.3.9
 
 The following validation issues were fixed in version 1.3.9:
 

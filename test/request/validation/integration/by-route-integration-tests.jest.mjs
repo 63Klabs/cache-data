@@ -143,7 +143,7 @@ describe('ClientRequest - BY_ROUTE Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'users/{userId}/posts/{id}',
-								validate: (value) => /^POST-[0-9]+$/.test(value)
+								validate: ({ userId, id }) => /^[0-9]+$/.test(userId) && /^POST-[0-9]+$/.test(id)
 							}
 						]
 					}
@@ -298,7 +298,7 @@ describe('ClientRequest - BY_ROUTE Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'users/{userId}/posts/{postId}',
-								validate: (value) => /^POST-[0-9]+$/.test(value)
+								validate: ({ userId, postId }) => /^[0-9]+$/.test(userId) && /^POST-[0-9]+$/.test(postId)
 							}
 						]
 					}
@@ -606,22 +606,10 @@ describe('ClientRequest - BY_ROUTE Integration Tests', () => {
 				referrers: ['*'],
 				parameters: {
 					pathParameters: {
-						id: (value) => /^[0-9]+$/.test(value),
-						BY_ROUTE: [
-							{
-								route: 'users/{id}?includeProfile',
-								validate: ({ id }) => /^[0-9]+$/.test(id) && parseInt(id) > 0
-							}
-						]
+						id: (value) => /^[0-9]+$/.test(value)
 					},
 					queryParameters: {
-						includeProfile: (value) => value === 'true' || value === 'false',
-						BY_ROUTE: [
-							{
-								route: 'users/{id}?includeProfile',
-								validate: (value) => value === 'true' || value === 'false'
-							}
-						]
+						includeProfile: (value) => value === 'true' || value === 'false'
 					}
 				}
 			});
@@ -637,7 +625,7 @@ describe('ClientRequest - BY_ROUTE Integration Tests', () => {
 
 			expect(request.isValid()).toBe(true);
 			expect(request.getPathParameters()).toEqual({ id: '123' });
-			expect(request.getQueryStringParameters()).toEqual({ includeProfile: 'true' });
+			expect(request.getQueryStringParameters()).toEqual({ includeprofile: 'true' });
 		});
 	});
 

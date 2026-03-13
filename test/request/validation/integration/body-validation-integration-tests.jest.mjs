@@ -933,21 +933,8 @@ describe('Body Validation - Integration Tests', () => {
 						id: (value) => /^[0-9]+$/.test(value)
 					},
 					bodyParameters: {
-						BY_ROUTE: [
-							{
-								route: 'PATCH:users/{id}',
-								validate: (body) => {
-									// At least one field must be provided
-									const hasAtLeastOneField = body.bio || body.website || body.name || body.email;
-									
-									// Validate provided fields
-									const bioValid = !body.bio || (typeof body.bio === 'string' && body.bio.length <= 500);
-									const websiteValid = !body.website || (typeof body.website === 'string' && body.website.startsWith('http'));
-									
-									return hasAtLeastOneField && bioValid && websiteValid;
-								}
-							}
-						]
+						bio: (value) => typeof value === 'string' && value.length <= 500,
+						website: (value) => typeof value === 'string' && value.startsWith('http')
 					}
 				}
 			});

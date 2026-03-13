@@ -316,12 +316,24 @@ class ValidationMatcher {
 	 * @returns {{validate: Function, params: Array<string>}|null} Validation rule or null
 	 */
 	#findGlobalMatch(paramName) {
-		// Check if parameter has a global validation function
+		// >! Try exact match first (for backwards compatibility)
 		if (this.#paramValidations[paramName] && typeof this.#paramValidations[paramName] === 'function') {
 			return {
 				validate: this.#paramValidations[paramName],
 				params: [paramName]
 			};
+		}
+
+		// >! Try case-insensitive match for query parameters
+		// >! Query parameters are lowercased in ClientRequest, but validation rules may use camelCase
+		const lowerParamName = paramName.toLowerCase();
+		for (const key in this.#paramValidations) {
+			if (key.toLowerCase() === lowerParamName && typeof this.#paramValidations[key] === 'function') {
+				return {
+					validate: this.#paramValidations[key],
+					params: [paramName] // Return the lowercased paramName that was passed in
+				};
+			}
 		}
 
 		return null;

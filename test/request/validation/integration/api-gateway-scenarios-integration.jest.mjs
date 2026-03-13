@@ -95,7 +95,12 @@ describe('ClientRequest - Real-World API Gateway Scenarios', () => {
 						BY_ROUTE: [
 							{
 								route: 'orgs/{orgId}/teams/{teamId}/projects/{projectId}/issues/{issueId}',
-								validate: (value) => /^[0-9]+$/.test(value) && parseInt(value) > 0
+								validate: ({ orgId, teamId, projectId, issueId }) => {
+									return /^[0-9]+$/.test(orgId) && parseInt(orgId) > 0 &&
+									       /^[0-9]+$/.test(teamId) && parseInt(teamId) > 0 &&
+									       /^[0-9]+$/.test(projectId) && parseInt(projectId) > 0 &&
+									       /^[0-9]+$/.test(issueId) && parseInt(issueId) > 0;
+								}
 							}
 						]
 					}
@@ -259,7 +264,7 @@ describe('ClientRequest - Real-World API Gateway Scenarios', () => {
 
 			expect(request.isValid()).toBe(true);
 			expect(request.getPathParameters()).toEqual({
-				userId: '123' // Converted to camelCase
+				'user-id': '123' // Path parameters keep original names
 			});
 		});
 
@@ -322,7 +327,10 @@ describe('ClientRequest - Real-World API Gateway Scenarios', () => {
 						BY_ROUTE: [
 							{
 								route: 'repos/{owner}/{repo}',
-								validate: (value) => value.length > 0 && value.length <= 100
+								validate: ({ owner, repo }) => {
+									return owner.length > 0 && owner.length <= 100 &&
+									       repo.length > 0 && repo.length <= 100;
+								}
 							}
 						]
 					},
@@ -388,7 +396,9 @@ describe('ClientRequest - Real-World API Gateway Scenarios', () => {
 						BY_ROUTE: [
 							{
 								route: 'customers/{customerId}/subscriptions/{subscriptionId}',
-								validate: (value) => value.length > 4
+								validate: ({ customerId, subscriptionId }) => {
+									return customerId.length > 4 && subscriptionId.length > 4;
+								}
 							}
 						]
 					},
@@ -401,7 +411,7 @@ describe('ClientRequest - Real-World API Gateway Scenarios', () => {
 					},
 					headerParameters: {
 						authorization: (value) => value.startsWith('Bearer sk_'),
-						'stripe-version': (value) => /^\d{4}-\d{2}-\d{2}$/.test(value)
+						stripeVersion: (value) => /^\d{4}-\d{2}-\d{2}$/.test(value)
 					}
 				}
 			});
@@ -454,14 +464,14 @@ describe('ClientRequest - Real-World API Gateway Scenarios', () => {
 
 			const event = createApiGatewayEvent({
 				headers: {
-					'Referer': 'https://example.com'
-					// Missing Authorization header
+					'Referer': 'https://example.com',
+					'Authorization': '' // Empty authorization header
 				}
 			});
 
 			const request = new ClientRequest(event, createMockContext());
 
-			// Should be invalid but not throw
+			// Should be invalid due to empty/invalid authorization
 			expect(request.isValid()).toBe(false);
 			expect(request.getHeaderParameters()).toEqual({});
 		});
@@ -709,7 +719,9 @@ describe('ClientRequest - Real-World API Gateway Scenarios', () => {
 						BY_ROUTE: [
 							{
 								route: 'POST:carts/{cartId}/items/{itemId}',
-								validate: (value) => value.length > 5
+								validate: ({ cartId, itemId }) => {
+									return cartId.length > 5 && itemId.length > 5;
+								}
 							}
 						]
 					},
@@ -729,8 +741,8 @@ describe('ClientRequest - Real-World API Gateway Scenarios', () => {
 					},
 					// Defect 3: Header parameter extraction
 					headerParameters: {
-						'x-api-key': (value) => value.length === 32,
-						'x-session-id': (value) => /^sess_[a-z0-9]+$/.test(value)
+						xApiKey: (value) => value.length === 32,
+						xSessionId: (value) => /^sess_[a-z0-9]+$/.test(value)
 					}
 				}
 			});

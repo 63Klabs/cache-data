@@ -66,7 +66,10 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'users/{userId}/posts/{postId}',
-								validate: (value) => /^[0-9]+$/.test(value) && parseInt(value) > 0
+								validate: ({ userId, postId }) => {
+									return /^[0-9]+$/.test(userId) && parseInt(userId) > 0 &&
+									       /^[0-9]+$/.test(postId) && parseInt(postId) > 0;
+								}
 							}
 						]
 					},
@@ -125,7 +128,9 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'api/{version}/resources/{resourceId}/items/{itemId}',
-								validate: (value) => value.length > 0
+								validate: ({ version, resourceId, itemId }) => {
+									return version.length > 0 && resourceId.length > 0 && itemId.length > 0;
+								}
 							}
 						]
 					}
@@ -199,11 +204,16 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'POST:users/{userId}/posts/{postId}',
-								validate: (value) => /^[0-9]+$/.test(value) && parseInt(value) > 0
+								validate: ({ userId, postId }) => {
+									return /^[0-9]+$/.test(userId) && parseInt(userId) > 0 &&
+									       /^[0-9]+$/.test(postId) && parseInt(postId) > 0;
+								}
 							},
 							{
 								route: 'users/{userId}/posts/{postId}',
-								validate: (value) => /^[0-9]+$/.test(value)
+								validate: ({ userId, postId }) => {
+									return /^[0-9]+$/.test(userId) && /^[0-9]+$/.test(postId);
+								}
 							}
 						]
 					}
@@ -239,11 +249,17 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'POST:users/{userId}/posts/{postId}',
-								validate: (value) => /^NEW-[0-9]+$/.test(value) // Strict format for POST
+								validate: ({ userId, postId }) => {
+									// Strict format for POST - requires NEW- prefix
+									return /^NEW-[0-9]+$/.test(userId) && /^NEW-[0-9]+$/.test(postId);
+								}
 							},
 							{
 								route: 'users/{userId}/posts/{postId}',
-								validate: (value) => /^[0-9]+$/.test(value) // Flexible format for other methods
+								validate: ({ userId, postId }) => {
+									// Flexible format for other methods
+									return /^[0-9]+$/.test(userId) && /^[0-9]+$/.test(postId);
+								}
 							}
 						]
 					}
@@ -315,7 +331,7 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 				referrers: ['*'],
 				parameters: {
 					headerParameters: {
-						'content-type': (value) => value.length > 0,
+						contentType: (value) => value.length > 0,
 						authorization: (value) => value.startsWith('Bearer ')
 					}
 				}
@@ -604,7 +620,10 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'POST:categories/{categoryId}/products/{productId}',
-								validate: (value) => /^[0-9]+$/.test(value) && parseInt(value) > 0
+								validate: ({ categoryId, productId }) => {
+									return /^[0-9]+$/.test(categoryId) && parseInt(categoryId) > 0 &&
+									       /^[0-9]+$/.test(productId) && parseInt(productId) > 0;
+								}
 							}
 						]
 					},
@@ -623,7 +642,7 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 					},
 					headerParameters: {
 						authorization: (value) => value.startsWith('Bearer '),
-						'x-api-version': (value) => /^v[0-9]+$/.test(value)
+						xApiVersion: (value) => /^v[0-9]+$/.test(value)
 					}
 				}
 			});
@@ -655,8 +674,8 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 				productId: '500'
 			});
 			expect(request.getQueryStringParameters()).toEqual({
-				includeReviews: 'true',
-				includeInventory: 'true'
+				includereviews: 'true',
+				includeinventory: 'true'
 			});
 			expect(request.getHeaderParameters()).toEqual({
 				authorization: 'Bearer token123',
@@ -677,7 +696,11 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'users/{userId}/posts/{postId}/comments/{commentId}',
-								validate: (value) => /^[0-9]+$/.test(value) && parseInt(value) > 0
+								validate: ({ userId, postId, commentId }) => {
+									return /^[0-9]+$/.test(userId) && parseInt(userId) > 0 &&
+									       /^[0-9]+$/.test(postId) && parseInt(postId) > 0 &&
+									       /^[0-9]+$/.test(commentId) && parseInt(commentId) > 0;
+								}
 							}
 						]
 					},
@@ -688,7 +711,7 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 					},
 					headerParameters: {
 						authorization: (value) => value.startsWith('Bearer '),
-						'accept-language': (value) => /^[a-z]{2}(-[A-Z]{2})?$/.test(value)
+						acceptLanguage: (value) => /^[a-z]{2}(-[A-Z]{2})?$/.test(value)
 					}
 				}
 			});
@@ -723,9 +746,9 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 				commentId: '300'
 			});
 			expect(request.getQueryStringParameters()).toEqual({
-				includeProfile: 'true',
-				includeReplies: 'true',
-				maxDepth: '3'
+				includeprofile: 'true',
+				includereplies: 'true',
+				maxdepth: '3'
 			});
 			expect(request.getHeaderParameters()).toEqual({
 				authorization: 'Bearer social-token',
@@ -747,7 +770,10 @@ describe('ClientRequest - Complex Validation Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'POST:orgs/{orgId}/repos/{repoId}',
-								validate: (value) => /^[0-9]+$/.test(value) && parseInt(value) > 0
+								validate: ({ orgId, repoId }) => {
+									return /^[0-9]+$/.test(orgId) && parseInt(orgId) > 0 &&
+									       /^[0-9]+$/.test(repoId) && parseInt(repoId) > 0;
+								}
 							}
 						]
 					},

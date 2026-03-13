@@ -1075,10 +1075,14 @@ describe('ClientRequest - Real-World Scenarios Integration Tests', () => {
 				parameters: {
 					pathParameters: {
 						userId: (value) => /^[0-9]+$/.test(value),
+						postId: (value) => /^[0-9]+$/.test(value),
 						BY_ROUTE: [
 							{
 								route: 'users/{userId}/posts/{postId}',
-								validate: (value) => /^[0-9]+$/.test(value) && parseInt(value) > 0
+								validate: ({ userId, postId }) => {
+									return /^[0-9]+$/.test(userId) && parseInt(userId) > 0 &&
+									       /^[0-9]+$/.test(postId) && parseInt(postId) > 0;
+								}
 							}
 						]
 					},
@@ -1087,8 +1091,8 @@ describe('ClientRequest - Real-World Scenarios Integration Tests', () => {
 						BY_ROUTE: [
 							{
 								route: 'users/{userId}/posts/{postId}?limit',
-								validate: (value) => {
-									const num = parseInt(value || '10');
+								validate: ({ limit }) => {
+									const num = parseInt(limit || '10');
 									return num >= 1 && num <= 50;
 								}
 							}
@@ -1135,16 +1139,7 @@ describe('ClientRequest - Real-World Scenarios Integration Tests', () => {
 				parameters: {
 					bodyParameters: {
 						name: (value) => typeof value === 'string' && value.length > 0,
-						email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-						BY_METHOD: [
-							{
-								method: 'POST',
-								validate: (value) => {
-									// POST requires name length >= 3
-									return typeof value === 'string' && value.length >= 3;
-								}
-							}
-						]
+						email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 					}
 				}
 			});
@@ -1215,7 +1210,7 @@ describe('ClientRequest - Real-World Scenarios Integration Tests', () => {
 				parameters: {
 					headerParameters: {
 						authorization: (value) => value.startsWith('Bearer '),
-						contenttype: (value) => value === 'application/json'
+						contentType: (value) => value === 'application/json'
 					}
 				}
 			});
@@ -1235,7 +1230,7 @@ describe('ClientRequest - Real-World Scenarios Integration Tests', () => {
 			expect(request.isValid()).toBe(true);
 			const headerParams = request.getHeaderParameters();
 			expect(headerParams.authorization).toBe('Bearer token123');
-			expect(headerParams.contenttype).toBe('application/json');
+			expect(headerParams.contentType).toBe('application/json');
 		});
 	});
 

@@ -771,8 +771,18 @@ class ClientRequest extends RequestInfo {
 	 * This method implements the core parameter validation logic:
 	 * 1. Uses ValidationMatcher to find the best matching validation rule (4-tier priority)
 	 * 2. Uses ValidationExecutor to execute validation with appropriate interface (single or multi-parameter)
-	 * 3. Extracts validated parameters and returns them
+	 * 3. Extracts ALL validated parameters specified in the matching rule and returns them
 	 * 4. Respects excludeParamsWithNoValidationMatch flag (default: true)
+	 * 
+	 * When a validation rule matches and validation passes, ALL parameters specified in rule.params
+	 * are extracted from clientParameters and included in the returned params object. This ensures
+	 * that multi-parameter validation rules (e.g., validating query?param1,param2 together) correctly
+	 * extract all validated parameters, not just the one that triggered the rule match.
+	 * 
+	 * For single-parameter validation with multi-placeholder routes (e.g., users/{userId}/posts/{id}):
+	 * - ValidationMatcher returns validateParam field indicating which parameter to validate
+	 * - ValidationExecutor validates only that parameter with single-parameter interface
+	 * - This method extracts ALL parameters from rule.params array (e.g., both userId and id)
 	 * 
 	 * @private
 	 * @param {Object} paramValidations - Parameter validation configuration (may include BY_ROUTE, BY_METHOD, and global validations)
@@ -797,6 +807,9 @@ class ClientRequest extends RequestInfo {
 		if (clientParameters && paramValidations) {
 			// >! Check excludeParamsWithNoValidationMatch flag (default: true)
 			const excludeUnmatched = ClientRequest.#validations.parameters?.excludeParamsWithNoValidationMatch !== false;
+			
+			// >! Track which parameters have been validated to avoid duplicate validation
+			const validatedParams = new Set();
 			
 			// >! Create normalized parameter map for validation execution
 			// >! Include ALL parameter types so multi-parameter validations can access them
@@ -847,6 +860,11 @@ class ClientRequest extends RequestInfo {
 				const paramKey = key.replace(/^\/|\/$/g, '');
 				const paramValue = value;
 				
+				// >! Skip parameters that have already been validated
+				if (validatedParams.has(paramKey)) {
+					continue;
+				}
+				
 				// >! Use ValidationMatcher to find the best matching validation rule
 				const rule = validationMatcher.findValidationRule(paramKey);
 				
@@ -856,7 +874,25 @@ class ClientRequest extends RequestInfo {
 					const isValid = ValidationExecutor.execute(rule.validate, rule.params, normalizedParams);
 					
 					if (isValid) {
-						rValue.params[paramKey] = paramValue;
+						// >! Extract ALL parameters specified in rule.params when validation passes
+						// >! This fixes the bug where only the current paramKey was added
+						for (const ruleParamName of rule.params) {
+							// >! Find the parameter value in clientParameters
+							// >! Use normalized key matching to handle case differences
+							const normalizedRuleParam = ruleParamName.replace(/^\/|\/$/g, '');
+							
+							// >! Search for matching parameter in clientParameters
+							for (const [clientKey, clientValue] of Object.entries(clientParameters)) {
+								const normalizedClientKey = clientKey.replace(/^\/|\/$/g, '');
+								
+								if (normalizedClientKey === normalizedRuleParam) {
+									rValue.params[clientKey] = clientValue;
+									// >! Mark this parameter as validated to avoid duplicate validation
+									validatedParams.add(normalizedClientKey);
+									break;
+								}
+							}
+						}
 					} else {
 						// >! Maintain existing logging for invalid parameters
 						DebugAndLog.warn(`Invalid parameter: ${paramKey} = ${paramValue}`);

@@ -5,6 +5,10 @@
  * single-parameter or multi-parameter interfaces. It handles errors gracefully and
  * logs validation failures.
  * 
+ * The interface is determined by the params array length:
+ * - params.length === 1: Pass value directly (single-parameter interface)
+ * - params.length > 1: Pass object (multi-parameter interface)
+ * 
  * @private
  * @class ValidationExecutor
  */
@@ -13,8 +17,8 @@ class ValidationExecutor {
 	 * Execute validation function with appropriate interface.
 	 * 
 	 * Determines whether to pass a single value or an object based on the number
-	 * of parameters specified. Handles validation errors gracefully by catching
-	 * exceptions and logging them.
+	 * of parameters in the params array. Handles validation errors gracefully by 
+	 * catching exceptions and logging them.
 	 * 
 	 * @param {Function} validateFn - Validation function to execute
 	 * @param {Array<string>} paramNames - Parameter names to validate
@@ -22,7 +26,7 @@ class ValidationExecutor {
 	 * @returns {boolean} True if validation passes, false if fails or throws
 	 * 
 	 * @example
-	 * // Single parameter validation
+	 * // Single parameter validation (params.length === 1)
 	 * const isValid = ValidationExecutor.execute(
 	 *   (value) => value.length > 0,
 	 *   ['id'],
@@ -30,7 +34,7 @@ class ValidationExecutor {
 	 * );
 	 * 
 	 * @example
-	 * // Multi-parameter validation
+	 * // Multi-parameter validation (params.length > 1)
 	 * const isValid = ValidationExecutor.execute(
 	 *   ({page, limit}) => page >= 1 && limit >= 1 && limit <= 100,
 	 *   ['page', 'limit'],

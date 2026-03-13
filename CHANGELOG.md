@@ -10,6 +10,16 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.10 (unreleased)
 
+### Fixed
+- **ClientRequest Parameter Extraction Bug** [Spec: 1-3-10-validation-parameter-extraction-fix](.kiro/specs/1-3-10-validation-parameter-extraction-fix/)
+  - Fixed critical parameter extraction bug in ClientRequest validation system where validated parameters were not being extracted and returned by parameter getter methods (`getQueryStringParameters()`, `getHeaderParameters()`, `getBodyParameters()`, `getPathParameters()`)
+  - Multi-parameter validation rules now correctly extract all specified parameters
+  - BY_ROUTE validation with multiple placeholders now correctly extracts all path parameters
+  - Method-and-route patterns now correctly extract validated parameters
+  - Validation priority order now correctly extracts parameters using highest-priority matching rule
+  - When validation passed, parameter getter methods would return empty objects instead of validated parameter values
+  - This fix ensures that all parameters specified in validation rules are properly extracted when validation succeeds
+
 ### Changes
 
 - **ApiRequest** and **CachedSsmParameter** renaming to conform to naming conventions:

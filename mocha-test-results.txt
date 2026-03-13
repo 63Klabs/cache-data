@@ -1,0 +1,1585 @@
+
+> @63klabs/cache-data@1.3.10 test
+> mocha 'test/**/*-tests.mjs' --exclude 'test/migration/property/test-execution-equivalence-property-tests.mjs'
+
+AWS_REGION is NOT set in Lambda Node environment variables. Trying 'us-east-1'. To prevent unexpected results, please create and set the 'AWS_REGION' in your Lambda environment variables.
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+Testing Against Node version 24 (24.13.0)
+Node 24.13.0 MAJOR 24 MINOR 13 PATCH 0 MAJOR MINOR 24.13 SDK V3 REGION us-east-1 V2 false V3 true [ 24, 13, 0 ]
+AWS.INFO {
+  NODE_VER: '24.13.0',
+  NODE_VER_MAJOR: 24,
+  NODE_VER_MINOR: 13,
+  NODE_VER_PATCH: 0,
+  NODE_VER_MAJOR_MINOR: '24.13',
+  NODE_VER_ARRAY: [ 24, 13, 0 ],
+  SDK_VER: 'V3',
+  REGION: 'us-east-1',
+  SDK_V2: false,
+  SDK_V3: true,
+  AWSXRayOn: false
+}
+▶ Cache - Backwards Compatibility Property Tests
+  ▶ Property 5: Backwards Compatibility for Valid Values
+    ✔ should maintain identical behavior for valid header values (null and non-null) (25.127545ms)
+    ✔ should verify that existing test suite passes (no regressions) (0.537835ms)
+  ✔ Property 5: Backwards Compatibility for Valid Values (31.905443ms)
+✔ Cache - Backwards Compatibility Property Tests (32.263736ms)
+▶ Cache.getHeader() - Valid Header Passthrough Property Tests
+  ▶ Property 4: Valid Header Passthrough
+    ✔ should return exact value without modification for valid header values (151.682439ms)
+  ✔ Property 4: Valid Header Passthrough (151.802523ms)
+✔ Cache.getHeader() - Valid Header Passthrough Property Tests (151.896356ms)
+▶ Cache.getHeader() - Property-Based Tests
+  ▶ Property 1: getHeader Undefined Normalization
+    ✔ should never return undefined - always return null for undefined header values (7.99807ms)
+  ✔ Property 1: getHeader Undefined Normalization (8.660113ms)
+✔ Cache.getHeader() - Property-Based Tests (9.113115ms)
+▶ CacheableDataAccess - Header Assignment Integration Tests
+  ▶ Header assignment logic validation
+    ✔ should not assign if-modified-since when value is undefined (0.550085ms)
+    ✔ should not assign if-modified-since when value is null (0.35321ms)
+    ✔ should assign if-modified-since when value is valid (0.460043ms)
+  ✔ Header assignment logic validation (1.656173ms)
+  ▶ ETag header assignment logic validation
+    ✔ should not assign if-none-match when value is undefined (0.956545ms)
+    ✔ should not assign if-none-match when value is null (0.133292ms)
+    ✔ should assign if-none-match when value is valid (0.055084ms)
+  ✔ ETag header assignment logic validation (1.207129ms)
+  ▶ Combined header assignment validation
+    ✔ should handle both headers when both are null (0.0515ms)
+    ✔ should handle both headers when both are undefined (0.406876ms)
+    ✔ should handle both headers when both are valid (0.340709ms)
+    ✔ should handle mixed valid and invalid values (0.037375ms)
+  ✔ Combined header assignment validation (1.878215ms)
+✔ CacheableDataAccess - Header Assignment Integration Tests (4.876933ms)
+▶ CacheableDataAccess - Conditional Header Assignment Property Tests
+  ▶ Property 3: Conditional Header Assignment
+    ✔ should only assign headers when values are valid (not null or undefined) (4.107514ms)
+  ✔ Property 3: Conditional Header Assignment (7.550442ms)
+✔ CacheableDataAccess - Conditional Header Assignment Property Tests (8.993198ms)
+
+
+  Cache Feature Flag
+    Test In-Memory Cache Feature Flag
+      ✔ Test feature flag in Cache.info()
+      ✔ Test Cache.info() includes inMemoryCache when enabled
+      ✔ Test Cache.info() structure when feature disabled
+      ✔ Test STATUS_CACHE_IN_MEM constant exists
+    Test Feature Flag Initialization Scenarios
+      ✔ Should accept useInMemoryCache parameter
+      ✔ Should accept CACHE_USE_IN_MEMORY environment variable
+      ✔ Should default to false when not specified
+
+  Cache.getHeader() - Unit Tests
+    getHeader() behavior verification
+      ✔ should return null when cache is empty (no data read yet)
+      ✔ should return null for missing header key
+      ✔ should handle case-insensitive header keys
+    getHeader() return value consistency
+      ✔ should never return undefined - always null or a value
+      ✔ should return null for empty cache
+    getHeader() with getLastModified() and getETag()
+      ✔ getLastModified() should return null when no cache data
+      ✔ getETag() should return null when no cache data
+      ✔ getLastModified() should never return undefined
+      ✔ getETag() should never return undefined
+
+  Cache._isValidHeaderValue() - Unit Tests
+    Invalid values (should return false)
+      ✔ should return false for null
+      ✔ should return false for undefined
+      ✔ should return false for empty string
+      ✔ should return false for NaN
+      ✔ should return false for boolean true
+      ✔ should return false for boolean false
+      ✔ should return false for object
+      ✔ should return false for array
+      ✔ should return false for empty object
+      ✔ should return false for empty array
+    Valid values (should return true)
+      ✔ should return true for non-empty string
+      ✔ should return true for single character string
+      ✔ should return true for string with spaces
+      ✔ should return true for positive number
+      ✔ should return true for negative number
+      ✔ should return true for zero
+      ✔ should return true for decimal number
+    Edge cases
+      ✔ should return false for function
+      ✔ should return false for Symbol
+      ✔ should return true for string '0'
+      ✔ should return true for string 'false'
+      ✔ should return true for string 'null'
+      ✔ should return false for string 'undefined'
+
+  Cache Object
+    Test Cache Settings
+      ✔ Test Cache Init
+      ✔ Test Cache Profile
+      ✔ Test Cache Profile Backward Compatibility
+
+  Cache Validation Tests
+    ✔ Should throw error for invalid DynamoDbMaxCacheSize_kb parameter (146ms)
+    ✔ Should throw error for invalid purgeExpiredCacheEntriesAfterXHours parameter (145ms)
+    ✔ Should throw error for invalid timeZoneForInterval parameter (185ms)
+    ✔ Should throw error for invalid environment variable CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB (161ms)
+[ERROR] Unable to perform DynamoDb query. (c93561cc2a3384e80ef32f1a80d87901a12357235a248a5e5d6aadd85a022b0e) The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:391:14'
+}
+    ✔ Should use valid environment variables when parameters not provided (153ms)
+[ERROR] Write to DynamoDb failed for id_hash: c93561cc2a3384e80ef32f1a80d87901a12357235a248a5e5d6aadd85a022b0e The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:441:20'
+}
+[CACHE] c93561cc2a3384e80ef32f1a80d87901a12357235a248a5e5d6aadd85a022b0e | api.example.com/test | original | 854
+▶ CacheableDataAccess - Header Sanitization Tests
+  ▶ Header sanitization before API call
+    ✔ should remove headers with string "undefined" value (855.50811ms)
+    ✔ Should use environment variables when parameters object is empty (144ms)
+[ERROR] Unable to perform DynamoDb query. (e5612afceacf9b640ed08e891f544c9d59739c1d46804d4dda156c949973b9e7) The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:391:14'
+}
+
+  Cache.read() Integration with L0_Cache
+    Feature Flag Disabled
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should not use L0_Cache when feature flag is false
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should default to false when feature flag not specified
+    Feature Flag Enabled
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should initialize L0_Cache when feature flag is true
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should initialize L0_Cache from environment variable
+    Cache Hit Scenarios
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should return data immediately from L0_Cache on cache hit
+    Cache Miss Scenarios
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should continue to DynamoDB on cache miss
+    Expired Entry Scenarios
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should retain stale data and continue to DynamoDB on expired entry
+    Error Handling with Stale Data
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should return stale data with extended expiration on DynamoDB error
+    Successful DynamoDB Read
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+      ✔ should store fresh data in L0_Cache after successful DynamoDB read
+
+  Config.getConnCacheProfile() Tests
+    ✔ should return both conn and cacheProfile when both exist
+    ✔ should return conn but null cacheProfile when profile not found
+    ✔ should return null for both when connection not found
+    ✔ should return null for both when connections not initialized
+    ✔ should return defensive copies that do not affect internal state
+    ✔ should handle Promises in connection parameters gracefully
+
+  Connections - Property-Based Tests
+    Property 1: Defensive Copy Immutability
+      ✔ should not affect internal state when modifying returned parameters
+      ✔ should not affect internal state when modifying returned headers
+      ✔ should not affect internal state when modifying returned cache profile
+      ✔ should not affect internal state when modifying toObject() result
+      ✔ should not affect internal state when modifying nested values in parameters
+    Property 2: Output Compatibility with JSON Pattern
+      ✔ should produce identical output for getParameters()
+[ERROR] Write to DynamoDb failed for id_hash: e5612afceacf9b640ed08e891f544c9d59739c1d46804d4dda156c949973b9e7 The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:441:20'
+}
+[CACHE] e5612afceacf9b640ed08e891f544c9d59739c1d46804d4dda156c949973b9e7 | api.example.com/test | original | 221
+    ✔ should remove headers with null value (221.676096ms)
+      ✔ should produce identical output for getHeaders()
+      ✔ should produce identical output for getCacheProfile()
+      ✔ should produce identical output for toObject() with authentication
+
+  Test Connection, Connections, and ConnectionAuthentication Classes
+    Test Connection Class
+      ✔ toString with defaults
+    Promise Handling in Connection Properties
+      ✔ should handle resolved Promise in parameters
+      ✔ should handle resolved Promise in headers
+      ✔ should handle Promise in authentication parameters
+      ✔ should handle Promise in authentication headers
+      ✔ should handle Promise in toObject()
+      ✔ should handle nested Promises in connection properties
+      ✔ should handle Promises in Connections collection
+      ✔ should handle rejected Promises gracefully
+      ✔ should handle pending Promises
+      ✔ should handle mixed Promise and non-Promise values
+
+  Connections - Unit Tests (Edge Cases)
+    Empty parameters/headers
+      ✔ should handle empty parameters object
+      ✔ should handle null parameters
+      ✔ should handle empty headers object
+      ✔ should handle null headers
+    Null cache profiles
+      ✔ should handle null cache profiles array
+      ✔ should handle empty cache profiles array
+      ✔ should handle non-existent cache profile
+    Complex nested connection objects
+      ✔ should handle deeply nested parameters
+      ✔ should handle nested headers with arrays
+      ✔ should handle complex authentication with nested structures
+      ✔ should handle toObject() with complex nested structures
+      ✔ should handle cache profiles with nested configuration
+    Authentication edge cases
+      ✔ should handle empty authentication objects
+      ✔ should handle authentication with only headers
+      ✔ should handle authentication with only parameters
+      ✔ should merge authentication parameters with connection parameters
+      ✔ should merge authentication headers with connection headers
+
+  CachedParameterSecret, CachedSsmParameter, CachedSecret
+    CachedParameterSecrets class
+      ✔ toObject()
+      ✔ getNameTags()
+      ✔ getNames()
+    CachedSecret class through CachedParameterSecrets.get()
+      ✔ Check name and instance of CachedSecret
+      ✔ Check object cache properties of CachedSecret
+    CachedSsmParameter class
+      ✔ Check name and instance of CachedSsmParameter
+      ✔ Check object cache properties of CachedSsmParameter
+
+  Feature: documentation-quality-fixes - Backwards Compatibility
+    Property 10: Function Signature Preservation
+      ✔ should preserve all function signatures in dao-cache.js
+      ✔ should preserve all function signatures in dao-endpoint.js
+      ✔ should preserve all function signatures in tools module
+      ✔ Property 10: Function signatures must remain unchanged after documentation fixes (173ms)
+[ERROR] Unable to perform DynamoDb query. (941f9d9aafcf67eed03337fcde9fff0b33e9ecc1bc66b60a9d3eaff82178328e) The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:391:14'
+}
+    Property 11: Export Preservation
+      ✔ should preserve exact export structure in src/index.js
+      ✔ should preserve tools module exports
+      ✔ should preserve cache module exports
+      ✔ should preserve endpoint module exports
+      ✔ Property 11: All module exports must be preserved after documentation fixes
+
+  Property 8: Documentation Link Validity
+    ✔ should find markdown files in the repository
+    ✔ should extract links from markdown files
+    ✔ Property: All internal file links should point to existing files
+    ✔ Property: All external URLs should have valid format
+    ✔ Property: For any markdown file, all relative links resolve to existing files
+    ✔ Property: For any link in documentation, it is either a valid file or valid external URL
+    ✔ Property: Links should not contain common typos
+    ✔ Property: README should have valid links to documentation directories
+    ✔ Property: All documentation files should have valid cross-references
+
+  Example Code - Property-Based Tests
+    Property 9: Example Code Import Completeness
+      ✔ should have necessary imports for all package functionality used
+      ✔ should use property-based testing to verify import patterns
+    Property 10: Example Code API Currency
+      ✔ should not use deprecated methods or patterns
+      ✔ should use property-based testing to verify no deprecated APIs
+    Property 11: CloudFormation Template Syntax Validity
+      ✔ should have syntactically valid YAML in all CloudFormation templates
+      ✔ should use property-based testing to verify template validity
+      ✔ should have required CloudFormation sections
+    Property 12: Configuration Example Completeness
+      ✔ should have complete configuration examples with all required fields
+      ✔ should have IAM permissions for cache-data operations
+
+  Executable Example Validation - Property-Based Tests
+    Property 15: Executable Example Validation
+[ERROR] Write to DynamoDb failed for id_hash: 941f9d9aafcf67eed03337fcde9fff0b33e9ecc1bc66b60a9d3eaff82178328e The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:441:20'
+}
+[CACHE] 941f9d9aafcf67eed03337fcde9fff0b33e9ecc1bc66b60a9d3eaff82178328e | api.example.com/test | original | 283
+    ✔ should remove headers with undefined value (282.596013ms)
+[ERROR] Unable to perform DynamoDb query. (ed32d932cb52868a5eaec0f3494c4a2a742fc50914d6bf9a70f437b31c681259) The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:391:14'
+}
+[ERROR] Write to DynamoDb failed for id_hash: ed32d932cb52868a5eaec0f3494c4a2a742fc50914d6bf9a70f437b31c681259 The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:441:20'
+}
+[CACHE] ed32d932cb52868a5eaec0f3494c4a2a742fc50914d6bf9a70f437b31c681259 | api.example.com/test | original | 149
+    ✔ should remove headers with empty string value (149.106721ms)
+[ERROR] Unable to perform DynamoDb query. (507c9783459cc83d99072c26f948a36f3da4cbb7ddb3ea634f3a702a5614ec4a) The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:391:14'
+}
+[ERROR] Write to DynamoDb failed for id_hash: 507c9783459cc83d99072c26f948a36f3da4cbb7ddb3ea634f3a702a5614ec4a The security token included in the request is expired | {
+  value: 'ExpiredTokenException: *********e security token included in the request is expired\n' +
+    '    at ProtocolLib.getErrorSchemaOrThrowBaseException (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:69:67)\n' +
+    '    at AwsJson1_0Protocol.handleError (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:769:65)\n' +
+    '    at AwsJson1_0Protocol.deserializeResponse (/home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:488:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:26:24\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js:107:34\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/core/dist-cjs/index.js:121:20\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@smithy/middleware-retry/dist-cjs/index.js:254:46\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n' +
+    '    at async /home/devuser/Projects/personal/aws/release/npm-63klabs-cache-data/src/lib/dao-cache.js:441:20'
+}
+[CACHE] 507c9783459cc83d99072c26f948a36f3da4cbb7ddb3ea634f3a702a5614ec4a | api.example.com/test | original | 148
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+[WARN] CacheData already initialized. Ignoring call to CacheData.init()
+    ✔ should keep all valid headers (148.265551ms)
+  ✔ Header sanitization before API call (1657.764536ms)
+✔ CacheableDataAccess - Header Sanitization Tests (1657.846244ms)
+▶ Cache._isValidHeaderValue() - Property-Based Tests
+  ▶ Property 2: Header Value Type Validation
+    ✔ should return true only for non-empty strings and valid numbers (7.625068ms)
+    ✔ should reject all invalid types (null, undefined, boolean, object, array, empty string, NaN) (4.891725ms)
+    ✔ should accept all valid types (non-empty strings and valid numbers) (0.449044ms)
+    ✔ should handle edge cases consistently (0.288959ms)
+    ✔ should be consistent across multiple invocations with same value (2.141258ms)
+  ✔ Property 2: Header Value Type Validation (15.719637ms)
+✔ Cache._isValidHeaderValue() - Property-Based Tests (15.785388ms)
+▶ Cache.read() Integration - Property-Based Tests
+  ▶ Property 9: Feature Flag Disabled Prevents L0_Cache Usage
+    ✔ should never access or use L0_Cache when feature flag is false (5.082642ms)
+    ✔ should never access L0_Cache when environment variable is not set to true (3.115761ms)
+  ✔ Property 9: Feature Flag Disabled Prevents L0_Cache Usage (8.323029ms)
+  ▶ Property 10: Cache Hit Returns Data Immediately
+    ✔ should return data immediately from L0_Cache with STATUS_CACHE_IN_MEM on cache hit (5.286768ms)
+    ✔ should initialize L0_Cache with correct configuration when feature flag is enabled (5.759061ms)
+  ✔ Property 10: Cache Hit Returns Data Immediately (11.272081ms)
+✔ Cache.read() Integration - Property-Based Tests (19.697442ms)
+▶ InMemoryCache - Property-Based Tests
+  ▶ Property 1: Cache Entry Round-Trip Preservation
+    ✔ should preserve all fields of CacheDataFormat object when storing and retrieving before expiration (4.167639ms)
+  ✔ Property 1: Cache Entry Round-Trip Preservation (4.261014ms)
+  ▶ Property 2: Valid Entry Returns Hit Status
+    ✔ should return cache hit (status 1) for any valid stored entry (2.942926ms)
+  ✔ Property 2: Valid Entry Returns Hit Status (3.022677ms)
+  ▶ Property 3: Missing Key Returns Miss Status
+    ✔ should return cache miss (status 0) with null data for any key that has never been stored (11.832541ms)
+  ✔ Property 3: Missing Key Returns Miss Status (11.932916ms)
+  ▶ Property 4: Expired Entry Returns Expired Status and Deletes
+    ✔ should return expired status (status -1) with expired data, then delete the entry (4.185347ms)
+  ✔ Property 4: Expired Entry Returns Expired Status and Deletes (4.302973ms)
+  ▶ Property 5: Storing Existing Key Updates Entry
+    ✔ should replace old value when storing a new value with an existing key (3.522096ms)
+  ✔ Property 5: Storing Existing Key Updates Entry (3.604262ms)
+  ▶ Property 6: LRU Eviction When At Capacity
+    ✔ should evict the least recently used entry when cache is at maximum capacity (41.568226ms)
+  ✔ Property 6: LRU Eviction When At Capacity (41.679685ms)
+  ▶ Property 7: Access Updates LRU Position
+    ✔ should move accessed entry to most recently used position, preventing premature eviction (39.688595ms)
+  ✔ Property 7: Access Updates LRU Position (39.85297ms)
+  ▶ Property 8: MAX_ENTRIES Calculation From Memory
+    ✔ should calculate maxEntries correctly from Lambda memory allocation using the formula (memoryMB / 1024) * entriesPerGB (0.483751ms)
+  ✔ Property 8: MAX_ENTRIES Calculation From Memory (0.541127ms)
+✔ InMemoryCache - Property-Based Tests (109.511209ms)
+▶ InMemoryCache - Basic Operations
+  ▶ get() method
+    ✔ should return cache miss (status 0) for non-existent key (0.1375ms)
+    ✔ should return cache hit (status 1) for valid entry (0.122833ms)
+    ✔ should return expired status (status -1) for expired entry (0.052709ms)
+    ✔ should delete expired entry after retrieval (0.0615ms)
+    ✔ should update LRU position on cache hit (0.096334ms)
+  ✔ get() method (0.62496ms)
+  ▶ set() method
+    ✔ should store entry successfully (0.070458ms)
+    ✔ should update existing entry (0.053167ms)
+  ✔ set() method (0.313459ms)
+  ▶ info() method
+    ✔ should return cache information (0.068333ms)
+    ✔ should update size after adding entries (0.110542ms)
+  ✔ info() method (0.248876ms)
+  ▶ clear() method
+    ✔ should clear all entries (0.127292ms)
+  ✔ clear() method (0.154958ms)
+✔ InMemoryCache - Basic Operations (1.444047ms)
+▶ InMemoryCache - Constructor and Initialization
+  ▶ Constructor with explicit maxEntries
+    ✔ should use explicit maxEntries parameter (0.077459ms)
+    ✔ should initialize with size 0 (0.027751ms)
+  ✔ Constructor with explicit maxEntries (0.149459ms)
+  ▶ Constructor with Lambda memory calculation
+    ✔ should calculate maxEntries from AWS_LAMBDA_FUNCTION_MEMORY_SIZE (0.043292ms)
+    ✔ should calculate maxEntries for 512 MB Lambda (0.027708ms)
+    ✔ should use custom entriesPerGB heuristic (0.038375ms)
+  ✔ Constructor with Lambda memory calculation (0.15775ms)
+  ▶ Constructor with fallback to defaultMaxEntries
+    ✔ should use defaultMaxEntries when Lambda memory unavailable (0.044583ms)
+    ✔ should use default defaultMaxEntries (1000) when not specified (0.043667ms)
+    ✔ should handle invalid Lambda memory value (0.029625ms)
+  ✔ Constructor with fallback to defaultMaxEntries (0.184167ms)
+  ▶ info() method
+    ✔ should return correct structure (0.033667ms)
+    ✔ should return correct types (0.025875ms)
+  ✔ info() method (0.091626ms)
+  ▶ Edge cases
+    ✔ should ensure maxEntries is at least 1 (0.037542ms)
+    ✔ should ensure maxEntries is at least 1 for negative values (0.0265ms)
+  ✔ Edge cases (0.218209ms)
+✔ InMemoryCache - Constructor and Initialization (0.998254ms)
+▶ Test Migration Phase 2 - Property-Based Tests
+  ✔ Property 1: Test Migration Completeness - Jest test count equals Mocha test count (0.594377ms)
+  ✔ Property 7: Source Code Immutability - Source files unchanged during migration (23.604915ms)
+  ✔ Property 11: Jest File Naming Convention - All Jest files follow .jest.mjs pattern (0.329459ms)
+  ✔ Property 12: Jest File Location Convention - Jest files in same directory as Mocha files (0.599835ms)
+✔ Test Migration Phase 2 - Property-Based Tests (25.322337ms)
+      ✔ should have syntactically valid JavaScript in all documentation examples (4441ms)
+      ✔ should use property-based testing to verify example executability (810ms)
+
+Example Import Issues:
+  - docs/01-advanced-implementation-for-web-service/best-practices.md:83 - Uses cache-data functionality but missing import statement
+  - docs/features/cache/README.md:102 - Uses cache-data functionality but missing import statement
+  - docs/features/tools/README.md:995 - Uses cache-data functionality but missing import statement
+  - docs/features/tools/README.md:1331 - Uses cache-data functionality but missing import statement
+  - docs/technical/in-memory-cache.md:199 - Uses cache-data functionality but missing import statement
+
+Note: Found 5 examples that may need import statements
+      ✔ should validate that examples use proper module imports
+      ✔ should validate that examples don't use deprecated APIs
+
+  Feature Documentation Configuration Coverage Property Tests
+    ✔ Property 13: For any feature that accepts configuration options, documentation SHALL have a configuration section
+    ✔ Property 13: For any feature with configuration options, documentation SHALL list each option
+    ✔ Property 13: For any configuration option in documentation, it SHALL have a description
+
+  Feature Documentation JSDoc References Property Tests
+    ✔ Property 14: For any feature documented in features directory, documentation SHALL include references to JSDoc
+    ✔ Property 14: For any feature documentation, it SHALL have an API Reference section
+    ✔ Property 14: For any feature documentation, it SHALL mention relevant source files
+    ✔ Property 14: For any feature documentation, it SHALL have multiple JSDoc references
+
+  JSDoc Completeness - Property-Based Tests
+    Property 1: JSDoc Completeness for All Exports
+      ✔ should have complete JSDoc for all exported functions in dao-cache.js
+    Property 2: JSDoc Parameter Accuracy
+      ✔ should have JSDoc parameter names matching actual function signatures
+
+  JSDoc No Hallucinated Documentation - Property-Based Tests
+    Property 5: No Hallucinated Documentation
+      ✔ should not document parameters that don't exist in function signatures in tools module
+      ✔ should not document parameters that don't exist in function signatures in dao-cache.js
+      ✔ should not document parameters that don't exist in function signatures in dao-endpoint.js
+      ✔ should not document parameters that don't exist in function signatures in src/index.js
+
+  JSDoc Return Type Format - Property-Based Tests
+    Property 3: JSDoc Return Type Format Compliance
+      ✔ should use proper Promise<Type> notation for async functions in dao-endpoint.js
+      ✔ should use proper Promise<Type> notation for async functions in dao-cache.js
+      ✔ should validate return type format using property-based testing
+      ✔ should reject improper return type formats using property-based testing
+
+  JSDoc Throws Documentation Completeness - Property-Based Tests
+    Property 4: JSDoc Throws Documentation Completeness
+      ✔ should document all throw statements with @throws tags in tools module
+      ✔ should document all throw statements with @throws tags in dao-cache.js
+      ✔ should document all throw statements with @throws tags in dao-endpoint.js
+
+  Module Documentation Completeness Property Tests
+    ✔ Property 6: For any exported module (tools, cache, endpoint), documentation SHALL exist in the features directory
+
+Low documentation coverage for endpoint: 33.3%
+Covered (1): send
+Missing (2): /** @deprecated Use send() instead */
+	getDataDirectFromURI, /** @deprecated Use send() instead */
+	get
+
+Low documentation coverage for cache: 72.7%
+Covered (8): handles, handles, is, and, CacheData
+Missing (3): S3Cache, DynamoDbCache, TestHarness
+
+Low documentation coverage for endpoint: 33.3%
+Covered (1): send
+Missing (2): /** @deprecated Use send() instead */
+	getDataDirectFromURI, /** @deprecated Use send() instead */
+	get
+    ✔ Property 6: For any exported module, documentation SHALL cover all public methods and classes
+    ✔ Property 6: For any module documentation, it SHALL have standard sections
+
+  Property 7: README Feature Coverage
+    ✔ should mention all exported modules in README
+    ✔ should have a Features section
+    ✔ Property: For any exported module, README mentions that module
+    ✔ Property: Features section should describe module purposes
+    ✔ Property: Each module section should list capabilities
+
+  Call test endpoint
+    Call test endpoint using tools ApiRequest class
+      ✔ Passing uri results in success with a hidden game listed (1754ms)
+      ✔ Passing host and path results in success with a hidden game listed (62ms)
+      ✔ Headers were passed along (99ms)
+      ✔ Parameters were passed along and duplicates were combined into CSV (82ms)
+      ✔ Parameters were passed along and duplicates were separate (57ms)
+      ✔ Body was passed along in a POST request (58ms)
+      ✔ GET request (61ms)
+      ✔ Passing host and path and an empty uri results in success with a hidden game listed (54ms)
+      ✔ Passing uri results in 404 (49ms)
+      ✔ Passing uri results in no redirect (52ms)
+    Test ConnectionAuthentication class
+      ✔ ConnectionAuthentication Basic
+      ✔ ConnectionAuthentication Parameters
+      ✔ ConnectionAuthentication Parameters with Existing Parameters
+      ✔ ConnectionAuthentication Headers
+      ✔ ConnectionAuthentication Headers with Existing Headers
+      ✔ ConnectionAuthentication Body
+      ✔ ConnectionAuthentication Body with Existing Body
+    Test ApiRequest class
+      ✔ Testing setter and getter functions of ApiRequest without sending
+      ✔ Testing min value of timeOutInMilliseconds
+      ✔ Test timeout (204ms)
+
+  Test Endpoint DAO
+    ✔ Test endpoint directly (165ms)
+    Call test endpoint using Endpoint DAO class
+      ✔ Passing uri results in success with a hidden game listed (149ms)
+      ✔ Passing host and path results in success with a hidden game listed (50ms)
+      ✔ Headers were passed along (69ms)
+      ✔ Parameters were passed along (60ms)
+      ✔ GET request (53ms)
+      ✔ Passing host and path and an empty uri results in success with a hidden game listed (55ms)
+      ✔ Test timeout (104ms)
+
+  DebugAndLog tests
+    Check the defaults
+      ✔ Check the default log level for NODE_ENV production and no ENV_TYPE vars
+      ✔ Check the default log level for NODE_ENV development and no ENV_TYPE vars
+      ✔ Check the default log level for NODE_ENV (not set) and no ENV_TYPE vars
+      ✔ Get the default environment
+    Check default environment booleans
+      ✔ Check isNotProduction
+      ✔ Check isProduction
+      ✔ Check isDevelopment
+      ✔ Check isTest
+    Check NODE_ENV booleans
+      ✔ Check nodeEnvIsProduction with NODE_ENV not set
+      ✔ Check nodeEnvIsDevelopment with NODE_ENV not set
+      ✔ Check nodeEnvIsProduction with NODE_ENV=production
+      ✔ Check nodeEnvIsDevelopment with NODE_ENV=production
+      ✔ Check nodeEnvIsProduction with NODE_ENV=development
+      ✔ Check nodeEnvIsDevelopment with NODE_ENV=development
+    Check environment booleans
+      ✔ Check isNotProduction in DEV
+      ✔ Check isProduction in DEV
+      ✔ Check isDevelopment in DEV
+      ✔ Check isTest in DEV
+      ✔ Check isNotProduction in TEST
+      ✔ Check isProduction in TEST
+      ✔ Check isDevelopment in TEST
+      ✔ Check isTest in TEST
+      ✔ Check isNotProduction in PROD
+      ✔ Check isProduction in PROD
+      ✔ Check isDevelopment in PROD
+      ✔ Check isTest in PROD
+    Check logging
+      ✔ Check Errors and Warnings
+
+  DebugAndLog environment type tests
+    ✔ Test with CACHE_DATA_ENV set to 'DEV'
+    ✔ Test with CACHE_DATA_ENV set to 'TEST'
+    ✔ Test with CACHE_DATA_ENV set to 'PROD'
+    ✔ Test with DEPLOY_ENVIRONMENT set to 'DEV'
+    ✔ Test with DEPLOY_ENVIRONMENT set to 'TEST'
+    ✔ Test with DEPLOY_ENVIRONMENT set to 'PROD'
+    ✔ Test with DEPLOY_ENV set to 'DEV'
+    ✔ Test with DEPLOY_ENV set to 'TEST'
+    ✔ Test with DEPLOY_ENV set to 'PROD'
+    ✔ Test with ENV_TYPE set to 'DEV'
+    ✔ Test with ENV_TYPE set to 'TEST'
+    ✔ Test with ENV_TYPE set to 'PROD'
+    ✔ Test with deploy_environment set to 'DEV'
+    ✔ Test with deploy_environment set to 'TEST'
+    ✔ Test with deploy_environment set to 'PROD'
+    ✔ Test with ENV set to 'DEV'
+    ✔ Test with ENV set to 'TEST'
+    ✔ Test with ENV set to 'PROD'
+    ✔ Test with env set to 'DEV'
+    ✔ Test with env set to 'TEST'
+    ✔ Test with env set to 'PROD'
+    ✔ Test with deployEnvironment set to 'DEV'
+    ✔ Test with deployEnvironment set to 'TEST'
+    ✔ Test with deployEnvironment set to 'PROD'
+    ✔ Test with ENVIRONMENT set to 'DEV'
+    ✔ Test with ENVIRONMENT set to 'TEST'
+    ✔ Test with ENVIRONMENT set to 'PROD'
+    ✔ Test with environment set to 'DEV'
+    ✔ Test with environment set to 'TEST'
+    ✔ Test with environment set to 'PROD'
+
+  DebugAndLog environment and log level tests
+    ✔ Set logLevel to 0 with CACHE_DATA_ENV set to 'DEV'
+    ✔ Set logLevel to 0 with CACHE_DATA_ENV set to 'TEST'
+    ✔ Set logLevel to 0 with CACHE_DATA_ENV set to 'PROD'
+    ✔ Set logLevel to 0 with DEPLOY_ENVIRONMENT set to 'DEV'
+    ✔ Set logLevel to 0 with DEPLOY_ENVIRONMENT set to 'TEST'
+    ✔ Set logLevel to 0 with DEPLOY_ENVIRONMENT set to 'PROD'
+    ✔ Set logLevel to 0 with DEPLOY_ENV set to 'DEV'
+    ✔ Set logLevel to 0 with DEPLOY_ENV set to 'TEST'
+    ✔ Set logLevel to 0 with DEPLOY_ENV set to 'PROD'
+    ✔ Set logLevel to 1 with CACHE_DATA_ENV set to 'DEV'
+    ✔ Set logLevel to 1 with CACHE_DATA_ENV set to 'TEST'
+    ✔ Set logLevel to 1 with CACHE_DATA_ENV set to 'PROD'
+    ✔ Set logLevel to 1 with DEPLOY_ENVIRONMENT set to 'DEV'
+    ✔ Set logLevel to 1 with DEPLOY_ENVIRONMENT set to 'TEST'
+    ✔ Set logLevel to 1 with DEPLOY_ENVIRONMENT set to 'PROD'
+    ✔ Set logLevel to 1 with DEPLOY_ENV set to 'DEV'
+    ✔ Set logLevel to 1 with DEPLOY_ENV set to 'TEST'
+    ✔ Set logLevel to 1 with DEPLOY_ENV set to 'PROD'
+    ✔ Set logLevel to 2 with CACHE_DATA_ENV set to 'DEV'
+    ✔ Set logLevel to 2 with CACHE_DATA_ENV set to 'TEST'
+    ✔ Set logLevel to 2 with CACHE_DATA_ENV set to 'PROD'
+    ✔ Set logLevel to 2 with DEPLOY_ENVIRONMENT set to 'DEV'
+    ✔ Set logLevel to 2 with DEPLOY_ENVIRONMENT set to 'TEST'
+    ✔ Set logLevel to 2 with DEPLOY_ENVIRONMENT set to 'PROD'
+    ✔ Set logLevel to 2 with DEPLOY_ENV set to 'DEV'
+    ✔ Set logLevel to 2 with DEPLOY_ENV set to 'TEST'
+    ✔ Set logLevel to 2 with DEPLOY_ENV set to 'PROD'
+    ✔ Set logLevel to 3 with CACHE_DATA_ENV set to 'DEV'
+    ✔ Set logLevel to 3 with CACHE_DATA_ENV set to 'TEST'
+    ✔ Set logLevel to 3 with CACHE_DATA_ENV set to 'PROD'
+    ✔ Set logLevel to 3 with DEPLOY_ENVIRONMENT set to 'DEV'
+    ✔ Set logLevel to 3 with DEPLOY_ENVIRONMENT set to 'TEST'
+    ✔ Set logLevel to 3 with DEPLOY_ENVIRONMENT set to 'PROD'
+    ✔ Set logLevel to 3 with DEPLOY_ENV set to 'DEV'
+    ✔ Set logLevel to 3 with DEPLOY_ENV set to 'TEST'
+    ✔ Set logLevel to 3 with DEPLOY_ENV set to 'PROD'
+    ✔ Set logLevel to 4 with CACHE_DATA_ENV set to 'DEV'
+    ✔ Set logLevel to 4 with CACHE_DATA_ENV set to 'TEST'
+    ✔ Set logLevel to 4 with CACHE_DATA_ENV set to 'PROD'
+    ✔ Set logLevel to 4 with DEPLOY_ENVIRONMENT set to 'DEV'
+    ✔ Set logLevel to 4 with DEPLOY_ENVIRONMENT set to 'TEST'
+    ✔ Set logLevel to 4 with DEPLOY_ENVIRONMENT set to 'PROD'
+    ✔ Set logLevel to 4 with DEPLOY_ENV set to 'DEV'
+    ✔ Set logLevel to 4 with DEPLOY_ENV set to 'TEST'
+    ✔ Set logLevel to 4 with DEPLOY_ENV set to 'PROD'
+    ✔ Set logLevel to 5 with CACHE_DATA_ENV set to 'DEV'
+    ✔ Set logLevel to 5 with CACHE_DATA_ENV set to 'TEST'
+    ✔ Set logLevel to 5 with CACHE_DATA_ENV set to 'PROD'
+    ✔ Set logLevel to 5 with DEPLOY_ENVIRONMENT set to 'DEV'
+    ✔ Set logLevel to 5 with DEPLOY_ENVIRONMENT set to 'TEST'
+    ✔ Set logLevel to 5 with DEPLOY_ENVIRONMENT set to 'PROD'
+    ✔ Set logLevel to 5 with DEPLOY_ENV set to 'DEV'
+    ✔ Set logLevel to 5 with DEPLOY_ENV set to 'TEST'
+    ✔ Set logLevel to 5 with DEPLOY_ENV set to 'PROD'
+
+  DebugAndLog complex environment tests
+    ✔ Test with env var CACHE_DATA_ENV='PROD' and NODE_ENV=production
+    ✔ Test with env var CACHE_DATA_ENV='PROD' and NODE_ENV=development
+    ✔ Test with env var CACHE_DATA_ENV='PROD' and NODE_ENV=empty
+    ✔ Test with env var CACHE_DATA_ENV='TEST' and NODE_ENV=production
+    ✔ Test with env var CACHE_DATA_ENV='TEST' and NODE_ENV=development
+    ✔ Test with env var CACHE_DATA_ENV='TEST' and NODE_ENV=empty
+    ✔ Test with env var CACHE_DATA_ENV='DEV' and NODE_ENV=production
+    ✔ Test with env var CACHE_DATA_ENV='DEV' and NODE_ENV=development
+    ✔ Test with env var CACHE_DATA_ENV='DEV' and NODE_ENV=empty
+    ✔ Test with env var DEPLOY_ENVIRONMENT='PROD' and NODE_ENV=production
+    ✔ Test with env var DEPLOY_ENVIRONMENT='PROD' and NODE_ENV=development
+    ✔ Test with env var DEPLOY_ENVIRONMENT='PROD' and NODE_ENV=empty
+    ✔ Test with env var DEPLOY_ENVIRONMENT='TEST' and NODE_ENV=production
+    ✔ Test with env var DEPLOY_ENVIRONMENT='TEST' and NODE_ENV=development
+    ✔ Test with env var DEPLOY_ENVIRONMENT='TEST' and NODE_ENV=empty
+    ✔ Test with env var DEPLOY_ENVIRONMENT='DEV' and NODE_ENV=production
+    ✔ Test with env var DEPLOY_ENVIRONMENT='DEV' and NODE_ENV=development
+    ✔ Test with env var DEPLOY_ENVIRONMENT='DEV' and NODE_ENV=empty
+    ✔ Test with env var DEPLOY_ENV='PROD' and NODE_ENV=production
+    ✔ Test with env var DEPLOY_ENV='PROD' and NODE_ENV=development
+    ✔ Test with env var DEPLOY_ENV='PROD' and NODE_ENV=empty
+    ✔ Test with env var DEPLOY_ENV='TEST' and NODE_ENV=production
+    ✔ Test with env var DEPLOY_ENV='TEST' and NODE_ENV=development
+    ✔ Test with env var DEPLOY_ENV='TEST' and NODE_ENV=empty
+    ✔ Test with env var DEPLOY_ENV='DEV' and NODE_ENV=production
+    ✔ Test with env var DEPLOY_ENV='DEV' and NODE_ENV=development
+    ✔ Test with env var DEPLOY_ENV='DEV' and NODE_ENV=empty
+
+  DebugAndLog log level environment variable tests
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to '5'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to '4'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to '3'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to '2'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to '1'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to '0'
+    ✔ Test with CACHE_DATA_LOG_LEVEL invalid
+    ✔ Test with CACHE_DATA_LOG_LEVEL empty
+    ✔ Test with CACHE_DATA_LOG_LEVEL unset
+    ✔ Test with LOG_LEVEL set to '5'
+    ✔ Test with LOG_LEVEL set to '4'
+    ✔ Test with LOG_LEVEL set to '3'
+    ✔ Test with LOG_LEVEL set to '2'
+    ✔ Test with LOG_LEVEL set to '1'
+    ✔ Test with LOG_LEVEL set to '0'
+    ✔ Test with LOG_LEVEL invalid
+    ✔ Test with LOG_LEVEL empty
+    ✔ Test with LOG_LEVEL unset
+    ✔ Test with both LOG_LEVEL=3 and AWS_LAMBDA_LOG_LEVEL=ERROR set. LOG_LEVEL has priority.
+    ✔ Test with both LOG_LEVEL=invalid and AWS_LAMBDA_LOG_LEVEL=DEBUG set
+    ✔ Test with both LOG_LEVEL and AWS_LAMBDA_LOG_LEVEL unset
+    ✔ Test with both LOG_LEVEL=invalid and AWS_LAMBDA_LOG_LEVEL=invalid set
+    ✔ Test with AWS_LAMBDA_LOG_LEVEL=ERROR set
+    ✔ Test with AWS_LAMBDA_LOG_LEVEL=WARN set
+    ✔ Test with AWS_LAMBDA_LOG_LEVEL=INFO set
+    ✔ Test with AWS_LAMBDA_LOG_LEVEL=DEBUG set
+
+  DebugAndLog log level environment variable tests with strings
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to 'ERROR'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to 'WARN'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to 'INFO'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to 'MSG'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to 'DIAG'
+    ✔ Test with CACHE_DATA_LOG_LEVEL set to 'DEBUG'
+    ✔ Test with LOG_LEVEL set to 'ERROR'
+    ✔ Test with LOG_LEVEL set to 'WARN'
+    ✔ Test with LOG_LEVEL set to 'INFO'
+    ✔ Test with LOG_LEVEL set to 'MSG'
+    ✔ Test with LOG_LEVEL set to 'DIAG'
+    ✔ Test with LOG_LEVEL set to 'DEBUG'
+    ✔ Test with both LOG_LEVEL='MSG' and AWS_LAMBDA_LOG_LEVEL=ERROR set. LOG_LEVEL has priority.
+
+  Timer tests
+    Check Starts: construct, isRunning(), wasStarted(), notStarted() wasStopped()
+      ✔ Check if timer 1 started
+      ✔ Check if timer 2 not started
+      ✔ Check if timer 3 not started
+      ✔ Check if timer 4 stopped
+      ✔ Check if timer 5 started
+      ✔ Check if timer 6 started
+    Check Timer calc functions
+      ✔ Check elapsed() no stop - should continue to increase (441ms)
+      ✔ Check elapsedSinceStart() no stop - should continue to increase (441ms)
+      ✔ Check elapsedSinceStop() no stop - should be -1 (345ms)
+      ✔ Check elapsed() after stop - should remain same (446ms)
+      ✔ Check elapsedSinceStart() after stop - should continue to increase (441ms)
+      ✔ Check elapsedSinceStop() after stop - should continue to increase (443ms)
+
+  ClientRequest - Property-Based Tests
+    Property 1: Defensive Copy Immutability
+      ✔ should not affect static property when modifying returned authorizations from constructor
+      ✔ should not affect static property when modifying returned authorizations from getAuthorizations()
+      ✔ should not affect internal state when modifying nested values in authorizations
+    Property 2: Output Compatibility with JSON Pattern
+      ✔ should produce identical output for getAuthorizations() compared to JSON pattern
+      ✔ should produce identical output for authorization arrays with various structures
+      ✔ should handle empty and single-element authorization arrays identically
+
+  ClientRequest Class
+    Initialize ClientRequest Class
+      ✔ Set Options during initialization and check values
+      ✔ Check client information against test event
+      ✔ Test Props against test event
+      ✔ Test getPath and getResource methods
+
+  ClientRequest - Edge Cases for structuredClone optimization
+    Empty authorization arrays
+      ✔ should handle empty authorization arrays correctly
+    Authorization arrays with various structures
+      ✔ should return defensive copy that doesn't affect internal state
+      ✔ should handle authorization arrays with string values
+      ✔ should maintain array structure after cloning
+      ✔ should handle multiple authorization values
+    Authorization cloning consistency
+      ✔ should produce identical results across multiple calls
+      ✔ should maintain independence between instances
+
+  Response Class
+    Test Response Class Generic Classes
+      ✔ Use a combo of Generic and Custom JSON responses
+    Test Responses
+      ✔ Set a Default (JSON) response after new Response
+      ✔ Set Response to JSON through constructor
+      ✔ Set Response to HTML through constructor
+      ✔ Set Response to RSS through constructor
+      ✔ Set Response to XML through constructor
+      ✔ Set Response to TEXT through constructor
+    Test Constructor
+      ✔ Set Generic Status Default (JSON)
+      ✔ Reset response (JSON)
+      ✔ Reset response (HTML)
+
+  Response Class
+    Test Response Class init
+      ✔ Check Response Class init
+      ✔ Check Response class static variables
+      ✔ Check Response class static methods ContentType inspections
+    Set response with an object then update portions of the response (JSON)
+      ✔ Test set and add methods
+    Test finalize and log
+      ✔ Test finalize and log
+
+  Response Class Finalize
+    Test finalize and log
+      ✔ Test finalize and log
+
+  ResponseDataModel - Property-Based Tests
+    Property 1: Defensive Copy Immutability
+      ✔ should not affect internal state when modifying getResponseData() return value
+      ✔ should not affect internal state when modifying nested values in getResponseData()
+      ✔ should not affect internal state when modifying addItemByKey() cloned data
+      ✔ should not affect internal state when modifying array items (40ms)
+
+  Property 2: Output Compatibility with JSON Pattern
+    ✔ should produce output identical to JSON pattern for getResponseData()
+    ✔ should produce identical output for nested response data
+    ✔ should produce identical output for array response data
+    ✔ should produce identical output for toObject() method
+
+  Unit Tests: Edge Cases
+    Empty response data
+      ✔ should handle empty object response data
+      ✔ should handle null response data
+      ✔ should handle empty array response data
+    Null items
+      ✔ should handle null items in addItem()
+      ✔ should handle null items in addItemByKey()
+      ✔ should handle null values in nested structures
+    Complex nested response structures
+      ✔ should handle deeply nested objects
+      ✔ should handle arrays within nested objects
+      ✔ should handle mixed types in nested structures
+      ✔ should handle ResponseDataModel instances in addItem()
+      ✔ should handle ResponseDataModel instances in addItemByKey()
+      ✔ should handle converting single value to array when adding duplicate keys
+
+  JSDoc Parser Security
+    ✔ should parse nested brackets correctly
+    ✔ should parse triple nesting correctly
+    ✔ should handle escaped brackets
+    ✔ should handle unmatched opening bracket gracefully
+    ✔ should handle unmatched closing bracket gracefully
+    ✔ should parse mixed brackets correctly
+    ✔ should parse empty brackets correctly
+    ✔ should parse special characters in types correctly
+    ✔ should handle complex real-world type annotations
+    ✔ should handle optional parameters with nested types
+    ✔ should handle parameters with default values and nested types
+    ✔ should not throw error on deeply nested brackets
+    ✔ should not hang on very long type strings
+Warning: Unparseable JSDoc @param tag (unmatched brackets): @param {{{{{ broken
+Warning: Unparseable JSDoc @param tag (unmatched brackets): @param { broken
+    ✔ should handle malformed input without throwing
+
+  Property-Based Tests: JSDoc Parsing Security
+    ✔ Property 2: JSDoc Bracket Matching Correctness - correctly parses nested brackets
+    ✔ Property 3: JSDoc Parser Resilience - handles malformed input gracefully
+    ✔ Property 2b: JSDoc Bracket Matching - @returns tag handles nested brackets
+    ✔ Property 2c: JSDoc Bracket Matching - @throws tag handles nested brackets
+    ✔ Property 3b: JSDoc Parser Resilience - specific malformed patterns
+    ✔ Property 6: Backwards Compatibility - new implementation matches expected behavior
+    - Property 6b: Backwards Compatibility - default values are extracted correctly
+
+  Property-Based Tests: Shell Injection Prevention
+    ✔ Property 1: Shell Command Execution Safety - execFile treats all paths as literal strings
+    ✔ Property 1b: Shell Command Execution Safety - specific attack vectors are prevented
+
+  Shell Command Security
+    ✔ should handle file paths with spaces safely
+    ✔ should prevent command injection via semicolon
+    ✔ should prevent command injection via pipe
+    ✔ should prevent command injection via command substitution
+    ✔ should prevent command injection via backticks
+    ✔ should handle file paths with quotes safely
+    ✔ should prevent command injection via ampersand
+    ✔ should prevent command injection via redirection
+
+  AWS.classes
+    Node.js Version Detection
+      ✔ should return Node.js version string
+      ✔ should return major version number
+      ✔ should return minor version number
+      ✔ should return patch version number
+      ✔ should return major.minor version string
+      ✔ should return version array [major, minor, patch]
+    AWS SDK Version Detection
+      ✔ should return SDK version V3 for Node.js >= 18
+      ✔ should return SDK_V3 as true for Node.js >= 18
+      ✔ should return SDK_V2 as false for Node.js >= 18
+    AWS Region Configuration
+      ✔ should return AWS_REGION from environment when set
+    AWS INFO Getter
+      ✔ should return object with all version and configuration info
+    DynamoDB Client
+      ✔ should return object with client
+      ✔ should return object with put function
+      ✔ should return object with get function
+      ✔ should return object with scan function
+      ✔ should return object with delete function
+      ✔ should return object with update function
+      ✔ should return object with sdk
+    S3 Client
+      ✔ should return object with client
+      ✔ should return object with put function
+      ✔ should return object with get function
+      ✔ should return object with sdk
+    SSM Client
+      ✔ should return object with client
+      ✔ should return object with getByName function
+      ✔ should return object with getByPath function
+      ✔ should return object with sdk
+    X-Ray
+      ✔ should return XRay object or null
+
+  Hash Data
+    General
+      ✔ Returns string
+      ✔ Simple objects re-arranged return same hash
+      ✔ Hash a String
+      ✔ Hash a Number
+      ✔ Hash a Boolean
+      ✔ Hash an Undefined
+      ✔ Hash a Null
+      ✔ Hash a Function
+      ✔ Hash a BigInt
+      ✔ Hash a Symbol
+      ✔ Hash a Date
+      ✔ Hash an Object
+      ✔ Hash an Array
+    Simple Object
+      ✔ Equal Objects
+      ✔ Different Objects Round 1
+      ✔ Different Objects Round 2
+      ✔ Different Objects Round 3
+    Simple Array
+      ✔ Equal Arrays
+      ✔ Different Arrays Round 1
+      ✔ Different Arrays Round 2
+      ✔ Different Arrays Round 3
+    Simple Nested Object
+      ✔ Equal Objects
+      ✔ Different Objects Round 1
+      ✔ Different Objects Round 2
+      ✔ Different Objects Round 3
+    Simple Nested Array
+      ✔ Equal Objects
+      ✔ Different Objects Round 1
+      ✔ Different Objects Round 2
+      ✔ Different Objects Round 3
+    Nested Data
+      ✔ 2 objects, same hash
+      ✔ 2 objects, 1 property difference
+      ✔ 2 objects, 1 data difference
+      ✔ 2 really different objects
+    Deeply Nested Data
+      ✔ Equal complex objects
+      ✔ Similar complex objects Round 1
+      ✔ Similar complex objects Round 2
+      ✔ Similar complex objects Round 3
+      ✔ Similar complex objects Round 4
+      ✔ Similar complex objects Round 5
+    Data Types
+      ✔ Equal data type objects
+      ✔ Different data type objects
+      ✔ Dates: Equal
+      ✔ Dates: Different
+      ✔ BigInt: Equal
+      ✔ BigInt: Different
+      ✔ Function: Equal
+    Edge Cases for structuredClone optimization
+      hashThisData with various data types
+        ✔ should handle empty objects
+        ✔ should handle empty arrays
+        ✔ should handle objects with null values
+        ✔ should handle arrays with null values
+        ✔ should handle mixed types in objects
+        ✔ should handle mixed types in arrays
+      Options cloning with nested structures
+        ✔ should handle options with salt
+        ✔ should handle options with iterations
+        ✔ should handle options with both salt and iterations
+        ✔ should handle empty options object
+      Normalization behavior preservation
+        ✔ should normalize BigInt values
+        ✔ should normalize undefined values
+        ✔ should produce consistent hashes for objects with same content but different key order
+        ✔ should produce consistent hashes for arrays with same content but different order
+        ✔ should handle deeply nested objects
+        ✔ should handle deeply nested arrays
+        ✔ should handle mixed nested structures
+
+  ImmutableObject - Property-Based Tests
+    Property 1: Defensive Copy Immutability
+      ✔ should not affect internal state when modifying returned values
+      ✔ should not affect internal state when modifying nested values
+      ✔ should not affect internal state when getting by key
+    Property 2: Output Compatibility with JSON Pattern
+      ✔ should produce output identical to JSON pattern for plain objects
+      ✔ should produce identical output for nested objects
+      ✔ should produce identical output when getting by key
+    Property 3: Deep Clone Reference Breaking
+      ✔ should break all references at all nesting levels
+      ✔ should break references in arrays within objects (50ms)
+      ✔ should break references when getting nested values by key
+
+  ImmutableObject - Edge Cases
+    Empty objects
+      ✔ should handle empty objects
+      ✔ should return empty object when getting non-existent key
+    Null values
+      ✔ should handle null values in objects
+      ✔ should handle objects with only null values
+      ✔ should handle nested null values
+    Circular reference handling
+      ✔ should handle circular references correctly (structuredClone preserves them)
+      ✔ should handle nested circular references correctly
+    Arrays within objects
+      ✔ should handle arrays within objects
+      ✔ should deep clone arrays within objects
+      ✔ should handle nested arrays
+      ✔ should handle empty arrays
+      ✔ should handle arrays with mixed types
+    Special cases
+      ✔ should handle objects with numeric keys
+      ✔ should handle objects with special characters in keys
+      ✔ should handle deeply nested objects
+
+  safeClone
+    Basic cloning
+      ✔ should clone simple objects
+      ✔ should clone nested objects
+      ✔ should clone arrays
+      ✔ should handle null
+      ✔ should handle primitives
+    Promise handling
+      ✔ should handle objects containing Promises
+      ✔ should handle resolved Promises
+      ✔ should handle rejected Promises
+      ✔ should handle pending Promises
+      ✔ should handle arrays containing Promises
+      ✔ should handle deeply nested Promises
+    Non-cloneable values
+      ✔ should handle functions by converting to undefined
+      ✔ should handle symbols by removing them
+      ✔ should handle mixed non-cloneable values
+    Edge cases
+      ✔ should handle empty objects
+      ✔ should handle empty arrays
+      ✔ should handle Date objects
+      ✔ should handle objects with undefined values
+    Mutation isolation
+      ✔ should prevent mutations to cloned object from affecting original
+      ✔ should prevent mutations to original from affecting clone
+
+  Sanitize and Obfuscate
+    Obfuscate
+      ✔ Obfuscate Default
+      ✔ Obfuscate Pad Character
+      ✔ Obfuscate Keep
+      ✔ Obfuscate Keep Upper Limit
+      ✔ Obfuscate Keep Lower Limit
+      ✔ Obfuscate Set Size
+    Sanitize
+      ✔ Sanitize Object
+      ✔ Sanitize Simple Object Values
+      ✔ Sanitize Strings with Query Parameters
+      ✔ Sanitize Authorization headers
+      ✔ Sanitize Array of Secrets
+    Sanitize Debug and Log
+      ✔ Log Sanitization
+      ✔ Warning Sanitization
+      ✔ Error Sanitization
+
+  Utils Property-Based Tests
+    Property 4: Hash Data Cloning Isolation
+      ✔ should not modify original data when hashing objects
+      ✔ should not modify original options when hashing with options
+      ✔ should not modify original data when hashing arrays
+      ✔ should not modify nested structures in original data
+    Property 2: Output Compatibility with JSON Pattern
+      ✔ should produce identical hash output for structuredClone vs JSON pattern
+      ✔ should produce identical hash for objects with different key orders
+      ✔ should produce consistent hashes for nested structures
+      ✔ should produce consistent hashes with options
+
+
+  622 passing (13s)
+  1 pending
+
+ℹ tests 63
+ℹ suites 40
+ℹ pass 63
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14595.063307
