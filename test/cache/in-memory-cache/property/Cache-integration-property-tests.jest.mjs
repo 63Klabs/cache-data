@@ -3,8 +3,7 @@
  * Uses fast-check to validate universal correctness properties
  */
 
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
+import { describe, it, expect } from '@jest/globals';
 import fc from 'fast-check';
 import { randomBytes } from "crypto";
 import { Cache } from '../../../../src/lib/dao-cache.js';
@@ -42,24 +41,13 @@ describe('Cache.read() Integration - Property-Based Tests', () => {
             const info = Cache.info();
             
             // Verify feature flag is disabled
-            assert.strictEqual(
-              info.useInMemoryCache,
-              false,
-              'useInMemoryCache should be false when feature flag is disabled'
-            );
+            expect(info.useInMemoryCache).toBe(false);
             
             // Verify L0_Cache is not initialized
-            assert.strictEqual(
-              info.inMemoryCache,
-              undefined,
-              'inMemoryCache should be undefined when feature flag is disabled'
-            );
+            expect(info.inMemoryCache).toBeUndefined();
             
             // Additional verification: info should not have inMemoryCache property at all
-            assert.ok(
-              !('inMemoryCache' in info) || info.inMemoryCache === undefined,
-              'inMemoryCache property should not exist or be undefined when feature flag is disabled'
-            );
+            expect(!('inMemoryCache' in info) || info.inMemoryCache === undefined).toBe(true);
             
             return true;
           }
@@ -114,18 +102,10 @@ describe('Cache.read() Integration - Property-Based Tests', () => {
               const info = Cache.info();
               
               // Verify feature flag is disabled
-              assert.strictEqual(
-                info.useInMemoryCache,
-                false,
-                `useInMemoryCache should be false when CACHE_USE_IN_MEMORY='${envValue}'`
-              );
+              expect(info.useInMemoryCache).toBe(false);
               
               // Verify L0_Cache is not initialized
-              assert.strictEqual(
-                info.inMemoryCache,
-                undefined,
-                'inMemoryCache should be undefined when feature flag is disabled via environment'
-              );
+              expect(info.inMemoryCache).toBeUndefined();
               
               return true;
             } finally {
@@ -177,35 +157,18 @@ describe('Cache.read() Integration - Property-Based Tests', () => {
             const info = Cache.info();
             
             // Verify feature flag is enabled
-            assert.strictEqual(
-              info.useInMemoryCache,
-              true,
-              'useInMemoryCache should be true when feature flag is enabled'
-            );
+            expect(info.useInMemoryCache).toBe(true);
             
             // Verify L0_Cache is initialized
-            assert.ok(
-              info.inMemoryCache !== undefined,
-              'inMemoryCache should be initialized when feature flag is enabled'
-            );
+            expect(info.inMemoryCache).not.toBeUndefined();
             
             // Verify L0_Cache has expected structure
-            assert.ok(
-              typeof info.inMemoryCache.size === 'number',
-              'inMemoryCache should have size property'
-            );
+            expect(typeof info.inMemoryCache.size).toBe('number');
             
-            assert.ok(
-              typeof info.inMemoryCache.maxEntries === 'number',
-              'inMemoryCache should have maxEntries property'
-            );
+            expect(typeof info.inMemoryCache.maxEntries).toBe('number');
             
             // Verify STATUS_CACHE_IN_MEM constant exists
-            assert.strictEqual(
-              Cache.STATUS_CACHE_IN_MEM,
-              'cache:memory',
-              'STATUS_CACHE_IN_MEM constant should be defined as "cache:memory"'
-            );
+            expect(Cache.STATUS_CACHE_IN_MEM).toBe('cache:memory');
             
             return true;
           }
@@ -247,40 +210,22 @@ describe('Cache.read() Integration - Property-Based Tests', () => {
             const info = Cache.info();
             
             // Verify feature flag is enabled
-            assert.strictEqual(
-              info.useInMemoryCache,
-              true,
-              'useInMemoryCache should be true'
-            );
+            expect(info.useInMemoryCache).toBe(true);
             
             // Verify L0_Cache is initialized
-            assert.ok(
-              info.inMemoryCache !== undefined,
-              'inMemoryCache should be initialized'
-            );
+            expect(info.inMemoryCache).not.toBeUndefined();
             
             // Verify L0_Cache configuration
             if (config.maxEntries !== undefined) {
               // If maxEntries was explicitly set, it should be used
-              assert.strictEqual(
-                info.inMemoryCache.maxEntries,
-                config.maxEntries,
-                'maxEntries should match configured value'
-              );
+              expect(info.inMemoryCache.maxEntries).toBe(config.maxEntries);
             } else {
               // Otherwise, it should be calculated or use default
-              assert.ok(
-                typeof info.inMemoryCache.maxEntries === 'number' && info.inMemoryCache.maxEntries > 0,
-                'maxEntries should be a positive number'
-              );
+              expect(typeof info.inMemoryCache.maxEntries === 'number' && info.inMemoryCache.maxEntries > 0).toBe(true);
             }
             
             // Verify initial size is 0
-            assert.strictEqual(
-              info.inMemoryCache.size,
-              0,
-              'Initial cache size should be 0'
-            );
+            expect(info.inMemoryCache.size).toBe(0);
             
             return true;
           }
