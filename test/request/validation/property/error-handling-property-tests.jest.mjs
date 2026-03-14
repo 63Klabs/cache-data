@@ -229,7 +229,7 @@ describe('Property 7: Error Handling and Logging', () => {
 					param2Value: fc.string(),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					routePattern: fc.stringMatching(/^[a-z]+$/)
-				}).filter(({ param1Name, param2Name }) => param1Name !== param2Name),
+				}).filter(({ param1Name, param2Name }) => param1Name.toLowerCase() !== param2Name.toLowerCase()),
 				async ({ param1Name, param2Name, param1Value, param2Value, httpMethod, routePattern }) => {
 					let param1Called = false;
 					let param2Called = false;
@@ -298,7 +298,7 @@ describe('Property 7: Error Handling and Logging', () => {
 					errorMessage: fc.string({ minLength: 5, maxLength: 30 }),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					routePattern: fc.stringMatching(/^[a-z]+\/\{[a-z]+\}$/)
-				}).filter(({ param1Name, param2Name }) => param1Name !== param2Name),
+				}).filter(({ param1Name, param2Name }) => param1Name.toLowerCase() !== param2Name.toLowerCase()),
 				async ({ param1Name, param2Name, param1Value, param2Value, errorMessage, httpMethod, routePattern }) => {
 					// >! Create multi-parameter validation that throws error
 					const validateFn = jest.fn().mockImplementation(() => {

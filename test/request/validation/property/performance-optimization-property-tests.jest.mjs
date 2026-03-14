@@ -512,7 +512,7 @@ describe('Property 8: Performance Optimization Through Early Exit', () => {
 					differentParam: fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,10}$/),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					resourcePath: fc.stringMatching(/^\/[a-z]+\/\{[a-z]+\}$/)
-				}).filter(({ paramName, differentParam }) => paramName !== differentParam),
+				}).filter(({ paramName, differentParam }) => paramName.toLowerCase() !== differentParam.toLowerCase()),
 				async ({ paramName, differentParam, httpMethod, resourcePath }) => {
 					// >! Create config with rules for a different parameter
 					const config = {

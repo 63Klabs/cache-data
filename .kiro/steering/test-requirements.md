@@ -15,13 +15,13 @@ This steering document establishes critical requirements for test execution to e
 
 GitHub Actions will run the full test suite on every push and pull request. If any test fails, the deployment to NPM will be blocked. This is a critical safeguard to prevent broken code from reaching production.
 
-**CRITICAL: Test Framework Migration in Progress**
+**Test Framework: Jest**
 
-This project is migrating from Mocha to Jest. During this transition:
-- **ALL NEW TESTS MUST BE WRITTEN IN JEST** (files ending in `.jest.mjs`)
-- Both Mocha and Jest test suites must pass (`npm run test:all`)
-- Mocha tests are legacy - maintain but don't create new ones
-- Jest tests are current - all new tests use this framework
+This project uses Jest as its sole test framework:
+- All tests use the `.jest.mjs` file extension
+- Tests use Jest built-in assertions (`expect`)
+- Mocking uses Jest built-in (`jest.spyOn`, `jest.fn`)
+- Property-based tests use fast-check with Jest
 
 ## Pre-Commit Checklist
 
@@ -33,7 +33,7 @@ Before committing any code changes, you MUST:
    ```
 
 2. **Verify all tests pass**:
-   - Check the output for "X passing" with 0 failing
+   - Check the output for passing/failing counts
    - Exit code must be 0
    - No test failures, errors, or exceptions
 
@@ -42,16 +42,6 @@ Before committing any code changes, you MUST:
    - Investigate the root cause of the failure
    - Fix the failing tests or the code causing the failure
    - Re-run the full test suite to verify the fix
-
-4. **Run Jest tests separately** (if applicable):
-   ```bash
-   npm run test:jest
-   ```
-
-5. **Run all tests together**:
-   ```bash
-   npm run test:all
-   ```
 
 ## Test Isolation Requirements
 
@@ -63,7 +53,7 @@ Tests that depend on shared global state (like `Cache.init()`) can fail when run
 
 When writing tests that use global initialization:
 
-1. **Use subprocess isolation for validation tests**: Tests that validate initialization parameters should run in separate Node.js processes (see `cache-validation-tests.mjs` for examples using `execSync`)
+1. **Use subprocess isolation for validation tests**: Tests that validate initialization parameters should run in separate Node.js processes (see `cache-validation-tests.jest.mjs` for examples using `execSync`)
 
 2. **Accept shared initialization in integration tests**: Tests that verify behavior after initialization can share the global state, but must be aware that the first test to run will set the configuration
 
@@ -97,7 +87,7 @@ it("Should throw error for invalid parameter", () => {
 
 Some tests may fail due to pre-existing issues unrelated to your changes:
 
-1. **Cache Init Test** (`cache-tests.mjs`):
+1. **Cache Init Test** (`cache-tests.jest.mjs`):
    - **Issue**: Expects 'myDynamoDbTable' but gets 'test-table' from earlier test initialization
    - **Root Cause**: Cache.init() can only be called once, and property tests initialize it first
    - **Status**: Pre-existing issue, not caused by recent changes
@@ -128,83 +118,58 @@ If you encounter pre-existing test failures that are NOT caused by your changes:
 
 ## Test Categories
 
-### Test Framework Migration
-
-**IMPORTANT**: This project is migrating from Mocha to Jest.
-
-- **Mocha Tests** (legacy): Files ending in `-tests.mjs`
-- **Jest Tests** (current): Files ending in `.jest.mjs`
-- **Rule**: ALL NEW TESTS MUST BE WRITTEN IN JEST
-
 ### Unit Tests
 - Test individual functions and methods in isolation
 - Should not depend on external state or other tests
 - Should be fast and deterministic
-- **Write new unit tests in Jest** (`*.jest.mjs`)
+- File pattern: `*-unit-tests.jest.mjs` or `*-tests.jest.mjs`
 
 ### Property-Based Tests
 - Test universal properties across many generated inputs
-- Use fast-check for randomized testing (works with both Mocha and Jest)
+- Use fast-check for randomized testing
 - Should run with minimum 100 iterations
 - May take longer to execute
-- **Write new property tests in Jest** (`*-property-tests.jest.mjs`)
+- File pattern: `*-property-tests.jest.mjs`
 
 ### Integration Tests
 - Test interactions between modules
 - May use mocked AWS services
 - Should clean up resources after execution
-- **Write new integration tests in Jest** (`*-integration-tests.jest.mjs`)
+- File pattern: `*-integration-tests.jest.mjs`
 
 ### End-to-End Tests
 - Test complete workflows
 - May make real HTTP requests to test endpoints
 - Should be idempotent and not affect production
-- **Write new E2E tests in Jest** (`*.jest.mjs`)
+- File pattern: `*.jest.mjs`
 
 ## Test Execution Commands
 
-### Run All Mocha Tests (Legacy)
+### Run All Tests
 ```bash
 npm test
 ```
 
-### Run All Jest Tests (Current)
+### Run Specific Test Directory
 ```bash
-npm run test:jest
+npm test -- test/cache
+npm test -- test/endpoint
+npm test -- test/documentation
 ```
-
-### Run All Tests (Mocha + Jest) - REQUIRED FOR CI/CD
-```bash
-npm run test:all
-```
-
-**CRITICAL**: Both Mocha and Jest test suites must pass before merging. The CI/CD pipeline runs `npm run test:all`.
 
 ### Run Specific Test File
 ```bash
-# Mocha test
-npm test -- test/cache/cache-tests.mjs
-
-# Jest test
-npm run test:jest -- test/cache/cache-tests.jest.mjs
+npm test -- test/cache/cache-tests.jest.mjs
 ```
 
 ### Run Tests Matching Pattern
 ```bash
-# Mocha tests
-npm test -- 'test/cache/**/*-property-tests.mjs'
-
-# Jest tests
-npm run test:jest -- 'test/cache/**/*-property-tests.jest.mjs'
+npm test -- 'test/cache/**/*-property-tests.jest.mjs'
 ```
 
 ### Run Tests with Debugging
 ```bash
-# Mocha
 NODE_ENV=development npm test
-
-# Jest
-NODE_ENV=development npm run test:jest
 ```
 
 ## GitHub Actions Integration
@@ -219,10 +184,9 @@ GitHub Actions will automatically run tests on:
 ### CI/CD Pipeline Requirements
 
 The CI/CD pipeline requires:
-1. All Mocha tests pass (`npm test`)
-2. All Jest tests pass (`npm run test:jest`)
-3. Exit code 0 from test execution
-4. No unhandled exceptions or errors
+1. All Jest tests pass (`npm test`)
+2. Exit code 0 from test execution
+3. No unhandled exceptions or errors
 
 ### Deployment Blocking
 
@@ -238,17 +202,17 @@ If ANY test fails in GitHub Actions:
 
 1. **Run tests with verbose output**:
    ```bash
-   npm test -- --reporter spec
+   npm test -- --verbose
    ```
 
 2. **Run a single test file**:
    ```bash
-   npm test -- test/cache/cache-tests.mjs
+   npm test -- test/cache/cache-tests.jest.mjs
    ```
 
 3. **Check for test isolation issues**:
    ```bash
-   npm test -- test/cache/cache-tests.mjs --grep "Test Cache Init"
+   npm test -- -t "Test Cache Init"
    ```
 
 4. **Enable debug logging**:
@@ -268,14 +232,12 @@ If ANY test fails in GitHub Actions:
 
 ### Writing New Tests
 
-**CRITICAL**: ALL NEW TESTS MUST BE WRITTEN IN JEST (`.jest.mjs` files).
-
-1. **Use Jest for all new tests**: Create files ending in `.jest.mjs`
+1. **Use Jest for all tests**: Create files ending in `.jest.mjs`
 2. **Ensure tests are isolated**: Each test should be independent
 3. **Clean up after tests**: Restore mocks, clear timers, close connections
 4. **Use descriptive test names**: Clearly describe what is being tested
 5. **Test both success and failure cases**: Don't just test the happy path
-6. **Use property-based testing for core logic**: Validate universal properties (fast-check works with Jest)
+6. **Use property-based testing for core logic**: Validate universal properties with fast-check
 7. **Mock external dependencies**: Don't make real API calls or database queries in unit tests
 
 **Jest Test Example:**
@@ -304,7 +266,6 @@ describe('Cache', () => {
 3. **Refactor brittle tests**: Fix tests that fail intermittently
 4. **Document test dependencies**: Make implicit dependencies explicit
 5. **Remove obsolete tests**: Delete tests for removed functionality
-6. **Consider migrating to Jest**: When modifying Mocha tests, consider migrating to Jest
 
 ## Emergency Procedures
 

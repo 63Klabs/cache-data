@@ -329,8 +329,8 @@ describe('Properties 9-15: Additional Validation Properties', () => {
 					httpMethod: fc.constantFrom('GET', 'POST', 'PUT'),
 					resourcePath: fc.stringMatching(/^\/[a-z]{3,8}$/)
 				}).filter(({ validatedParam1, validatedParam2, unvalidatedParam1, unvalidatedParam2 }) => {
-					// Ensure all parameter names are unique
-					const names = [validatedParam1, validatedParam2, unvalidatedParam1, unvalidatedParam2];
+					// Ensure all parameter names are unique (case-insensitive, since ValidationMatcher uses case-insensitive matching)
+					const names = [validatedParam1, validatedParam2, unvalidatedParam1, unvalidatedParam2].map(n => n.toLowerCase());
 					return new Set(names).size === names.length;
 				}),
 				async ({ validatedParam1, validatedParam2, unvalidatedParam1, unvalidatedParam2, httpMethod, resourcePath }) => {
@@ -459,7 +459,7 @@ describe('Properties 9-15: Additional Validation Properties', () => {
 					presentValue: fc.oneof(fc.string(), fc.integer(), fc.boolean()),
 					httpMethod: fc.constantFrom('GET', 'POST', 'PUT'),
 					resourcePath: fc.stringMatching(/^\/[a-z]{3,8}$/)
-				}).filter(({ presentParam, absentParam }) => presentParam !== absentParam),
+				}).filter(({ presentParam, absentParam }) => presentParam.toLowerCase() !== absentParam.toLowerCase()),
 				async ({ presentParam, absentParam, presentValue, httpMethod, resourcePath }) => {
 					let presentParamCallCount = 0;
 					let absentParamCallCount = 0;

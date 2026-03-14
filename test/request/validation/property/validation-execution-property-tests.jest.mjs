@@ -431,7 +431,7 @@ describe('Property 5: Validation Execution and Result Handling', () => {
 					param2Value: fc.integer({ min: 1, max: 100 }),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					routePattern: fc.stringMatching(/^[a-z]+$/)
-				}).filter(({ param1Name, param2Name }) => param1Name !== param2Name),
+				}).filter(({ param1Name, param2Name }) => param1Name.toLowerCase() !== param2Name.toLowerCase()),
 				async ({ param1Name, param2Name, param1Value, param2Value, httpMethod, routePattern }) => {
 					let param1CallCount = 0;
 					let param2CallCount = 0;

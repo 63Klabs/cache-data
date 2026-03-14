@@ -304,7 +304,7 @@ describe('Property 2: Validation Priority Order', () => {
 					differentParamName: fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,10}$/),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					resourcePath: fc.stringMatching(/^\/[a-z]+\/\{[a-z]+\}$/)
-				}).filter(({ paramName, differentParamName }) => paramName !== differentParamName),
+				}).filter(({ paramName, differentParamName }) => paramName.toLowerCase() !== differentParamName.toLowerCase()),
 				async ({ paramName, differentParamName, httpMethod, resourcePath }) => {
 					// >! Create config with rules for a different parameter
 					const config = {
@@ -423,7 +423,7 @@ describe('Property 2: Validation Priority Order', () => {
 					paramName2: fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]{0,10}$/),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					routePattern: fc.stringMatching(/^[a-z]+\/\{[a-z]+\}$/)
-				}).filter(({ paramName1, paramName2 }) => paramName1 !== paramName2),
+				}).filter(({ paramName1, paramName2 }) => paramName1.toLowerCase() !== paramName2.toLowerCase()),
 				async ({ paramName1, paramName2, httpMethod, routePattern }) => {
 					const priority1Fn = (value) => 'P1';
 					const priority2Fn = (value) => 'P2';

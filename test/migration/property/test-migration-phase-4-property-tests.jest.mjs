@@ -153,21 +153,23 @@ function scanFileForPattern(filePath, pattern) {
 describe('Test Migration Phase 4 - Property-Based Tests', () => {
 
 	/**
-	 * Property 1: Test Execution Equivalence
-	 * For any module in Phase 4 scope, when both Mocha and Jest test suites are executed,
-	 * both should pass with zero failures.
+	 * Property 1: Test Execution - Jest tests produce passing results
+	 * For any module in Phase 4 scope, the Jest test suite should pass with zero failures.
 	 * 
-	 * Feature: test-migration-phase-4, Property 1: Test Execution Equivalence
+	 * Note: Mocha has been fully removed after migration completion (Phase 6).
+	 * This test now validates that Jest tests pass independently.
+	 * 
+	 * Feature: test-migration-phase-4, Property 1: Test Execution
 	 * Validates: Requirements 1.8, 2.9, 3.12, 4.10, 7.1, 7.2, 7.3
 	 * 
 	 * Note: This test is expensive as it runs full test suites. We limit to 3 runs.
 	 */
-	it('Property 1: Test Execution Equivalence - Both Mocha and Jest produce passing results', async () => {
+	it('Property 1: Test Execution - Jest tests produce passing results', async () => {
 		const modules = [
-			{ name: 'parameter-secret', mocha: 'test/config/parameter-secret-tests.mjs', jest: 'test/config/parameter-secret-tests.jest.mjs' },
-			{ name: 'connections', mocha: 'test/config/connections-tests.mjs', jest: 'test/config/connections-tests.jest.mjs' },
-			{ name: 'debug-and-log', mocha: 'test/logging/debug-and-log-tests.mjs', jest: 'test/logging/debug-and-log-tests.jest.mjs' },
-			{ name: 'timer', mocha: 'test/logging/timer-tests.mjs', jest: 'test/logging/timer-tests.jest.mjs' }
+			{ name: 'parameter-secret', jest: 'test/config/parameter-secret-tests.jest.mjs' },
+			{ name: 'connections', jest: 'test/config/connections-tests.jest.mjs' },
+			{ name: 'debug-and-log', jest: 'test/logging/debug-and-log-tests.jest.mjs' },
+			{ name: 'timer', jest: 'test/logging/timer-tests.jest.mjs' }
 		];
 
 		fc.assert(
@@ -176,23 +178,19 @@ describe('Test Migration Phase 4 - Property-Based Tests', () => {
 				(module) => {
 					console.log(`\n  Testing ${module.name}...`);
 
-					// Run Mocha tests
-					console.log(`    Running Mocha tests for ${module.name}...`);
-					const mochaResults = runTests(module.mocha, 'mocha');
-					console.log(`    Mocha: ${mochaResults.passed} passed, ${mochaResults.failed} failed, ${mochaResults.total} total`);
-
 					// Run Jest tests
 					console.log(`    Running Jest tests for ${module.name}...`);
 					const jestResults = runTests(module.jest, 'jest');
 					console.log(`    Jest: ${jestResults.passed} passed, ${jestResults.failed} failed, ${jestResults.total} total`);
 
-					// Both should succeed (no failures)
-					expect(mochaResults.success).toBe(true);
+					// Jest tests should succeed (no failures)
 					expect(jestResults.success).toBe(true);
 
-					// Note: We don't require the same number of tests because Jest may have
-					// additional edge case tests added during migration (as per task 7)
-					// We only require that both pass all their tests
+					// Mocha has been fully removed after Phase 6 migration completion
+					// Verify Mocha test files no longer exist
+					const mochaFile = module.jest.replace('.jest.mjs', '.mjs');
+					const mochaPath = path.join(projectRoot, mochaFile);
+					expect(fileExists(mochaPath)).toBe(false);
 
 					return true;
 				}
@@ -451,43 +449,42 @@ describe('Test Migration Phase 4 - Property-Based Tests', () => {
 
 	/**
 	 * Property 6: Test Coverage Preservation
-	 * For any module in Phase 4 scope, the Jest test file should have at least
-	 * as many test cases as the Mocha test file (may have more for edge cases).
+	 * For any module in Phase 4 scope, the Jest test file should exist and
+	 * have a reasonable number of test cases. Mocha files have been removed
+	 * after migration completion (Phase 6).
 	 * 
 	 * Feature: test-migration-phase-4, Property 6: Test Coverage Preservation
 	 * Validates: Requirements 1.2, 1.5, 1.6, 1.7, 2.3, 2.4, 2.5, 2.6, 3.4-3.10, 4.4-4.8, 5.1-5.4
 	 */
-	it('Property 6: Test Coverage Preservation - Jest has at least as many tests as Mocha', () => {
-		const testPairs = [
-			{ name: 'parameter-secret', mocha: 'test/config/parameter-secret-tests.mjs', jest: 'test/config/parameter-secret-tests.jest.mjs' },
-			{ name: 'connections', mocha: 'test/config/connections-tests.mjs', jest: 'test/config/connections-tests.jest.mjs' },
-			{ name: 'debug-and-log', mocha: 'test/logging/debug-and-log-tests.mjs', jest: 'test/logging/debug-and-log-tests.jest.mjs' },
-			{ name: 'timer', mocha: 'test/logging/timer-tests.mjs', jest: 'test/logging/timer-tests.jest.mjs' }
+	it('Property 6: Test Coverage Preservation - Jest test files exist with adequate test counts', () => {
+		const testFiles = [
+			{ name: 'parameter-secret', jest: 'test/config/parameter-secret-tests.jest.mjs', minTests: 1 },
+			{ name: 'connections', jest: 'test/config/connections-tests.jest.mjs', minTests: 1 },
+			{ name: 'debug-and-log', jest: 'test/logging/debug-and-log-tests.jest.mjs', minTests: 1 },
+			{ name: 'timer', jest: 'test/logging/timer-tests.jest.mjs', minTests: 1 }
 		];
 
 		fc.assert(
 			fc.property(
-				fc.constantFrom(...testPairs),
-				(pair) => {
-					const mochaPath = path.join(projectRoot, pair.mocha);
-					const jestPath = path.join(projectRoot, pair.jest);
+				fc.constantFrom(...testFiles),
+				(file) => {
+					const jestPath = path.join(projectRoot, file.jest);
 
-					// Both files must exist
-					if (!fileExists(mochaPath) || !fileExists(jestPath)) {
-						return true; // Skip if files don't exist yet
-					}
+					// Jest file must exist
+					expect(fileExists(jestPath)).toBe(true);
 
 					// Count test cases (it() and test() calls)
-					const mochaContent = fs.readFileSync(mochaPath, 'utf8');
 					const jestContent = fs.readFileSync(jestPath, 'utf8');
-
-					const mochaTests = (mochaContent.match(/\bit\s*\(/g) || []).length +
-					                   (mochaContent.match(/\btest\s*\(/g) || []).length;
 					const jestTests = (jestContent.match(/\bit\s*\(/g) || []).length +
 					                  (jestContent.match(/\btest\s*\(/g) || []).length;
 
-					// Jest should have at least as many tests as Mocha (may have more for edge cases)
-					expect(jestTests).toBeGreaterThanOrEqual(mochaTests);
+					// Jest should have at least the minimum expected tests
+					expect(jestTests).toBeGreaterThanOrEqual(file.minTests);
+
+					// Mocha files should no longer exist (removed in Phase 6)
+					const mochaFile = file.jest.replace('.jest.mjs', '.mjs');
+					const mochaPath = path.join(projectRoot, mochaFile);
+					expect(fileExists(mochaPath)).toBe(false);
 
 					return true;
 				}

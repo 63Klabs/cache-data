@@ -107,7 +107,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			const request = {
 				host: 'httpbin.org',
 				path: '/status/200',
-				options: { timeout: 5000 }
+				options: { timeout: 10000 }
 			};
 			
 			const apiRequest = new ApiRequest(request);
@@ -134,7 +134,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 				host: 'httpbin.org',
 				path: '/get',
 				pagination: { enabled: false },
-				options: { timeout: 5000 }
+				options: { timeout: 10000 }
 			};
 			
 			const apiRequest = new ApiRequest(request);
@@ -150,7 +150,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 				host: 'httpbin.org',
 				path: '/get',
 				retry: { enabled: false },
-				options: { timeout: 5000 }
+				options: { timeout: 10000 }
 			};
 			
 			const apiRequest = new ApiRequest(request);
@@ -326,7 +326,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			const request = {
 				host: 'httpbin.org',
 				path: '/get',
-				options: { timeout: 5000 }
+				options: { timeout: 10000 }
 			};
 			
 			const apiRequest = new ApiRequest(request);
@@ -335,7 +335,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			expect(response.success).toBe(true);
 			expect(response.statusCode).toBe(200);
 			expect(response).not.toHaveProperty('metadata');
-		});
+		}, 15000);
 
 		it('should handle query parameters without pagination', async () => {
 			const request = {
@@ -345,7 +345,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 					param1: 'value1',
 					param2: 'value2'
 				},
-				options: { timeout: 5000 }
+				options: { timeout: 10000 }
 			};
 			
 			const apiRequest = new ApiRequest(request);
@@ -353,7 +353,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			
 			expect(response.success).toBe(true);
 			expect(response).not.toHaveProperty('metadata');
-		});
+		}, 15000);
 
 		it('should handle headers without pagination', async () => {
 			const request = {
@@ -362,7 +362,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 				headers: {
 					'X-Custom-Header': 'test-value'
 				},
-				options: { timeout: 5000 }
+				options: { timeout: 10000 }
 			};
 			
 			const apiRequest = new ApiRequest(request);
@@ -370,7 +370,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			
 			expect(response.success).toBe(true);
 			expect(response).not.toHaveProperty('metadata');
-		});
+		}, 15000);
 	});
 
 	describe('Requests Without Retry Behave Identically', () => {
@@ -378,7 +378,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			const request = {
 				host: 'httpbin.org',
 				path: '/status/200',
-				options: { timeout: 5000 }
+				options: { timeout: 10000 }
 			};
 			
 			const apiRequest = new ApiRequest(request);
@@ -387,22 +387,24 @@ describe('ApiRequest Backwards Compatibility', () => {
 			expect(response.success).toBe(true);
 			expect(response.statusCode).toBe(200);
 			expect(response).not.toHaveProperty('metadata');
-		});
+		}, 15000);
 
 		it('should fail immediately on error without retry', async () => {
 			const request = {
 				host: 'httpbin.org',
 				path: '/status/500',
-				options: { timeout: 5000 }
+				options: { timeout: 10000 }
 			};
 			
 			const apiRequest = new ApiRequest(request);
 			const response = await apiRequest.send();
 			
 			expect(response.success).toBe(false);
-			expect(response.statusCode).toBe(500);
+			// httpbin.org may return 500, 502, or other 5xx depending on load
+			expect(response.statusCode).toBeGreaterThanOrEqual(500);
+			expect(response.statusCode).toBeLessThan(600);
 			expect(response).not.toHaveProperty('metadata');
-		});
+		}, 15000);
 
 		it('should handle timeout without retry', async () => {
 			const request = {

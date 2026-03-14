@@ -8,35 +8,32 @@ This steering document establishes critical rules and monitoring practices to pr
 
 **NEVER create tests that recursively execute the full test suite.** Tests that spawn child processes to run other tests MUST be carefully designed to avoid infinite loops and exponential process growth.
 
-**CRITICAL: Test Framework Migration in Progress**
+**Test Framework: Jest**
 
-This project is migrating from Mocha to Jest:
-- **Mocha tests** (legacy): `*-tests.mjs` files
-- **Jest tests** (current): `*.jest.mjs` files
-- **ALL NEW TESTS MUST BE WRITTEN IN JEST**
-- Both test suites must pass in CI/CD
+This project uses Jest as its sole test framework:
+- All tests use the `.jest.mjs` file extension
+- Test command: `npm test` (runs Jest)
 
 ## Critical Rules for Test Execution
 
 ### Rule 1: No Recursive Test Suite Execution
 
-**NEVER write tests that execute `npm test` or `npm run test:all` from within a test file.**
+**NEVER write tests that execute `npm test` from within a test file.**
 
-When a test file is part of the test suite (matched by `test/**/*-tests.mjs`), and that test file executes `npm test`, it creates an infinite loop:
+When a test file is part of the test suite and that test file executes `npm test`, it creates an infinite loop:
 
 ```
 npm test
-  → runs test/migration/property/test-execution-equivalence-property-tests.mjs
+  → runs test/migration/property/test-execution-equivalence-property-tests.jest.mjs
     → executes npm test
-      → runs test/migration/property/test-execution-equivalence-property-tests.mjs
+      → runs test/migration/property/test-execution-equivalence-property-tests.jest.mjs
         → executes npm test
           → ... (infinite loop)
 ```
 
 **Bad Example** (causes infinite loop):
 ```javascript
-// test/migration/property/test-execution-equivalence-property-tests.mjs
-function runTests(testFile, framework) {
+function runTests(testFile) {
     const command = `npm test -- ${testFile}`;  // ❌ WRONG - runs full test suite
     execSync(command);
 }
@@ -44,29 +41,23 @@ function runTests(testFile, framework) {
 
 **Good Example** (runs specific test file directly):
 ```javascript
-// test/migration/property/test-execution-equivalence-property-tests.mjs
-function runTests(testFile, framework) {
-    // ✅ CORRECT - runs mocha/jest directly on specific file
-    const command = framework === 'mocha' 
-        ? `./node_modules/.bin/mocha ${testFile}`
-        : `node --experimental-vm-modules ./node_modules/jest/bin/jest.js ${testFile}`;
+function runTests(testFile) {
+    // ✅ CORRECT - runs Jest directly on specific file
+    const command = `node --experimental-vm-modules ./node_modules/jest/bin/jest.js ${testFile}`;
     execSync(command);
 }
 ```
 
 ### Rule 2: Direct Test Runner Invocation
 
-When tests need to execute other tests (e.g., for migration validation), they MUST:
+When tests need to execute other tests (e.g., for validation), they MUST:
 
-1. **Invoke the test runner directly** (mocha or jest binary)
+1. **Invoke the Jest binary directly**
 2. **Specify the exact test file** to run
 3. **Never use npm scripts** that might trigger the full test suite
 
-**Correct patterns:**
+**Correct pattern:**
 ```javascript
-// Run Mocha directly on specific file
-execSync(`./node_modules/.bin/mocha test/endpoint/api-request-tests.mjs`);
-
 // Run Jest directly on specific file
 execSync(`node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/endpoint/api-request-tests.jest.mjs`);
 ```
@@ -74,10 +65,7 @@ execSync(`node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/en
 **Incorrect patterns:**
 ```javascript
 // ❌ WRONG - runs full test suite
-execSync(`npm test -- test/endpoint/api-request-tests.mjs`);
-
-// ❌ WRONG - runs full test suite
-execSync(`npm run test:jest -- test/endpoint/api-request-tests.jest.mjs`);
+execSync(`npm test -- test/endpoint/api-request-tests.jest.mjs`);
 ```
 
 ### Rule 3: Test File Naming Exclusions
@@ -87,22 +75,13 @@ If a test file MUST execute other tests, it should be excluded from the default 
 **Option A: Use different file extension**
 ```javascript
 // test/migration/validation/test-execution-validator.mjs
-// Not matched by 'test/**/*-tests.mjs' pattern
+// Not matched by Jest's testMatch pattern
 ```
 
 **Option B: Place in excluded directory**
 ```javascript
-// test/scripts/validate-migration.mjs
-// Not in test/** pattern
-```
-
-**Option C: Explicit exclusion in test scripts**
-```json
-{
-  "scripts": {
-    "test": "mocha 'test/**/*-tests.mjs' --exclude 'test/migration/property/test-execution-equivalence-property-tests.mjs'"
-  }
-}
+// test/scripts/validate-tests.mjs
+// Excluded via jest.config.mjs testPathIgnorePatterns
 ```
 
 ### Rule 4: Monitor Test Processes During Development
@@ -111,12 +90,12 @@ Before running tests that spawn child processes:
 
 1. **Check for existing test processes:**
    ```bash
-   ps aux | grep -E "(mocha|jest|node.*test)" | grep -v grep
+   ps aux | grep -E "(jest|node.*test)" | grep -v grep
    ```
 
 2. **Monitor process count during test execution:**
    ```bash
-   watch -n 1 'ps aux | grep -E "(mocha|jest)" | wc -l'
+   watch -n 1 'ps aux | grep -E "jest" | wc -l'
    ```
 
 3. **Set a timeout for test execution:**
@@ -126,7 +105,6 @@ Before running tests that spawn child processes:
 
 4. **Kill runaway test processes immediately:**
    ```bash
-   pkill -f "mocha.*test"
    pkill -f "jest.*test"
    ```
 
@@ -135,8 +113,10 @@ Before running tests that spawn child processes:
 All tests that spawn child processes MUST have reasonable timeouts:
 
 ```javascript
-it('Property 2: Test Execution Equivalence', { timeout: 120000 }, () => {
-    // Test implementation with 2-minute timeout
+it('Property: Test Execution Equivalence', () => {
+    // Jest default timeout is 5000ms, override for expensive tests
+    jest.setTimeout(120000); // 2-minute timeout
+    // Test implementation
 });
 ```
 
@@ -170,14 +150,14 @@ fc.assert(
 
 1. **Exponentially growing process count:**
    ```bash
-   ps aux | grep mocha | wc -l
+   ps aux | grep jest | wc -l
    # Output: 50, 100, 200, 400... (doubling rapidly)
    ```
 
 2. **High CPU usage across many processes:**
    ```bash
    top
-   # Shows dozens of node/mocha processes at 50-100% CPU
+   # Shows dozens of node/jest processes at 50-100% CPU
    ```
 
 3. **Disk space filling up rapidly:**
@@ -196,14 +176,13 @@ If you detect an infinite loop:
 
 1. **Immediately kill all test processes:**
    ```bash
-   pkill -9 -f "mocha"
    pkill -9 -f "jest"
    pkill -9 -f "node.*test"
    ```
 
 2. **Verify all processes are killed:**
    ```bash
-   ps aux | grep -E "(mocha|jest|node.*test)" | grep -v grep
+   ps aux | grep -E "(jest|node.*test)" | grep -v grep
    # Should return no results
    ```
 
@@ -216,20 +195,17 @@ If you detect an infinite loop:
 4. **Clean up temporary files:**
    ```bash
    rm -rf /tmp/jest_*
-   rm -rf /tmp/mocha_*
    ```
 
 ## Safe Test Execution Patterns
 
 ### Pattern 1: Isolated Test File Execution
 
-When validating test migration, run test files in isolation:
+When running test files in isolation:
 
 ```javascript
-function runTestFile(testFile, framework) {
-    const command = framework === 'mocha'
-        ? `./node_modules/.bin/mocha ${testFile}`
-        : `node --experimental-vm-modules ./node_modules/jest/bin/jest.js ${testFile}`;
+function runTestFile(testFile) {
+    const command = `node --experimental-vm-modules ./node_modules/jest/bin/jest.js ${testFile}`;
     
     return execSync(command, {
         cwd: projectRoot,
@@ -258,16 +234,13 @@ function countTests(testFile) {
 If tests MUST execute other tests, use subprocess isolation:
 
 ```javascript
-// test/scripts/validate-migration.mjs (NOT in test/** pattern)
+// test/scripts/validate-tests.mjs (NOT matched by Jest testMatch pattern)
 import { execSync } from 'child_process';
 
-function validateMigration() {
+function validateTests() {
     // Run specific test files directly
-    const mochaResult = execSync('./node_modules/.bin/mocha test/endpoint/api-request-tests.mjs');
-    const jestResult = execSync('node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/endpoint/api-request-tests.jest.mjs');
-    
-    // Compare results
-    return compareMochaAndJestResults(mochaResult, jestResult);
+    const result = execSync('node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/endpoint/api-request-tests.jest.mjs');
+    return parseTestResults(result);
 }
 ```
 
@@ -275,8 +248,8 @@ function validateMigration() {
 
 Before committing tests that spawn child processes:
 
-- [ ] Test does NOT execute `npm test` or `npm run test:all`
-- [ ] Test invokes test runners directly (mocha/jest binaries)
+- [ ] Test does NOT execute `npm test`
+- [ ] Test invokes Jest binary directly
 - [ ] Test specifies exact test files to run
 - [ ] Test has appropriate timeout (≤ 120 seconds)
 - [ ] Property test has limited iterations (≤ 10 for expensive tests)
@@ -291,10 +264,9 @@ Before committing tests that spawn child processes:
 
 ```bash
 # Check for existing test processes
-ps aux | grep -E "(mocha|jest)" | grep -v grep
+ps aux | grep -E "jest" | grep -v grep
 
 # If any exist, kill them
-pkill -f "mocha"
 pkill -f "jest"
 ```
 
@@ -302,7 +274,7 @@ pkill -f "jest"
 
 ```bash
 # In a separate terminal, monitor process count
-watch -n 1 'ps aux | grep -E "(mocha|jest)" | wc -l'
+watch -n 1 'ps aux | grep -E "jest" | wc -l'
 
 # If count exceeds 10, investigate immediately
 # If count keeps growing, kill all test processes
@@ -312,10 +284,9 @@ watch -n 1 'ps aux | grep -E "(mocha|jest)" | wc -l'
 
 ```bash
 # Verify all test processes completed
-ps aux | grep -E "(mocha|jest)" | grep -v grep
+ps aux | grep -E "jest" | grep -v grep
 
 # Clean up any orphaned processes
-pkill -f "mocha"
 pkill -f "jest"
 ```
 
@@ -325,41 +296,12 @@ When creating or modifying tests:
 
 1. **ALWAYS check if test spawns child processes** (execSync, spawn, exec)
 2. **NEVER use npm scripts** in tests that spawn child processes
-3. **ALWAYS use direct test runner invocation** (mocha/jest binaries)
+3. **ALWAYS use direct Jest binary invocation**
 4. **ALWAYS set timeouts** for tests that spawn child processes
 5. **ALWAYS limit property test iterations** for expensive tests
 6. **ALWAYS exclude from default test suite** if test executes other tests
 7. **ALWAYS verify locally** before committing
 8. **ALWAYS monitor process count** during test execution
-
-## Known Issues and Fixes
-
-### Issue: test-execution-equivalence-property-tests.mjs Infinite Loop
-
-**Problem:** Test file uses `npm test -- ${testFile}` which causes infinite loop.
-
-**Fix:** Change to direct test runner invocation:
-
-```javascript
-// Before (WRONG):
-const command = `npm test -- ${testFile}`;
-
-// After (CORRECT):
-const command = framework === 'mocha'
-    ? `./node_modules/.bin/mocha ${testFile}`
-    : `node --experimental-vm-modules ./node_modules/jest/bin/jest.js ${testFile}`;
-```
-
-**Alternative:** Exclude from default test suite:
-
-```json
-{
-  "scripts": {
-    "test": "mocha 'test/**/*-tests.mjs' --exclude 'test/migration/property/test-execution-equivalence-property-tests.mjs'",
-    "test:migration:validation": "mocha test/migration/property/test-execution-equivalence-property-tests.mjs"
-  }
-}
-```
 
 ## Additional Guardrails
 
@@ -372,8 +314,7 @@ Set memory limits to prevent tests from consuming all system memory:
 ```json
 {
   "scripts": {
-    "test": "node --max-old-space-size=2048 ./node_modules/.bin/mocha 'test/**/*-tests.mjs'",
-    "test:jest": "node --max-old-space-size=2048 --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --max-old-space-size=2048 --experimental-vm-modules node_modules/jest/bin/jest.js"
   }
 }
 ```
@@ -462,7 +403,7 @@ describe('Tests that create files', () => {
 
 **Problem:** Tests that make real network requests can be slow and flaky.
 
-**Solution:** Mock network requests or use test servers:
+**Solution:** Mock network requests:
 
 ```javascript
 // Mock HTTP requests
@@ -486,19 +427,10 @@ afterEach(() => {
 **Solution:** Use test isolation or sequential execution for problematic tests:
 
 ```javascript
-// Mocha: Run specific tests sequentially
-describe('Sequential tests', function() {
-    this.timeout(60000);
-    
-    it.skip('test 1', async () => { /* ... */ });
-    it.skip('test 2', async () => { /* ... */ });
-});
-
 // Jest: Disable parallel execution for specific files
 // Add to jest.config.mjs
 export default {
     maxWorkers: 1, // Run tests sequentially
-    // Or use test.concurrent.skip() for specific tests
 };
 ```
 
@@ -530,7 +462,7 @@ jobs:
     timeout-minutes: 15  # Kill job after 15 minutes
     steps:
       - name: Run tests
-        run: timeout 600s npm run test:all  # 10 minute timeout
+        run: timeout 600s npm test  # 10 minute timeout
 ```
 
 #### AWS CodeBuild Timeout and Resource Limits
@@ -542,7 +474,6 @@ jobs:
 ```yaml
 version: 0.2
 
-# Set build timeout (max 480 minutes, but use much less for tests)
 phases:
   install:
     runtime-versions:
@@ -553,175 +484,39 @@ phases:
       
   pre_build:
     commands:
-      # Health check before running tests
       - echo "Checking system resources..."
       - df -h
       - free -h
       - ulimit -a
-      
-      # Kill any existing test processes (shouldn't exist, but safety check)
-      - pkill -9 -f "mocha" || true
       - pkill -9 -f "jest" || true
-      
-      # Set resource limits
-      - ulimit -u 1000  # Limit processes to prevent fork bombs
-      - ulimit -n 4096  # Increase file descriptors for parallel tests
+      - ulimit -u 1000
+      - ulimit -n 4096
       
   build:
     commands:
-      # Run tests with timeout protection
       - echo "Running test suite with timeout protection..."
-      - timeout 600s npm run test:all || exit 1
+      - timeout 600s npm test || exit 1
       
   post_build:
     commands:
-      # Always cleanup, even if tests fail
       - echo "Cleaning up test artifacts..."
-      - pkill -9 -f "mocha" || true
       - pkill -9 -f "jest" || true
       - rm -rf /tmp/jest_* || true
-      - rm -rf /tmp/mocha_* || true
       - rm -rf coverage/ || true
-      
-      # Report final status
       - echo "Test execution completed"
       - df -h
       - free -h
 
-# Artifacts to preserve (optional)
 artifacts:
   files:
     - 'coverage/**/*'
     - 'test-results/**/*'
   name: test-results-$(date +%Y%m%d-%H%M%S)
 
-# Cache dependencies for faster builds
 cache:
   paths:
     - 'node_modules/**/*'
-
-# Build timeout (in minutes) - CRITICAL
-# Set this in CodeBuild project settings or here
-# Recommended: 15 minutes for test execution
-# Maximum: 480 minutes (8 hours)
 ```
-
-**CodeBuild Project Configuration (via CloudFormation/Console):**
-
-```yaml
-# CloudFormation example
-Resources:
-  TestCodeBuildProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: npm-package-tests
-      TimeoutInMinutes: 15  # CRITICAL: Set timeout
-      QueuedTimeoutInMinutes: 30  # Timeout for queued builds
-      
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL  # Or MEDIUM for more resources
-        Image: aws/codebuild/standard:7.0
-        EnvironmentVariables:
-          - Name: NODE_OPTIONS
-            Value: "--max-old-space-size=2048"  # Limit Node.js memory
-          - Name: CI
-            Value: "true"
-          - Name: AWS_REGION
-            Value: !Ref AWS::Region
-            
-      Source:
-        Type: GITHUB  # or CODECOMMIT, S3, etc.
-        BuildSpec: buildspec.yml
-        
-      # Enable CloudWatch Logs for debugging
-      LogsConfig:
-        CloudWatchLogs:
-          Status: ENABLED
-          GroupName: /aws/codebuild/npm-package-tests
-```
-
-**CodeBuild-Specific Protections:**
-
-1. **Build Timeout Protection:**
-   ```yaml
-   # In buildspec.yml
-   phases:
-     build:
-       commands:
-         # Use timeout command as additional safety
-         - timeout 600s npm run test:all || exit 1
-   ```
-
-2. **Process Monitoring in CodeBuild:**
-   ```yaml
-   phases:
-     build:
-       commands:
-         # Monitor process count during tests
-         - |
-           npm run test:all &
-           TEST_PID=$!
-           while kill -0 $TEST_PID 2>/dev/null; do
-             PROCESS_COUNT=$(ps aux | grep -E "(mocha|jest)" | grep -v grep | wc -l)
-             if [ $PROCESS_COUNT -gt 20 ]; then
-               echo "ERROR: Too many test processes detected ($PROCESS_COUNT)"
-               pkill -9 -f "mocha"
-               pkill -9 -f "jest"
-               exit 1
-             fi
-             sleep 5
-           done
-           wait $TEST_PID
-   ```
-
-3. **Memory Monitoring:**
-   ```yaml
-   phases:
-     build:
-       commands:
-         # Check memory before tests
-         - |
-           AVAILABLE_MEM=$(free -m | awk 'NR==2{print $7}')
-           if [ $AVAILABLE_MEM -lt 500 ]; then
-             echo "ERROR: Insufficient memory available: ${AVAILABLE_MEM}MB"
-             exit 1
-           fi
-         - npm run test:all
-   ```
-
-4. **Disk Space Monitoring:**
-   ```yaml
-   phases:
-     pre_build:
-       commands:
-         # Check disk space before tests
-         - |
-           DISK_USAGE=$(df -h / | awk 'NR==2{print $5}' | sed 's/%//')
-           if [ $DISK_USAGE -gt 80 ]; then
-             echo "ERROR: Disk usage too high: ${DISK_USAGE}%"
-             exit 1
-           fi
-   ```
-
-5. **Automatic Cleanup on Failure:**
-   ```yaml
-   phases:
-     post_build:
-       commands:
-         # Always run cleanup, even on failure
-         - |
-           echo "Performing cleanup..."
-           pkill -9 -f "mocha" || true
-           pkill -9 -f "jest" || true
-           rm -rf /tmp/jest_* /tmp/mocha_* coverage/ || true
-           
-           # Report resource usage
-           echo "Final resource usage:"
-           df -h /
-           free -h
-           ps aux | grep -E "(mocha|jest)" | grep -v grep || echo "No test processes running"
-   ```
 
 **CodeBuild Environment Variables:**
 
@@ -741,32 +536,6 @@ LOG_LEVEL="3"  # Reduce logging in CI
 - **BUILD_GENERAL1_MEDIUM** (7 GB RAM, 4 vCPUs): Integration tests, property-based tests
 - **BUILD_GENERAL1_LARGE** (15 GB RAM, 8 vCPUs): Heavy test suites with parallel execution
 
-**CodeBuild-Specific Issues:**
-
-1. **Container Reuse:** CodeBuild may reuse containers, so always clean up:
-   ```yaml
-   pre_build:
-     commands:
-       - pkill -9 -f "mocha" || true
-       - pkill -9 -f "jest" || true
-   ```
-
-2. **Network Timeouts:** CodeBuild has network timeouts, mock external services:
-   ```javascript
-   if (process.env.CI === 'true') {
-       // Use mocks in CI
-       jest.mock('./external-service');
-   }
-   ```
-
-3. **Build Logs:** Enable CloudWatch Logs to debug infinite loops:
-   ```yaml
-   LogsConfig:
-     CloudWatchLogs:
-       Status: ENABLED
-       StreamName: test-execution
-   ```
-
 #### Retry Logic for Flaky Tests
 
 **Problem:** Network-dependent tests can be flaky in CI.
@@ -774,16 +543,7 @@ LOG_LEVEL="3"  # Reduce logging in CI
 **Solution:** Add retry logic:
 
 ```javascript
-// Mocha: Use mocha-retry
-describe('Flaky tests', function() {
-    this.retries(2); // Retry up to 2 times
-    
-    it('might fail due to network', async () => {
-        // Test implementation
-    });
-});
-
-// Jest: Use jest-retry
+// Jest: Use jest.retryTimes
 jest.retryTimes(2);
 ```
 
@@ -794,13 +554,12 @@ Ensure CI cleans up test artifacts:
 ```yaml
 # .github/workflows/test.yml
 - name: Run tests
-  run: npm run test:all
+  run: npm test
 
 - name: Cleanup test artifacts
   if: always()
   run: |
     rm -rf /tmp/jest_*
-    rm -rf /tmp/mocha_*
     rm -rf coverage/
 ```
 
@@ -830,7 +589,7 @@ fc.assert(
 
 **Reproduce failures:**
 ```bash
-FC_SEED=1234567890 npm test -- test/property/my-test.mjs
+FC_SEED=1234567890 npm test -- test/property/my-test.jest.mjs
 ```
 
 #### Shrinking Timeout
@@ -866,12 +625,8 @@ fc.assert(
 ```javascript
 describe('Tests with mocks', () => {
     afterEach(() => {
-        // Jest
         jest.restoreAllMocks();
         jest.clearAllMocks();
-        
-        // Sinon
-        sinon.restore();
     });
 });
 ```
@@ -933,25 +688,19 @@ Add debug mode that provides more information:
 ```json
 {
   "scripts": {
-    "test:debug": "LOG_LEVEL=5 node --inspect-brk ./node_modules/.bin/mocha 'test/**/*-tests.mjs'",
-    "test:verbose": "npm test -- --reporter spec --verbose"
+    "test:debug": "LOG_LEVEL=5 node --inspect-brk --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "test:verbose": "npm test -- --verbose"
   }
 }
 ```
 
 #### Test Execution Logging
 
-Log test execution for debugging:
+Log test execution for debugging using Jest lifecycle hooks:
 
 ```javascript
-// Add to test setup
-beforeEach(function() {
-    console.log(`\n▶ Running: ${this.currentTest.title}`);
-});
-
-afterEach(function() {
-    const status = this.currentTest.state === 'passed' ? '✓' : '✗';
-    console.log(`${status} Completed: ${this.currentTest.title}`);
+beforeEach(() => {
+    console.log(`\n▶ Running: ${expect.getState().currentTestName}`);
 });
 ```
 
@@ -959,25 +708,12 @@ afterEach(function() {
 
 #### Test Execution Time Monitoring
 
-Track slow tests:
+Track slow tests using Jest's built-in slow test detection:
 
 ```javascript
-// Mocha: Use slow threshold
-describe('Performance tests', function() {
-    this.slow(1000); // Warn if test takes > 1 second
-    
-    it('should be fast', () => {
-        // Test implementation
-    });
-});
-
-// Jest: Use custom reporter
 // jest.config.mjs
 export default {
-    reporters: [
-        'default',
-        ['jest-slow-test-reporter', { numTests: 10, warnOnSlowerThan: 1000 }]
-    ]
+    slowTestThreshold: 1000, // Warn if test takes > 1 second
 };
 ```
 
@@ -1006,7 +742,7 @@ describe('Memory leak tests', () => {
 
 **Run with:**
 ```bash
-node --expose-gc ./node_modules/.bin/mocha test/memory-tests.mjs
+node --expose-gc --experimental-vm-modules node_modules/jest/bin/jest.js test/memory-tests.jest.mjs
 ```
 
 ### Documentation Guardrails
@@ -1034,8 +770,8 @@ All complex tests should include:
  * - Requires network access in integration mode
  * 
  * Related Tests:
- * - test/auth/login-tests.mjs
- * - test/auth/logout-tests.mjs
+ * - test/auth/login-tests.jest.mjs
+ * - test/auth/logout-tests.jest.mjs
  */
 describe('User authentication', () => {
     // Test implementation
@@ -1059,7 +795,7 @@ it.skip('flaky test that needs fixing', () => {
 **Key Takeaways:**
 
 1. **Never execute npm test from within a test file** - causes infinite loops
-2. **Always use direct test runner invocation** - mocha/jest binaries
+2. **Always use direct Jest binary invocation** for subprocess tests
 3. **Always monitor process count** during test execution
 4. **Always set timeouts** for tests that spawn child processes
 5. **Always limit property test iterations** for expensive tests
@@ -1071,7 +807,7 @@ it.skip('flaky test that needs fixing', () => {
 
 **Emergency Command:**
 ```bash
-pkill -9 -f "mocha" && pkill -9 -f "jest" && pkill -9 -f "node.*test"
+pkill -9 -f "jest" && pkill -9 -f "node.*test"
 ```
 
 Use this command immediately if you detect an infinite loop.
@@ -1079,6 +815,6 @@ Use this command immediately if you detect an infinite loop.
 **Health Check Command:**
 ```bash
 # Check test health before running
-ps aux | grep -E "(mocha|jest)" | grep -v grep && echo "⚠️  Tests already running!" || echo "✓ Ready to run tests"
+ps aux | grep -E "jest" | grep -v grep && echo "⚠️  Tests already running!" || echo "✓ Ready to run tests"
 df -h | grep -E "/$" | awk '{if ($5+0 > 90) print "⚠️  Disk space low: " $5; else print "✓ Disk space OK: " $5}'
 ```
