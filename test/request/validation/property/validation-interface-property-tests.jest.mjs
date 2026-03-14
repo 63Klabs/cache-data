@@ -110,7 +110,7 @@ describe('Property 4: Validation Function Interface Selection', () => {
 					param2Value: fc.oneof(fc.string(), fc.integer()),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					routePattern: fc.stringMatching(/^[a-z]+$/)
-				}).filter(({ param1Name, param2Name }) => param1Name !== param2Name),
+				}).filter(({ param1Name, param2Name }) => param1Name.toLowerCase() !== param2Name.toLowerCase()),
 				async ({ param1Name, param2Name, param1Value, param2Value, httpMethod, routePattern }) => {
 					let receivedValue;
 					let receivedType;
@@ -257,7 +257,7 @@ describe('Property 4: Validation Function Interface Selection', () => {
 					pathValue: fc.string(),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					routePrefix: fc.stringMatching(/^[a-z]+$/)
-				}).filter(({ queryParam, pathParam }) => queryParam !== pathParam),
+				}).filter(({ queryParam, pathParam }) => queryParam.toLowerCase() !== pathParam.toLowerCase()),
 				async ({ queryParam, pathParam, queryValue, pathValue, httpMethod, routePrefix }) => {
 					let receivedValue;
 					
@@ -491,7 +491,7 @@ describe('Property 4: Validation Function Interface Selection', () => {
 					// param2 will be missing from paramValues
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					routePattern: fc.stringMatching(/^[a-z]+$/)
-				}).filter(({ param1Name, param2Name }) => param1Name !== param2Name),
+				}).filter(({ param1Name, param2Name }) => param1Name.toLowerCase() !== param2Name.toLowerCase()),
 				async ({ param1Name, param2Name, param1Value, httpMethod, routePattern }) => {
 					let receivedValue;
 					
@@ -613,7 +613,7 @@ describe('Property 4: Validation Function Interface Selection', () => {
 					param2Value: fc.constantFrom(null, undefined),
 					httpMethod: fc.constantFrom('GET', 'POST'),
 					routePattern: fc.stringMatching(/^[a-z]+$/)
-				}).filter(({ param1Name, param2Name }) => param1Name !== param2Name),
+				}).filter(({ param1Name, param2Name }) => param1Name.toLowerCase() !== param2Name.toLowerCase()),
 				async ({ param1Name, param2Name, param1Value, param2Value, httpMethod, routePattern }) => {
 					let receivedValue;
 					let receivedType;

@@ -1,0 +1,47 @@
+# This workflow runs the Jest test suite on pushes and pull requests
+# and uploads coverage reports as artifacts.
+
+name: Run Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        node-version: ['20', '22', '24']
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run tests with coverage
+        if: matrix.node-version == '24'
+        run: npm test -- --coverage
+
+      - name: Upload coverage report
+        if: matrix.node-version == '24'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-jest/
+          retention-days: 14

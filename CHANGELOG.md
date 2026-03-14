@@ -22,6 +22,25 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ### Changes
 
+- **Complete Mocha to Jest Test Migration** [Spec: 1-3-10-test-migration-phase-6](.kiro/specs/1-3-10-test-migration-phase-6/)
+  - Migrated all 38 remaining Mocha test files to Jest, completing the full test suite migration
+  - Jest is now the sole test framework for the project
+  - All tests use the `.jest.mjs` file extension
+  - Updated `npm test` to run Jest directly
+  - Updated all module-specific test scripts (`test:cache`, `test:config`, `test:endpoint`) to use Jest
+  - Updated CI/CD configuration to run Jest only
+  - Updated documentation (README, CONTRIBUTING, AGENTS, steering documents) to reflect Jest-only testing
+
+### Removed
+
+- **Mocha, Chai, and Sinon Dependencies** [Spec: 1-3-10-test-migration-phase-6](.kiro/specs/1-3-10-test-migration-phase-6/)
+  - Removed `mocha` from devDependencies
+  - Removed `chai` from devDependencies
+  - Removed `sinon` from devDependencies
+  - Removed `chai-http` from devDependencies
+  - Removed all legacy Mocha test files (`*-tests.mjs`)
+  - Removed `test:all` script (no longer needed with single test framework)
+
 - **ApiRequest** and **CachedSsmParameter** renaming to conform to naming conventions:
   - `APIRequest` has been renamed to `ApiRequest`.
   - `APIRequest` is now aliased to `ApiRequest` and will still work. 

@@ -15,7 +15,7 @@ npm install
 You can run all tests:
 
 ```bash
-npm run test
+npm test
 ```
 
 You can run tests for a single functional category:
@@ -24,20 +24,19 @@ You can run tests for a single functional category:
 npm run test:response
 ```
 
-If a new functional area/directory is added, you can add it to the available tests package.json file:
+If a new functional area/directory is added, you can add it to the available tests in the package.json file:
 
 ```json
 {
 	"scripts": {
-		"test": "mocha 'test/**/*-tests.mjs'",
-		"test:cache": "mocha 'test/cache/**/*-tests.mjs'",
-		"test:config": "mocha 'test/config/**/*-tests.mjs'",
-		"test:endpoint": "mocha 'test/endpoint/**/*-tests.mjs'",
-		"test:lambda": "mocha 'test/lambda/**/*-tests.mjs'",
-		"test:logging": "mocha 'test/logging/**/*-tests.mjs'",
-		"test:request": "mocha 'test/request/**/*-tests.mjs'",
-		"test:response": "mocha 'test/response/**/*-tests.mjs'",
-		"test:utils": "mocha 'test/utils/**/*-tests.mjs'"
+		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+		"test:cache": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/cache",
+		"test:config": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/config",
+		"test:endpoint": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/endpoint",
+		"test:logging": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/logging",
+		"test:request": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/request",
+		"test:response": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/response",
+		"test:utils": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/utils"
 	}
 }
 ```
@@ -46,36 +45,33 @@ Tests are automatically run using a GitHub action before publishing a new versio
 
 ## Creating New Tests
 
-The `chai` `chai-http` `mocha` `sinon` `lambda-tester` packages are used for testing.
+The `jest` and `fast-check` packages are used for testing.
 
 Add new tests to their respective functional folder.
 
-Since the test script will run all scripts matching the `*-test.mjs` format, any test scripts must have `-tests.mjs` added to the end of the file name.
+Since the test script will run all scripts matching the `*.jest.mjs` format, any test scripts must have `.jest.mjs` added to the end of the file name.
 
 ## Capturing Console Logs
 
-To capture console output you can use `sinon`.
+To capture console output you can use Jest's built-in spying.
 
-Define the console variables to capture to and activate `beforeEach` and deactivate `afterEach`.
+Define the console variables to capture and activate `beforeEach` and deactivate `afterEach`.
 
-```js
-import { expect } from 'chai';
-import sinon from 'sinon';
+```javascript
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 
 describe("Inspect Console", () => {
-	
-	let logStub, warnStub, errorStub;
+
+	let logSpy, warnSpy, errorSpy;
 
 	beforeEach(() => {
-		logStub = sinon.stub(console, 'log');
-		warnStub = sinon.stub(console, 'warn');
-		errorStub = sinon.stub(console, 'error');
+		logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+		warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+		errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 	});
 
 	afterEach(() => {
-		logStub.restore();
-		warnStub.restore();
-		errorStub.restore();
+		jest.restoreAllMocks();
 	});
 
 	it("Logs", async () => {
@@ -83,20 +79,19 @@ describe("Inspect Console", () => {
 		console.log("My Object", "LOG", obj);
 
 		// Verify that log was actually called
-		expect(logStub.called).to.be.true;
+		expect(logSpy).toHaveBeenCalled();
 
 		// Get all calls and their arguments
-		const calls = logStub.getCalls();
-		expect(calls.length).to.be.greaterThan(0, "Expected at least one log call");
+		const calls = logSpy.mock.calls;
+		expect(calls.length).toBeGreaterThan(0);
 
 		// Get the log output from the first call
-		const logOutput = calls[0].args.join(' ')
+		const logOutput = calls[0].join(' ')
 			.replace(/\u001b\[\d+m/g, '') // remove colorization of console text
 			.trim();
 
 		// Your assertions
-		expect(logOutput).to.include("My Object");
+		expect(logOutput).toContain("My Object");
 	});
 });
-
 ```

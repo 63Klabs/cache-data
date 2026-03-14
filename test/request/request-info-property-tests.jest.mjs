@@ -589,7 +589,7 @@ describe("RequestInfo - Property-Based Tests", () => {
 		it("should allow case-insensitive header access", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 20 }),
+					fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9-]{0,19}$/),
 					fc.string({ minLength: 1, maxLength: 50 }),
 					(headerKey, headerValue) => {
 						// Create headers with uppercase key

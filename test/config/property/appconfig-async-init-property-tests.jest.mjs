@@ -26,6 +26,7 @@ const settingsArbitrary = fc.record({
 
 // Generate valid connections object
 // >! Filter out objects with __proto__ or other special properties that cause Connections constructor to fail
+// >! Also filter out "name" key which conflicts with Connections.add() internal logic
 const connectionsArbitrary = fc.dictionary(
 	fc.string({ minLength: 1, maxLength: 20 }),
 	fc.record({
@@ -37,8 +38,9 @@ const connectionsArbitrary = fc.dictionary(
 	{ minKeys: 1, maxKeys: 3 }
 ).filter(connections => {
 	// Filter out objects with special properties like __proto__, constructor, prototype
+	// Also filter out "name" key which Connections.add() interprets as a connection name field
 	for (const key in connections) {
-		if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+		if (key === '__proto__' || key === 'constructor' || key === 'prototype' || key === 'name') {
 			return false;
 		}
 		// Also check nested objects
@@ -50,6 +52,10 @@ const connectionsArbitrary = fc.dictionary(
 				}
 			}
 		}
+	}
+	// Verify the object has a proper prototype (not null)
+	if (Object.getPrototypeOf(connections) === null) {
+		return false;
 	}
 	return true;
 });

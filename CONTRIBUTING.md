@@ -120,9 +120,62 @@ Ensure all tests pass before submitting changes:
 npm test
 
 # Run specific test suites
-npm test -- test/documentation/
-npm test -- test/cache/
+npm test -- test/documentation
+npm test -- test/cache
 ```
+
+## Testing
+
+This project uses Jest as its test framework. All tests use the `.jest.mjs` file extension.
+
+### Test Framework
+
+- Test Runner: Jest
+- Assertions: Jest built-in (`expect`)
+- Property Testing: fast-check
+- Mocking: Jest built-in (`jest.spyOn`, `jest.fn`)
+- File Pattern: `*.jest.mjs`
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test suites
+npm test -- test/cache
+npm test -- test/endpoint
+npm test -- test/documentation
+```
+
+### Writing Tests
+
+All tests must use Jest. Example:
+
+```javascript
+import { describe, it, expect, jest, afterEach } from '@jest/globals';
+import { Cache } from '../src/lib/dao-cache.js';
+
+describe('Cache', () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('should generate consistent hash for same input', () => {
+        const conn = { host: 'example.com', path: '/api' };
+        const hash1 = Cache.generateIdHash(conn);
+        const hash2 = Cache.generateIdHash(conn);
+        expect(hash1).toBe(hash2);
+    });
+});
+```
+
+### Test Naming Conventions
+
+- Test files: `*-tests.jest.mjs`
+- Property tests: `*-property-tests.jest.mjs`
+- Integration tests: `*-integration-tests.jest.mjs`
+- Unit tests: `*-unit-tests.jest.mjs`
 
 ## Documentation Standards
 
