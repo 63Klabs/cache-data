@@ -150,24 +150,39 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 					const jsdoc = parseJSDoc('/**' + jsdocComment + '*/');
 
 					// Parse actual function parameters
-					const actualParams = paramsStr ? paramsStr.split(',').map(p => {
-						let paramName = p.trim().split('=')[0].trim();
-						// Remove type annotations
-						paramName = paramName.split(':')[0].trim();
-						// Remove brackets for optional params
-						paramName = paramName.replace(/[\[\]]/g, '');
-						// Handle destructuring - extract first parameter name
-						if (paramName.includes('{') || paramName.includes('[')) {
-							// For destructured params, we consider the whole destructure as one param
-							// Extract the variable name if it's like "{ prop1, prop2 }"
-							const destructureMatch = paramName.match(/^[{\[]([^}\]]+)[}\]]/);
-							if (destructureMatch) {
-								// Return null for complex destructuring, filter out later
-								return null;
+					const actualParams = [];
+					if (paramsStr) {
+						// Check if the params string is a destructured object pattern like {success = false, statusCode = 0, ...}
+						const destructuredMatch = paramsStr.match(/^\s*\{([^}]+)\}/);
+						if (destructuredMatch) {
+							// Extract individual property names from destructured parameter
+							const props = destructuredMatch[1].split(',');
+							for (const prop of props) {
+								const propName = prop.trim().split('=')[0].trim();
+								if (propName.length > 0) {
+									actualParams.push(propName);
+								}
 							}
+						} else {
+							// Standard parameter parsing
+							const params = paramsStr.split(',').map(p => {
+								let paramName = p.trim().split('=')[0].trim();
+								// Remove type annotations
+								paramName = paramName.split(':')[0].trim();
+								// Remove brackets for optional params
+								paramName = paramName.replace(/[\[\]]/g, '');
+								// Handle destructuring - extract first parameter name
+								if (paramName.includes('{') || paramName.includes('[')) {
+									const destructureMatch = paramName.match(/^[{\[]([^}\]]+)[}\]]/);
+									if (destructureMatch) {
+										return null;
+									}
+								}
+								return paramName;
+							}).filter(p => p && p.length > 0);
+							actualParams.push(...params);
 						}
-						return paramName;
-					}).filter(p => p && p.length > 0) : [];
+					}
 
 					// Check for hallucinated parameters (in JSDoc but not in code)
 					if (jsdoc.params.length > 0) {
