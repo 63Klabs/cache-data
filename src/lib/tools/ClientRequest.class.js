@@ -401,6 +401,7 @@ class ClientRequest extends RequestInfo {
 	
 	/* Validation system */
 	#validationMatchers = {};
+	#validationReason = { isValid: true, statusCode: 200, messages: [] };
 
 	/* The request data */
 	#props = {};
@@ -755,15 +756,109 @@ class ClientRequest extends RequestInfo {
 	 */
 	#validate() {
 	
-		let valid = false;
+		const reasons = [];
+		let statusCode = 200;
 
-		// add your additional validations here
-		valid = this.isAuthorizedReferrer() && this.#hasValidPathParameters() && this.#hasValidQueryStringParameters() && this.#hasValidHeaderParameters() && this.#hasValidCookieParameters() && this.#hasValidBodyParameters();
+		// Referrer check
+		const referrerValid = this.isAuthorizedReferrer();
+		if (!referrerValid) {
+			reasons.push("Forbidden");
+			statusCode = this.#upgradeStatusCode(statusCode, 403);
+		}
 
-		// set the variable
+		// Authentication check
+		const authFailed = this.hasNoAuthorization();
+		if (authFailed) {
+			reasons.push("Unauthorized");
+			statusCode = this.#upgradeStatusCode(statusCode, 401);
+		}
+
+		// Parameter checks - collect invalid parameter names from each
+		const pathResult = this.#hasValidPathParameters();
+		const queryResult = this.#hasValidQueryStringParameters();
+		const headerResult = this.#hasValidHeaderParameters();
+		const cookieResult = this.#hasValidCookieParameters();
+		const bodyResult = this.#hasValidBodyParameters();
+
+		// Collect invalid parameter messages
+		const paramResults = [pathResult, queryResult, headerResult, cookieResult, bodyResult];
+		for (const result of paramResults) {
+			if (result.invalidParams) {
+				for (const paramName of result.invalidParams) {
+					reasons.push(`Invalid parameter: ${paramName}`);
+					statusCode = this.#upgradeStatusCode(statusCode, 400);
+				}
+			}
+		}
+
+		// Handle invalid JSON body
+		if (bodyResult.invalidBody) {
+			reasons.push("Invalid request body");
+			statusCode = this.#upgradeStatusCode(statusCode, 400);
+		}
+
+		// Compute combined valid boolean from all check results
+		const valid = referrerValid && !authFailed
+			&& pathResult.isValid && queryResult.isValid && headerResult.isValid
+			&& cookieResult.isValid && bodyResult.isValid;
+
+		// Preserve backwards compatibility
 		super._isValid = valid;
 
+		// Populate validation reason
+		this.#validationReason = {
+			isValid: valid,
+			statusCode: valid ? 200 : statusCode,
+			messages: valid ? [] : reasons
+		};
+
 	};
+
+	/**
+	 * Returns the higher-priority HTTP status code between two candidates.
+	 * Priority order: 401 > 403 > 400 > 200.
+	 *
+	 * @private
+	 * @param {number} current - The current status code
+	 * @param {number} candidate - The candidate status code to compare
+	 * @returns {number} The status code with higher priority
+	 */
+	#upgradeStatusCode(current, candidate) {
+		const priority = { 401: 3, 403: 2, 400: 1, 200: 0 };
+		return (priority[candidate] || 0) > (priority[current] || 0) ? candidate : current;
+	};
+
+	/**
+	 * Returns a structured validation result object describing why the request
+	 * passed or failed validation. The object includes the validation status,
+	 * an appropriate HTTP status code, and descriptive messages identifying
+	 * each failure.
+	 * 
+	 * A new object is returned on each call to prevent external mutation of
+	 * internal state.
+	 * 
+	 * @returns {{ isValid: boolean, statusCode: number, messages: Array<string> }}
+	 *   A new object on each call containing:
+	 *   - isValid: whether the request passed all validation checks
+	 *   - statusCode: the appropriate HTTP status code (200, 400, 401, or 403)
+	 *   - messages: array of descriptive failure messages (empty when valid)
+	 * @example
+	 * // Valid request
+	 * const reason = clientRequest.getValidationReason();
+	 * // { isValid: true, statusCode: 200, messages: [] }
+	 *
+	 * @example
+	 * // Invalid request with bad parameters
+	 * const reason = clientRequest.getValidationReason();
+	 * // { isValid: false, statusCode: 400, messages: ["Invalid parameter: limit"] }
+	 */
+	getValidationReason() {
+		return {
+			isValid: this.#validationReason.isValid,
+			statusCode: this.#validationReason.statusCode,
+			messages: [...this.#validationReason.messages]
+		};
+	}
 
 	/**
 	 * Validate parameters using ValidationMatcher and ValidationExecutor.
@@ -801,7 +896,8 @@ class ClientRequest extends RequestInfo {
 
 		let rValue = {
 			isValid: true,
-			params: {}
+			params: {},
+			invalidParams: []
 		}
 	
 		if (clientParameters && paramValidations) {
@@ -854,6 +950,9 @@ class ClientRequest extends RequestInfo {
 				normalizedParams[normalizedKey] = value;
 			}
 			
+			// >! Collect valid params separately so we can clear them if any fail
+			const collectedParams = {};
+
 			// Use a for...of loop instead of forEach for better control flow
 			for (const [key, value] of Object.entries(clientParameters)) {
 				// >! Preserve existing parameter key normalization
@@ -886,7 +985,7 @@ class ClientRequest extends RequestInfo {
 								const normalizedClientKey = clientKey.replace(/^\/|\/$/g, '');
 								
 								if (normalizedClientKey === normalizedRuleParam) {
-									rValue.params[clientKey] = clientValue;
+									collectedParams[clientKey] = clientValue;
 									// >! Mark this parameter as validated to avoid duplicate validation
 									validatedParams.add(normalizedClientKey);
 									break;
@@ -897,17 +996,18 @@ class ClientRequest extends RequestInfo {
 						// >! Maintain existing logging for invalid parameters
 						DebugAndLog.warn(`Invalid parameter: ${paramKey} = ${paramValue}`);
 						rValue.isValid = false;
-						rValue.params = {};
-						// >! Ensure early exit on validation failure
-						return rValue;
+						rValue.invalidParams.push(paramKey);
 					}
 				} else if (!excludeUnmatched) {
 					// No validation rule found, but excludeUnmatched is false
 					// Include parameter without validation
-					rValue.params[paramKey] = paramValue;
+					collectedParams[paramKey] = paramValue;
 				}
 				// If excludeUnmatched is true and no rule found, skip parameter (existing behavior)
 			}
+
+			// >! If any parameter failed, clear params (preserves existing behavior)
+			rValue.params = rValue.isValid ? collectedParams : {};
 		}	
 		return rValue;
 	}
@@ -925,13 +1025,13 @@ class ClientRequest extends RequestInfo {
 	 * const isValid = #hasValidPathParameters();
 	 */
 	#hasValidPathParameters() {
-		const { isValid, params } = this.#hasValidParameters(
+		const { isValid, params, invalidParams } = this.#hasValidParameters(
 			ClientRequest.getParameterValidations()?.pathParameters,
 			this.#event?.pathParameters,
 			this.#validationMatchers.pathParameters
 		);
 		this.#props.pathParameters = params;
-		return isValid;
+		return { isValid, invalidParams };
 	}
 
 	/**
@@ -959,13 +1059,13 @@ class ClientRequest extends RequestInfo {
 		const paramValidations = ClientRequest.getParameterValidations();
 		const queryValidations = paramValidations?.queryStringParameters || paramValidations?.queryParameters;
 		
-		const { isValid, params } = this.#hasValidParameters(
+		const { isValid, params, invalidParams } = this.#hasValidParameters(
 			queryValidations,
 			qs,
 			this.#validationMatchers.queryStringParameters
 		);
 		this.#props.queryStringParameters = params;
-		return isValid;
+		return { isValid, invalidParams };
 	}
 
 	/**
@@ -1013,23 +1113,23 @@ class ClientRequest extends RequestInfo {
 				const camelCaseKey = key.toLowerCase().replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 				headers[camelCaseKey] = this.#event.headers[key];
 			}
-			const { isValid, params } = this.#hasValidParameters(
+			const { isValid, params, invalidParams } = this.#hasValidParameters(
 				ClientRequest.getParameterValidations()?.headerParameters,
 				headers,
 				this.#validationMatchers.headerParameters
 			);
 			this.#props.headerParameters = params;
-			return isValid;
+			return { isValid, invalidParams };
 		}
 
 	#hasValidCookieParameters() {
-		const { isValid, params } = this.#hasValidParameters(
+		const { isValid, params, invalidParams } = this.#hasValidParameters(
 			ClientRequest.getParameterValidations()?.cookieParameters,
 			this.#event?.cookie,
 			this.#validationMatchers.cookieParameters
 		);
 		this.#props.cookieParameters = params;
-		return isValid;
+		return { isValid, invalidParams };
 	}
 
 	/**
@@ -1064,12 +1164,12 @@ class ClientRequest extends RequestInfo {
 					error?.stack
 				);
 				this.#props.bodyParameters = {};
-				return false;
+				return { isValid: false, invalidParams: [], invalidBody: true };
 			}
 		}
 
 		// >! Use existing validation framework with body validation matcher
-		const { isValid, params } = this.#hasValidParameters(
+		const { isValid, params, invalidParams } = this.#hasValidParameters(
 			ClientRequest.getParameterValidations()?.bodyParameters,
 			bodyObject,
 			this.#validationMatchers.bodyParameters
@@ -1077,7 +1177,7 @@ class ClientRequest extends RequestInfo {
 
 		// >! Store validated parameters
 		this.#props.bodyParameters = params;
-		return isValid;
+		return { isValid, invalidParams };
 	}
 
 

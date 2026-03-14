@@ -137,7 +137,7 @@ describe('ClientRequest - Backwards Compatibility Integration Tests', () => {
 			expect(request.getPathParameters()).toEqual({});
 		});
 
-		it('should stop validation on first failure (early exit)', () => {
+		it('should validate all parameters and collect failures', () => {
 			let validationCallCount = 0;
 
 			ClientRequest.init({
@@ -166,7 +166,7 @@ describe('ClientRequest - Backwards Compatibility Integration Tests', () => {
 			const request = new ClientRequest(event, createMockContext());
 
 			expect(request.isValid()).toBe(false);
-			expect(validationCallCount).toBe(1); // Only param1 validated
+			expect(validationCallCount).toBe(2); // All parameters are now validated (no early exit)
 		});
 	});
 

@@ -160,3 +160,7 @@ const someFunction = async (connection, opts) => {
     }
 };
 ```
+
+Be sure to add documentation and tests.
+
+Ask clarifying questions in SPEC-QUESTIONS.md in this directory and the user will respond with answers there.
