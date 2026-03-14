@@ -1471,6 +1471,126 @@ class ApiRequest {
 	};
 
 	/**
+	 * Creates a standardized response format object using a destructured options
+	 * parameter. This is the core formatting method that all other response
+	 * formatting methods delegate to. Unlike `responseFormat()`, which uses
+	 * positional arguments, `format()` accepts a single object so callers can
+	 * specify only the fields they need.
+	 *
+	 * @param {boolean} [success=false] - Whether the operation succeeded
+	 * @param {number} [statusCode=0] - HTTP status code
+	 * @param {string|null} [message=null] - Human-readable status message
+	 * @param {object|null} [headers=null] - Response headers
+	 * @param {object|string|null} [body=null] - Response body
+	 * @returns {{success: boolean, statusCode: number, message: string|null, headers: object|null, body: object|string|null}} Response_Format_Object with exactly five properties
+	 *
+	 * @example
+	 * // Create a response with defaults (no arguments)
+	 * const response = ApiRequest.format();
+	 * // { success: false, statusCode: 0, message: null, headers: null, body: null }
+	 *
+	 * @example
+	 * // Create a response specifying only the fields you need
+	 * const response = ApiRequest.format({ success: true, statusCode: 200, body: { id: 1 } });
+	 * // { success: true, statusCode: 200, message: null, headers: null, body: { id: 1 } }
+	 */
+	static format({
+		success = false,
+		statusCode = 0,
+		message = null,
+		headers = null,
+		body = null
+	} = {}) {
+		return { success, statusCode, message, headers, body };
+	};
+
+	/**
+	 * Shortcut for creating a successful response format object with
+	 * success-oriented defaults. Delegates to `format()` for construction.
+	 *
+	 * @param {boolean} [success=true] - Whether the operation succeeded
+	 * @param {number} [statusCode=200] - HTTP status code
+	 * @param {string|null} [message="SUCCESS"] - Human-readable status message
+	 * @param {object|null} [headers=null] - Response headers
+	 * @param {object|string|null} [body=null] - Response body
+	 * @returns {{success: boolean, statusCode: number, message: string|null, headers: object|null, body: object|string|null}} Response_Format_Object with exactly five properties
+	 *
+	 * @example
+	 * // Create a success response with defaults
+	 * const response = ApiRequest.success();
+	 * // { success: true, statusCode: 200, message: "SUCCESS", headers: null, body: null }
+	 */
+	static success({
+		success = true,
+		statusCode = 200,
+		message = "SUCCESS",
+		headers = null,
+		body = null
+	} = {}) {
+		return ApiRequest.format({ success, statusCode, message, headers, body });
+	};
+
+	/**
+	 * Shortcut for creating an error response format object with
+	 * error-oriented defaults. Delegates to `format()` for construction.
+	 *
+	 * @param {boolean} [success=false] - Whether the operation succeeded
+	 * @param {number} [statusCode=500] - HTTP status code
+	 * @param {string|null} [message="ERROR"] - Human-readable status message
+	 * @param {object|null} [headers=null] - Response headers
+	 * @param {object|string|null} [body=null] - Response body
+	 * @returns {{success: boolean, statusCode: number, message: string|null, headers: object|null, body: object|string|null}} Response_Format_Object with exactly five properties
+	 *
+	 * @example
+	 * // Create an error response with defaults
+	 * const response = ApiRequest.error();
+	 * // { success: false, statusCode: 500, message: "ERROR", headers: null, body: null }
+	 */
+	static error({
+		success = false,
+		statusCode = 500,
+		message = "ERROR",
+		headers = null,
+		body = null
+	} = {}) {
+		return ApiRequest.format({ success, statusCode, message, headers, body });
+	};
+
+	/**
+	 * Convert a Format_Options object into an Api_Gateway_Object suitable for
+	 * returning directly from an AWS Lambda handler to API Gateway. Delegates
+	 * to `format()` for normalization, then extracts `statusCode`, `headers`,
+	 * and `body`. Object bodies are stringified with `JSON.stringify()`;
+	 * string and `null` bodies pass through unchanged.
+	 *
+	 * @param {boolean} [success=false] - Whether the operation succeeded (not included in output)
+	 * @param {number} [statusCode=0] - HTTP status code
+	 * @param {string|null} [message=null] - Human-readable status message (not included in output)
+	 * @param {object|null} [headers=null] - Response headers
+	 * @param {object|string|null} [body=null] - Response body (objects are JSON.stringified)
+	 * @returns {{statusCode: number, headers: object|null, body: string|null}} Api_Gateway_Object with exactly three properties
+	 *
+	 * @example
+	 * // Create an API Gateway response with an object body
+	 * const response = ApiRequest.apiGateway({ statusCode: 200, body: { id: 1 } });
+	 * // { statusCode: 200, headers: null, body: '{"id":1}' }
+	 */
+	static apiGateway({
+		success = false,
+		statusCode = 0,
+		message = null,
+		headers = null,
+		body = null
+	} = {}) {
+		const resp = ApiRequest.format({ success, statusCode, message, headers, body });
+		return {
+			statusCode: resp.statusCode,
+			headers: resp.headers,
+			body: (resp.body !== null && typeof resp.body === "object") ? JSON.stringify(resp.body) : resp.body
+		};
+	};
+
+	/**
 	 * Formats the response for returning to program logic. When pagination or retry
 	 * features are used, the response may include an optional metadata field with
 	 * details about those operations.
@@ -1514,14 +1634,7 @@ class ApiRequest {
 	 * // }
 	 */
 	static responseFormat(success = false, statusCode = 0, message = null, headers = null, body = null) {
-		
-		return {
-			success: success,
-			statusCode: statusCode,
-			headers: headers,
-			body: body,
-			message: message
-		};
+		return ApiRequest.format({ success, statusCode, message, headers, body });
 	};
 };
 
