@@ -10,16 +10,6 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.10 (unreleased)
 
-### Fixed
-- **ClientRequest Parameter Extraction Bug** [Spec: 1-3-10-validation-parameter-extraction-fix](.kiro/specs/1-3-10-validation-parameter-extraction-fix/)
-  - Fixed critical parameter extraction bug in ClientRequest validation system where validated parameters were not being extracted and returned by parameter getter methods (`getQueryStringParameters()`, `getHeaderParameters()`, `getBodyParameters()`, `getPathParameters()`)
-  - Multi-parameter validation rules now correctly extract all specified parameters
-  - BY_ROUTE validation with multiple placeholders now correctly extracts all path parameters
-  - Method-and-route patterns now correctly extract validated parameters
-  - Validation priority order now correctly extracts parameters using highest-priority matching rule
-  - When validation passed, parameter getter methods would return empty objects instead of validated parameter values
-  - This fix ensures that all parameters specified in validation rules are properly extracted when validation succeeds
-
 ### Changes
 
 - **Complete Mocha to Jest Test Migration** [Spec: 1-3-10-test-migration-phase-6](.kiro/specs/1-3-10-test-migration-phase-6/)
@@ -30,6 +20,22 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
   - Updated all module-specific test scripts (`test:cache`, `test:config`, `test:endpoint`) to use Jest
   - Updated CI/CD configuration to run Jest only
   - Updated documentation (README, CONTRIBUTING, AGENTS, steering documents) to reflect Jest-only testing
+- **ApiRequest** and **CachedSsmParameter** renaming to conform to naming conventions:
+  - `APIRequest` has been renamed to `ApiRequest`.
+  - `APIRequest` is now aliased to `ApiRequest` and will still work. 
+  - `CachedSSMParameter` has been renamed to `CachedSsmParameter`.
+  - `CachedSSMParameter` is now aliased to `CachedSsmParameter` and will still work. 
+  - While there is no timeframe to deprecate and remove the old naming, it will happen with a future **major** version update.
+  - New code should use the new conventions. Old code should be updated.
+- **tools.endpoint.get()** deprecated in favor of **tools.endpoint.send()**
+  - `tools.endpoint.send()` removes any confusion about it accepting more than just `GET` requests and that it will send immediately when called.
+- **Optimized Generic Response** for easier maintenance
+
+### Added
+
+- **Enhanced Invalid Request Messaging**
+- **New Response Formatting to ApiRequest**
+
 
 ### Removed
 
@@ -41,15 +47,6 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
   - Removed all legacy Mocha test files (`*-tests.mjs`)
   - Removed `test:all` script (no longer needed with single test framework)
 
-- **ApiRequest** and **CachedSsmParameter** renaming to conform to naming conventions:
-  - `APIRequest` has been renamed to `ApiRequest`.
-  - `APIRequest` is now aliased to `ApiRequest` and will still work. 
-  - `CachedSSMParameter` has been renamed to `CachedSsmParameter`.
-  - `CachedSSMParameter` is now aliased to `CachedSsmParameter` and will still work. 
-  - While there is no timeframe to deprecate and remove the old naming, it will happen with a future **major** version update.
-  - New code should use the new conventions. Old code should be updated.
-- **tools.endpoint.get()** deprecated in favor of **tools.endpoint.send()**
-  - `tools.endpoint.send()` removes any confusion about it accepting more than just `GET` requests and that it will send immediately when called.
 
 ## v1.3.9 (2026-03-09)
 
