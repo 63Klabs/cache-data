@@ -940,7 +940,7 @@ describe('ClientRequest - Mixed Priority Integration Tests', () => {
 
 			expect(request.isValid()).toBe(false);
 			expect(param1ValidationCalled).toBe(true);
-			expect(param2ValidationCalled).toBe(false); // Should not be called due to early exit
+			expect(param2ValidationCalled).toBe(true); // All parameters are now validated (no early exit)
 		});
 
 		it('should not check lower priorities after higher priority match', () => {

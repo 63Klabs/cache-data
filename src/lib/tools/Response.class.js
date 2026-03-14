@@ -526,6 +526,31 @@ class Response {
 	};
 
 	/**
+	 * Sets a message or messages property on the JSON response body.
+	 * If the body is not a JSON object, this method is a no-op.
+	 * Does not alter the status code or headers.
+	 *
+	 * @param {string|Array<string>} message - A single message string or array of message strings
+	 * @returns {void}
+	 * @example
+	 * // Single message
+	 * response.setMessage("Invalid parameter: limit");
+	 * // body becomes: { ...existingBody, message: "Invalid parameter: limit" }
+	 *
+	 * @example
+	 * // Multiple messages
+	 * response.setMessage(["Invalid parameter: limit", "Invalid parameter: offset"]);
+	 * // body becomes: { ...existingBody, messages: ["Invalid parameter: limit", "Invalid parameter: offset"] }
+	 */
+	setMessage = (message) => {
+		if (Array.isArray(message)) {
+			this.addToJsonBody({ messages: message });
+		} else {
+			this.addToJsonBody({ message: message });
+		}
+	};
+
+	/**
 	 * Converts the response to a plain object.
 	 * 
 	 * @returns {{statusCode: number, headers: Object, body: null|string|Array|Object}} Response as object

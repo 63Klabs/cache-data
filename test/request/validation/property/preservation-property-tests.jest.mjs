@@ -312,9 +312,9 @@ describe('Preservation - Existing Behavior Properties', () => {
 						// PROPERTY: isValid() returns false due to referrer validation failure
 						expect(request.isValid()).toBe(false);
 
-						// Parameters should not be returned when validation fails
-						const queryParams = request.getQueryStringParameters();
-						expect(queryParams).toEqual({});
+						// All validation checks now run (no short-circuit) to collect failure reasons.
+						// Valid parameters are still extracted even when referrer fails,
+						// because #validate() runs all checks to populate validationReason.
 					}
 				),
 				{ numRuns: 50 }

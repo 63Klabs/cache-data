@@ -894,8 +894,8 @@ describe('ClientRequest - Real-World Scenarios Integration Tests', () => {
 
 			expect(request.isValid()).toBe(false);
 			expect(param1Validated).toBe(true);
-			// param2 should not be validated due to early exit
-			expect(param2Validated).toBe(false);
+			// All parameters are now validated (no early exit) to collect all invalid param names
+			expect(param2Validated).toBe(true);
 		});
 	});
 
