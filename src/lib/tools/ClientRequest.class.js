@@ -471,6 +471,10 @@ class ClientRequest extends RequestInfo {
 			bodyParameters: {},
 			bodyPayload: this.#event?.body || null, // from body
 			client: {
+				ip: this.getClientIp(),
+				userAgent: this.getClientUserAgent(),
+				origin: this.getClientOrigin(),
+				referrer: this.getClientReferrer(),
 				isAuthenticated: this.isAuthenticated(),
 				isGuest: this.isGuest(),
 				authorizations: this.getAuthorizations(),
@@ -900,9 +904,18 @@ class ClientRequest extends RequestInfo {
 			invalidParams: []
 		}
 	
-		if (clientParameters && paramValidations) {
+		if (clientParameters) {
 			// >! Check excludeParamsWithNoValidationMatch flag (default: true)
 			const excludeUnmatched = ClientRequest.#validations.parameters?.excludeParamsWithNoValidationMatch !== false;
+
+			// >! When no validation rules exist for this parameter type,
+			// >! pass through all parameters if excludeUnmatched is false
+			if (!paramValidations) {
+				if (!excludeUnmatched) {
+					rValue.params = { ...clientParameters };
+				}
+				return rValue;
+			}
 			
 			// >! Track which parameters have been validated to avoid duplicate validation
 			const validatedParams = new Set();
@@ -1388,7 +1401,7 @@ class ClientRequest extends RequestInfo {
 	 * Get the _processed_ request properties. These are the properties that
 	 * the ClientRequest object took from the event sent to Lambda, validated,
 	 * supplemented, and makes available to controllers. 
-	 * @returns {{ method: string, path: string, pathArray: string[], resource: string, resourceArray[], pathParameters: {}, queryStringParameters: {}, headerParameters: {}, cookieParameters: {}, bodyPayload: string, client: {isAuthenticated: boolean, isGuest: boolean, authorizations: string[], roles: string[]}, deadline: number, calcMsToDeadline: number}
+	 * @returns {{ method: string, path: string, pathArray: string[], resource: string, resourceArray[], pathParameters: {}, queryStringParameters: {}, headerParameters: {}, cookieParameters: {}, bodyParameters: {}, bodyPayload: string, client: {ip: string, userAgent: string, origin: string, referrer: string, isAuthenticated: boolean, isGuest: boolean, authorizations: string[], roles: string[]}, deadline: number, calcMsToDeadline: number}
 	 */
 	getProps() {
 		return this.#props;
