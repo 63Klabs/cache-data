@@ -8,6 +8,10 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
+## v1.3.11 (unreleased)
+
+- TODO
+
 ## v1.3.10 (2026-03-15)
 
 ### Fixes
