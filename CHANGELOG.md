@@ -8,7 +8,12 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
-## v1.3.10 (unreleased)
+## v1.3.10 (2026-03-15)
+
+### Fixes
+
+- **Security Fixes** in tests and SSM Parameter Store legacy access [Spec: 1-3-10-security-fixes-for-tests](.kiro/specs/1-3-10-security-fixes-for-tests/)
+- **GitHub Workflow fix** for testing matrix. Node24 was failing while Node 20, 22 were passing [Spec: 1-3-10-github-workflow-test-fix](.kiro/specs/1-3-10-github-workflow-test-fix/)
 
 ### Changes
 

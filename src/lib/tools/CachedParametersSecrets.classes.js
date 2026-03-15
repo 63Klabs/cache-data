@@ -579,6 +579,6 @@ module.exports = {
 	CachedParameterSecrets,
 	CachedParameterSecret,
 	CachedSsmParameter,
-	CachedSsmParameter: CachedSsmParameter,
+	CachedSSMParameter: CachedSsmParameter,
 	CachedSecret
 }

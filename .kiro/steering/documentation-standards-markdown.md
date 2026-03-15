@@ -331,7 +331,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${Prefix}-${ProjectId}-${StageId}-GetUser
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       Environment:
         Variables:
           TABLE_NAME: !Ref UserTable

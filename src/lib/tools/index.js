@@ -463,6 +463,14 @@ class AppConfig {
 				// put the parameter into its group
 				const obj = parameters.find(o => o.path === groupPath);
 				const group = obj.group;
+
+				// >! Guard against prototype pollution (CWE-471)
+				const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
+				if (DANGEROUS_KEYS.includes(group) || DANGEROUS_KEYS.includes(name)) {
+					DebugAndLog.warn(`Skipping dangerous parameter key: group="${group}", name="${name}"`);
+					return;
+				}
+
 				if ( !(group in paramstore)) {
 					paramstore[group] = {};
 				}
