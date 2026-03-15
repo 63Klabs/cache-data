@@ -25,6 +25,7 @@ export default {
 	},
 
 	// Coverage configuration
+	coverageProvider: 'v8',
 	coverageDirectory: 'coverage-jest',
 	collectCoverageFrom: [
 		'src/**/*.js',

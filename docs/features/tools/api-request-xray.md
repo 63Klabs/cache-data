@@ -58,7 +58,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: my-function
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       Handler: index.handler
       TracingConfig:
         Mode: Active  # Enable X-Ray tracing
@@ -73,7 +73,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: my-function
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       Handler: index.handler
       Tracing: Active  # Enable X-Ray tracing
       # ... other properties

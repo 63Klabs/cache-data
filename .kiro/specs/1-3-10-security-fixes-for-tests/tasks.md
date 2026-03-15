@@ -1,0 +1,107 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration tests (BEFORE implementing fix)
+  - **Property 1: Bug Condition** - Incomplete String Escaping and Prototype Pollution
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bugs exist
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate both bugs exist on unfixed code
+  - **Scoped PBT Approach**: Scope properties to concrete failing cases for reproducibility
+  - **Test file**: `test/security/security-bugfix-exploration-tests.jest.mjs`
+  - **Issue 1 — Incomplete String Escaping**:
+    - Import `parseParamTag` from `test/helpers/jsdoc-parser.mjs`
+    - Test that `parseParamTag('@param {string} [name=default]]')` returns `defaultValue` equal to `"default"` (no remaining `]`)
+    - Test that `parseParamTag('@param {string} [name=val]]]')` returns `defaultValue` equal to `"val"` (no remaining `]`)
+    - Import `parseParamTag` from `scripts/audit-documentation.mjs` and run same assertions
+    - Use fast-check to generate strings with 2+ `]` characters appended to default values, assert no `]` remains in `defaultValue`
+    - _Bug_Condition: `isBugCondition({issue: 1, context: {jsdocLine}})` where `countOccurrences(extractDefault(jsdocLine), ']') >= 2`_
+  - **Issue 2 — Prototype Pollution Guard**:
+    - Mock AWS SSM to return parameters with group resolving to `__proto__`, `constructor`, or `prototype`
+    - Call `_getParametersFromStore` and assert `Object.prototype` is NOT modified
+    - Assert the dangerous key is NOT present in the returned `paramstore`
+    - Use fast-check with `fc.constantFrom('__proto__', 'constructor', 'prototype')` for dangerous keys
+    - _Bug_Condition: `isBugCondition({issue: 2, context: {group, name}})` where `group IN DANGEROUS_KEYS OR name IN DANGEROUS_KEYS`_
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests FAIL (this is correct - it proves the bugs exist)
+  - Document counterexamples found:
+    - `parseParamTag('@param {string} [name=val]]')` returns `defaultValue: "val]"` instead of `"val"`
+    - `paramstore["__proto__"]["key"] = value` modifies `Object.prototype.key`
+  - Mark task complete when tests are written, run, and failure is documented
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - JSDoc Parsing and SSM Parameter Storage Unchanged for Normal Inputs
+  - **IMPORTANT**: Follow observation-first methodology
+  - **Test file**: `test/security/property/security-bugfix-preservation-property-tests.jest.mjs`
+  - **JSDoc Parsing Preservation (Issue 1)**:
+    - Observe on UNFIXED code: `parseParamTag('@param {string} [name=val]')` returns `defaultValue: "val"`
+    - Observe on UNFIXED code: `parseParamTag('@param {string} name')` returns `defaultValue: null`
+    - Observe on UNFIXED code: `parseParamTag('@param {number} [count=100]')` returns `defaultValue: "100"`
+    - Write property-based test: for all `@param` tags where default value has zero or one `]`, `parseParamTag` returns correct `defaultValue` with no `]` remaining (or `null` if no default)
+    - Use fast-check to generate random type names, param names, and default values (without `]` characters) to verify parsing is unchanged
+    - Verify `name`, `type`, `description`, `optional` fields are also unchanged
+    - _Preservation: For all jsdocLine where countBrackets(extractDefault(jsdocLine), ']') <= 1, parseParamTag output is unchanged_
+  - **SSM Parameter Storage Preservation (Issue 2)**:
+    - Observe on UNFIXED code: normal parameters like `{Name: '/app/config/apiKey', Value: 'key123'}` are stored as `paramstore["config"]["apiKey"] = "key123"`
+    - Observe on UNFIXED code: empty parameter arrays return empty `paramstore` object
+    - Observe on UNFIXED code: multi-group parameters are organized correctly
+    - Write property-based test: for all SSM parameters where neither group nor name is in `DANGEROUS_KEYS`, `paramstore[group][name]` stores the value correctly
+    - Use fast-check to generate random safe group/name strings (filtered to exclude `__proto__`, `constructor`, `prototype`)
+    - _Preservation: For all ssmParam where group NOT IN DANGEROUS_KEYS AND name NOT IN DANGEROUS_KEYS, paramstore stores correctly_
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [x] 3. Fix for incomplete string escaping and prototype pollution vulnerabilities
+
+  - [x] 3.1 Fix incomplete string escaping in `test/helpers/jsdoc-parser.mjs`
+    - Change line 78: `.replace(']', '')` → `.replace(/\]/g, '')`
+    - This ensures all `]` occurrences are removed from the default value string
+    - _Bug_Condition: isBugCondition({issue: 1}) where jsdocLine default value has 2+ `]` characters_
+    - _Expected_Behavior: All `]` characters removed from defaultValue field_
+    - _Preservation: Tags with 0-1 `]` in default value produce identical output_
+    - _Requirements: 1.1, 2.1, 3.1, 3.2, 3.3_
+
+  - [x] 3.2 Fix incomplete string escaping in `scripts/audit-documentation.mjs`
+    - Change line 155: `.replace(']', '')` → `.replace(/\]/g, '')`
+    - Identical fix to the test helper
+    - _Bug_Condition: isBugCondition({issue: 1}) where jsdocLine default value has 2+ `]` characters_
+    - _Expected_Behavior: All `]` characters removed from defaultValue field_
+    - _Preservation: Tags with 0-1 `]` in default value produce identical output_
+    - _Requirements: 1.2, 2.2, 3.1, 3.2, 3.3_
+
+  - [x] 3.3 Add prototype pollution guard in `src/lib/tools/index.js`
+    - In `AppConfig._getParametersFromStore`, inside the `results.forEach` callback, before `paramstore[group][name] = param.Value`:
+    - Add `const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];`
+    - Add guard: `if (DANGEROUS_KEYS.includes(group) || DANGEROUS_KEYS.includes(name)) { DebugAndLog.warn(...); return; }`
+    - Add `// >!` security comment documenting CWE-471 rationale
+    - Use `return` (not `continue`) since we are inside a `forEach` callback
+    - Preserve existing flow for all non-dangerous parameters
+    - _Bug_Condition: isBugCondition({issue: 2}) where group or name IN ['__proto__', 'constructor', 'prototype']_
+    - _Expected_Behavior: Dangerous parameters skipped, warning logged via DebugAndLog.warn()_
+    - _Preservation: Normal parameters stored in paramstore[group][name] exactly as before_
+    - _Requirements: 1.3, 1.4, 2.3, 2.4, 3.4, 3.5, 3.6_
+
+  - [x] 3.4 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Incomplete String Escaping and Prototype Pollution Fixed
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1: `test/security/security-bugfix-exploration-tests.jest.mjs`
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bugs are fixed)
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+  - [x] 3.5 Verify preservation tests still pass
+    - **Property 2: Preservation** - JSDoc Parsing and SSM Parameter Storage Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2: `test/security/property/security-bugfix-preservation-property-tests.jest.mjs`
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all tests still pass after fix (no regressions)
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Run `npm test` to execute the full test suite
+  - Verify no regressions across the entire codebase
+  - Ensure all new security tests pass
+  - Ensure all existing tests still pass
+  - Ask the user if questions arise

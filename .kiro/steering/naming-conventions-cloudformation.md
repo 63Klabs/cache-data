@@ -156,7 +156,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${Prefix}-${ProjectId}-${StageId}-GetPerson
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
   
   PersonTable:
     Type: AWS::DynamoDB::Table
@@ -510,7 +510,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${Prefix}-${ProjectId}-${StageId}-GetPerson
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       MemorySize: !FindInMap [StageConfig, !Ref StageId, MemorySize]
       Timeout: !FindInMap [StageConfig, !Ref StageId, Timeout]
       Role: !GetAtt LambdaExecutionRole.Arn

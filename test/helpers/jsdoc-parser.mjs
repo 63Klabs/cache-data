@@ -67,7 +67,7 @@ export function parseParamTag(line) {
 		const remainder = line.substring(typeEnd + 1).trim();
 		
 		// Parse parameter name and description
-		const nameMatch = remainder.match(/^(\[?[\w.]+\]?)\s*-?\s*(.*)/);
+		const nameMatch = remainder.match(/^(\[?[\w.=\]]+\]?)\s*-?\s*(.*)/);
 		if (!nameMatch) {
 			return null;
 		}
@@ -75,7 +75,7 @@ export function parseParamTag(line) {
 		const [, name, description] = nameMatch;
 		const isOptional = name.startsWith('[') && name.endsWith(']');
 		const cleanName = name.replace(/[\[\]]/g, '').split('=')[0];
-		const defaultValue = name.includes('=') ? name.split('=')[1].replace(']', '') : null;
+		const defaultValue = name.includes('=') ? name.split('=')[1].replace(/\]/g, '') : null;
 		
 		return {
 			name: cleanName,
