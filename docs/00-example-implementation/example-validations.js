@@ -40,8 +40,11 @@
 const ALLOWED_REFERRERS = ['*'];
 
 /**
- * Set to false when relying on API Gateway OpenAPI and validation within Lambda is only secondary.
- * Set to true only when ALL validation occurs on Lambda side.
+ * Set to false when relying on API Gateway OpenAPI (upstream) or Router/Controller (downstream) to handle validation
+ * Set to true when you want to invalidate a request immediately when a new ClientRequest(event, context) is invoked
+ * You would want to set to true when you have few parameters to validate and wish to fail the request quickly
+ * You would want to set to false when you have complex parameter validation logic and wish to let the downstream handle it.
+ * Set to true only when ALL validation occurs as soon as the request is recieved (before routing).
  * @returns {boolean}
  */
 const EXCLUDE_PARAMS_WITH_NO_VALIDATION_MATCH = false;
@@ -115,8 +118,8 @@ const playersQueryParameter = (players) => {
  */
 module.exports = {
 	referrers: ALLOWED_REFERRERS,
-	excludeParamsWithNoValidationMatch: EXCLUDE_PARAMS_WITH_NO_VALIDATION_MATCH,
 	parameters: {
+		excludeParamsWithNoValidationMatch: EXCLUDE_PARAMS_WITH_NO_VALIDATION_MATCH,
 		pathParameters: {
 			id: idPathParameter,
 		},

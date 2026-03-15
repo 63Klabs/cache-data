@@ -19,8 +19,8 @@
 
 const legacyValidations = {
 	referrers: ['example.com', 'myapp.com'],
-	excludeParamsWithNoValidationMatch: true,  // Default: exclude unvalidated parameters
 	parameters: {
+		excludeParamsWithNoValidationMatch: true,  // Default: exclude unvalidated parameters
 		pathParameters: {
 			// Global validation - applies to 'id' parameter on all routes
 			id: (value) => typeof value === 'string' && value.length > 0,
@@ -215,8 +215,8 @@ const multiParameterValidations = {
 
 const mixedPriorityValidations = {
 	referrers: ['example.com'],
-	excludeParamsWithNoValidationMatch: true,
 	parameters: {
+		excludeParamsWithNoValidationMatch: true,
 		pathParameters: {
 			// Priority 4: Global validation (fallback for all routes)
 			id: (value) => typeof value === 'string' && value.length > 0,
@@ -284,8 +284,8 @@ const mixedPriorityValidations = {
 
 const productionValidations = {
 	referrers: ['myapp.com', 'api.myapp.com'],
-	excludeParamsWithNoValidationMatch: true,
 	parameters: {
+		excludeParamsWithNoValidationMatch: true,
 		pathParameters: {
 			// Global fallback validations
 			id: (value) => typeof value === 'string' && value.length > 0,
