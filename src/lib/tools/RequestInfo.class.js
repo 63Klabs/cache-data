@@ -259,9 +259,25 @@ class RequestInfo {
 
 
 	/**
-	 * Obtain lambda event request details for logging
-	 * @param {*} event 
-	 * @returns Information about the requesting client including IP and user agent
+	 * Obtain lambda event request details for logging.
+	 * Parses the API Gateway event to extract client information including IP,
+	 * user agent, origin, referrer, headers, and query parameters.
+	 * 
+	 * For `client.ip`, the `x-forwarded-for` header is preferred over
+	 * `identity.sourceIp`. When `x-forwarded-for` is present and non-empty,
+	 * the first IP from the comma-separated list is used (trimmed). This
+	 * ensures the original client IP is returned when behind a proxy such
+	 * as CloudFront. Falls back to `identity.sourceIp` when the header is
+	 * absent or empty.
+	 * 
+	 * For `client.userAgent`, the `user-agent` header is preferred over
+	 * `identity.userAgent`. When the header is present and non-empty, its
+	 * value is used directly. This ensures the original client user agent
+	 * is returned instead of a proxy identifier (e.g. "Amazon CloudFront").
+	 * Falls back to `identity.userAgent` when the header is absent or empty.
+	 * 
+	 * @param {object} event - API Gateway Lambda event object
+	 * @returns {{ip: string|null, userAgent: string|null, origin: string|null, referrer: string|null, ifModifiedSince: string|null, ifNoneMatch: string|null, accept: string|null, headers: object, parameters: object, body: string|null}} Client request information
 	 */
 	_clientRequestInfo (event) {
 
@@ -292,9 +308,22 @@ class RequestInfo {
 			client.ip = identity.sourceIp;
 		}
 
+		// if x-forwarded-for header is present, prefer it over identity.sourceIp (first IP in the list is the original client)
+		if ( "x-forwarded-for" in headers && headers["x-forwarded-for"] !== null && headers["x-forwarded-for"] !== "" ) {
+			let firstIp = headers["x-forwarded-for"].split(",")[0].trim();
+			if ( firstIp !== "" ) {
+				client.ip = firstIp;
+			}
+		}
+
 		// if there is a user-agent header, set it
 		if ( "userAgent" in identity && identity.userAgent !== null ) {
 			client.userAgent = identity.userAgent;
+		}
+
+		// if user-agent header is present, prefer it over identity.userAgent (original client user agent)
+		if ( "user-agent" in headers && headers["user-agent"] !== null && headers["user-agent"] !== "" ) {
+			client.userAgent = headers["user-agent"];
 		}
 
 		// if there is an origin header, set it

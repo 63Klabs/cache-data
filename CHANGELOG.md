@@ -10,7 +10,9 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.11 (unreleased)
 
-- TODO
+### Fixed
+
+- **ClientRequest / RequestInfo: X-Forwarded-For and User-Agent header priority** - When API Gateway is behind CloudFront (or any reverse proxy), `getClientIp()` and `getClientUserAgent()` now return the original client values from the `x-forwarded-for` and `user-agent` headers instead of CloudFront's identity values. Falls back to `identity.sourceIp` and `identity.userAgent` when headers are absent. [Spec: 1-3-11-client-request-update-forwarded-for](.kiro/specs/1-3-11-client-request-update-forwarded-for/)
 
 ## v1.3.10 (2026-03-15)
 
