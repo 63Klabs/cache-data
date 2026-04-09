@@ -1054,7 +1054,9 @@ For comprehensive guides on each feature:
 
 ### ClientRequest Class
 
-Parse and validate incoming Lambda requests:
+Parse and validate incoming Lambda requests.
+
+Contains event and context information along with parsed properties of the request to be easily passed along to other methods.
 
 ```javascript
 const { tools: {ClientRequest} } = require('@63klabs/cache-data');
@@ -1062,14 +1064,72 @@ const { tools: {ClientRequest} } = require('@63klabs/cache-data');
 exports.handler = async (event, context) => {
   const clientRequest = new ClientRequest(event);
   
+  // a few examples of data you can access about the request
   const path = clientRequest.getPath();
   const method = clientRequest.getMethod();
   const headers = clientRequest.getHeaders();
   const queryParams = clientRequest.getQueryStringParameters();
+  const props = clientRequest.getProps();
+  const e = clientRequest.getEvent();
+  const c = clientRequest.getContext();
+  const ip = clientRequest.getClientIp();
+  const userAgent = clientRequest.getClientUserAgent();
   
   // ... handle request ...
+  processThisRequest(clientRequest);
 };
 ```
+
+> NOTE When accessed behind CloudFront: To ensure the user agent is passed along to API Gateway, use the AWS managed Origin Request Policy named AllViewerExceptHostHeader. This forwards the User-Agent along with most other viewer headers while maintaining the correct Host header required for API Gateway to route the request properly.
+
+#### ClientRequest `getProps()`
+
+You can also pass a lighter object using `getProps()` that contains many request properties:
+
+```javascript
+const { tools: {ClientRequest} } = require('@63klabs/cache-data');
+
+exports.handler = async (event, context) => {
+  const clientRequest = new ClientRequest(event);
+
+  const props = clientRequest.getProps();
+
+  // ... handle request ...
+  processThisRequest(props);
+}
+```
+
+The `getProps()` method returns data about the client request to use for routing and processing. 
+
+```js
+{
+  method: "POST", // GET|POST|PUT|DELETE|PATCH etc
+  path: "users/1234", // path after the API Gateway Stage Name (from event.path)
+  pathArray: ['users', '1234'], // array version of path (from event.path)
+  resource: "users/{id}", // path template (from event.resource) use for routing and logging
+  resourceArray: ['users', '{id}'], // path template (from event.resource) use for routing and logging
+  pathParameters: {},
+  queryStringParameters: {},
+  headerParameters: {},
+  cookieParameters: {},
+  bodyParameters: {}, // body as an object if JSON was detected
+  bodyPayload: "", // body as string
+  client: {
+    ip: "x.x.x.x", // IP of client (could be IPv4 or IPv6)
+    userAgent: "", // user agent of client (CloudFront origin policy must be AllViewerExceptHostHeader)
+    origin: "", // origin host
+    referrer: "example.com", // domain of referrer
+    isAuthenticated: false, // authenticated client
+    isGuest: true, // un-authenticated client
+    authorizations: ['all'], // explicit authorizations from policy
+    roles: ['guest'] // from a user record, can be used to determine authorization programatically
+  },
+  deadline: 123456677, // static timestamp
+  calcMsToDeadline: function() // countdown
+}
+```
+
+The `deadline` and `calcMsToDeadLine` properties utilize the timeout from `context.getRemainingTimeInMillis()` to determine how much time is remaining in the Lambda function's execution. This can be used to dynamically set external API timeouts or provide time to clean up/return a partial response if time is getting short. The `deadline` property is a static deadline which can be passed to methods to calculate time remaining on their own, whereas `calcMsToDeadline()` provides a dynamic output.
 
 ### Response Class
 

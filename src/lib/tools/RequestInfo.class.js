@@ -130,6 +130,12 @@ class RequestInfo {
 
 	/**
 	 * User Agent of client request
+	 * Note When accessed behind CloudFront:
+	 * To ensure the user agent is passed along to API Gateway, use the AWS 
+	 * managed Origin Request Policy named AllViewerExceptHostHeader. This 
+	 * forwards the User-Agent along with most other viewer headers while 
+	 * maintaining the correct Host header required for API Gateway to route 
+	 * the request properly.
 	 * @returns {string} The user agent string supplied by the client request
 	 */
 	getClientUserAgent() {

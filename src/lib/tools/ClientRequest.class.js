@@ -1400,8 +1400,16 @@ class ClientRequest extends RequestInfo {
 	/**
 	 * Get the _processed_ request properties. These are the properties that
 	 * the ClientRequest object took from the event sent to Lambda, validated,
-	 * supplemented, and makes available to controllers. 
-	 * @returns {{ method: string, path: string, pathArray: string[], resource: string, resourceArray[], pathParameters: {}, queryStringParameters: {}, headerParameters: {}, cookieParameters: {}, bodyParameters: {}, bodyPayload: string, client: {ip: string, userAgent: string, origin: string, referrer: string, isAuthenticated: boolean, isGuest: boolean, authorizations: string[], roles: string[]}, deadline: number, calcMsToDeadline: number}
+	 * supplemented, and makes available to controllers.
+	 * 
+	 * Note When accessed behind CloudFront:
+	 * To ensure the user agent is passed along to API Gateway, use the AWS 
+	 * managed Origin Request Policy named AllViewerExceptHostHeader. This 
+	 * forwards the User-Agent along with most other viewer headers while 
+	 * maintaining the correct Host header required for API Gateway to route 
+	 * the request properly.
+	 *
+	 * @returns {{ method: string, path: string, pathArray: string[], resource: string, resourceArray: string[], pathParameters: {}, queryStringParameters: {}, headerParameters: {}, cookieParameters: {}, bodyParameters: {}, bodyPayload: string, client: {ip: string, userAgent: string, origin: string, referrer: string, isAuthenticated: boolean, isGuest: boolean, authorizations: string[], roles: string[]}, deadline: number, calcMsToDeadline: function}
 	 */
 	getProps() {
 		return this.#props;
