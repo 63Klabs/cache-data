@@ -1,6 +1,6 @@
 {
   "name": "@63klabs/cache-data",
-  "version": "1.3.11",
+  "version": "1.3.12",
   "description": "A package for AWS Lambda Node.js applications to access and cache data from remote API endpoints (or other sources) utilizing AWS S3 and DynamoDb for the cache storage. Also provides a simple request handling, routing, and response logging framework for running a web service with minimal dependencies.",
   "author": "Chad Kluck (https://chadkluck.me)",
   "license": "MIT",
