@@ -1101,7 +1101,7 @@ exports.handler = async (event, context) => {
 
 The `getProps()` method returns data about the client request to use for routing and processing. 
 
-```js
+```
 {
   method: "POST", // GET|POST|PUT|DELETE|PATCH etc
   path: "users/1234", // path after the API Gateway Stage Name (from event.path)
