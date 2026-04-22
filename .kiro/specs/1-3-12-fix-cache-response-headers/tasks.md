@@ -20,7 +20,7 @@
   - Mark task complete when test is written, run, and failure is documented
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 2. Write preservation property tests (BEFORE implementing fix)
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
   - **Property 2: Preservation** - Default Cache Headers Applied When Not Pre-Set
   - **IMPORTANT**: Follow observation-first methodology
   - Create test file `test/response/cache-header-preservation-property-tests.jest.mjs`
@@ -39,9 +39,9 @@
   - Mark task complete when tests are written, run, and passing on unfixed code
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-- [ ] 3. Fix for Response.finalize() unconditionally overwriting Cache-Control and Expires headers
+- [x] 3. Fix for Response.finalize() unconditionally overwriting Cache-Control and Expires headers
 
-  - [ ] 3.1 Implement the fix in `src/lib/tools/Response.class.js`
+  - [x] 3.1 Implement the fix in `src/lib/tools/Response.class.js`
     - In the `finalize()` method, guard the `Expires` write in the error path (status >= 400) with `if (!('Expires' in this._headers))`
     - Guard the `Cache-Control` write in the error path with `if (!('Cache-Control' in this._headers))`
     - Guard the `Expires` write in the success path (status < 400, `routeExpirationInSeconds > 0`) with `if (!('Expires' in this._headers))`
@@ -51,12 +51,12 @@
     - _Preservation: When no Cache-Control or Expires headers are pre-set, finalize() continues to apply config-derived defaults identically to the unfixed version_
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [ ] 3.2 Update JSDoc on `finalize()` method
+  - [x] 3.2 Update JSDoc on `finalize()` method
     - Add a note to the JSDoc comment documenting that application-set `Cache-Control` and `Expires` headers take precedence over config defaults
     - Mention that if neither header is pre-set, `finalize()` applies config-derived values as before
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 3.3 Verify bug condition exploration test now passes
+  - [x] 3.3 Verify bug condition exploration test now passes
     - **Property 1: Expected Behavior** - Application-Set Cache Headers Preserved
     - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
     - The test from task 1 encodes the expected behavior
@@ -65,7 +65,7 @@
     - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 3.4 Verify preservation tests still pass
+  - [x] 3.4 Verify preservation tests still pass
     - **Property 2: Preservation** - Default Cache Headers Applied When Not Pre-Set
     - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
     - Run preservation property tests from step 2: `npm test -- test/response/cache-header-preservation-property-tests.jest.mjs`
@@ -73,12 +73,12 @@
     - Confirm all tests still pass after fix (no regressions)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [ ] 3.5 Update user documentation
+  - [x] 3.5 Update user documentation
     - Update `docs/01-advanced-implementation-for-web-service/response-management.md` to document how to override cache headers per-response using `addHeader("Cache-Control", ...)` and `addHeader("Expires", ...)`
     - Add a section or note explaining that application-set `Cache-Control` and `Expires` headers take precedence over `routeExpirationInSeconds` and `errorExpirationInSeconds` config defaults
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Run the full test suite: `npm test`
   - Ensure all tests pass, including the new bug condition and preservation property tests
   - Verify no regressions in existing response tests (`test/response/response-tests.jest.mjs` and others)

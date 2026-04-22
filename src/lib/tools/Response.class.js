@@ -188,7 +188,7 @@ class Response {
 
 		const genericResponses = Response.getGenericResponses(contentType);
 
-		newObj.headers = obj?.headers ?? genericResponses.response(newObj.statusCode).headers;
+		newObj.headers = { ...(obj?.headers ?? genericResponses.response(newObj.statusCode).headers) };
 		newObj.body = obj?.body ?? genericResponses.response(newObj.statusCode).body;
 
 		this.set(newObj, contentType);
@@ -596,6 +596,11 @@ class Response {
 	 * and logs the response to CloudWatch. If body is an object/array, it's stringified.
 	 * For JSON responses, string/number bodies are wrapped in an array.
 	 * 
+	 * Note: Application-set `Cache-Control` and `Expires` headers (via `addHeader()`)
+	 * take precedence over config defaults (`routeExpirationInSeconds` and
+	 * `errorExpirationInSeconds`). If neither header is pre-set by the application,
+	 * `finalize()` applies config-derived values as before.
+	 * 
 	 * @returns {{statusCode: number, headers: Object, body: string}} Finalized response ready for Lambda return
 	 * @example
 	 * response.setStatusCode(200);
@@ -606,6 +611,12 @@ class Response {
 	 * // Finalize handles errors automatically
 	 * response.setBody(new Error('Something failed'));
 	 * return response.finalize(); // Returns 500 error response
+	 * 
+	 * @example
+	 * // Override default cache headers per-response
+	 * response.addHeader("Cache-Control", "no-store");
+	 * response.addHeader("Expires", "0");
+	 * return response.finalize(); // Preserves application-set cache headers
 	 */
 	finalize = () => {
 
@@ -661,11 +672,19 @@ class Response {
 			}
 
 			if (this._statusCode >= 400) {
-				this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.errorExpirationInSeconds * 1000))).toUTCString());
-				this.addHeader("Cache-Control", "max-age="+Response.#settings.errorExpirationInSeconds);	
+				if (!('Expires' in this._headers)) {
+					this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.errorExpirationInSeconds * 1000))).toUTCString());
+				}
+				if (!('Cache-Control' in this._headers)) {
+					this.addHeader("Cache-Control", "max-age="+Response.#settings.errorExpirationInSeconds);
+				}
 			} else if (Response.#settings.routeExpirationInSeconds > 0 ) {
-				this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.routeExpirationInSeconds * 1000))).toUTCString());
-				this.addHeader("Cache-Control", "max-age="+Response.#settings.routeExpirationInSeconds);
+				if (!('Expires' in this._headers)) {
+					this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.routeExpirationInSeconds * 1000))).toUTCString());
+				}
+				if (!('Cache-Control' in this._headers)) {
+					this.addHeader("Cache-Control", "max-age="+Response.#settings.routeExpirationInSeconds);
+				}
 			}
 
 			this.addHeader('x-exec-ms', `${this._clientRequest.getFinalExecutionTime()}`);

@@ -219,6 +219,68 @@ return response.finalize();
 // }
 ```
 
+## Overriding cache headers per response
+
+By default, `finalize()` sets `Cache-Control` and `Expires` headers based on the `routeExpirationInSeconds` (for status < 400) and `errorExpirationInSeconds` (for status >= 400) config values. You can override these defaults on a per-response basis using `addHeader()`.
+
+> **Note**: Application-set `Cache-Control` and `Expires` headers take precedence over `routeExpirationInSeconds` and `errorExpirationInSeconds` config defaults. If you set either header before calling `finalize()`, your value is preserved. Any header you do not set will still receive the config-derived default.
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+async function handleRequest(clientRequest) {
+  const response = new Response(clientRequest);
+
+  // Short-lived response: override the default cache duration
+  response.setStatusCode(200);
+  response.addHeader('Cache-Control', 'max-age=30');
+  response.addHeader('Expires', new Date(Date.now() + 30000).toUTCString());
+  response.setBody({ data: 'frequently changing content' });
+
+  // finalize() preserves the Cache-Control and Expires values above
+  return response.finalize();
+}
+```
+
+You can also override cache headers for error responses:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+async function handleNotFound(clientRequest) {
+  const response = new Response(clientRequest);
+
+  // Prevent caching of this error response entirely
+  response.setStatusCode(404);
+  response.addHeader('Cache-Control', 'no-store');
+  response.addHeader('Expires', '0');
+  response.setBody({ error: 'Resource not found' });
+
+  // finalize() preserves 'no-store' instead of applying errorExpirationInSeconds
+  return response.finalize();
+}
+```
+
+Setting only one of the two headers is also supported. The other will receive the config default:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+async function handleRequest(clientRequest) {
+  const response = new Response(clientRequest);
+
+  response.setStatusCode(200);
+  // Override only Cache-Control; Expires will be set from routeExpirationInSeconds
+  response.addHeader('Cache-Control', 'no-cache, must-revalidate');
+  response.setBody({ data: 'validated on each request' });
+
+  return response.finalize();
+}
+```
+
 ## Reset and Reuse
 
 ```javascript

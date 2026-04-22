@@ -10,7 +10,9 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.3.12 (unreleased)
 
-- TODO
+### Fixed
+
+- **Response: finalize() overwriting application-set Cache-Control and Expires headers** - `finalize()` now preserves `Cache-Control` and `Expires` headers set via `addHeader()` instead of unconditionally replacing them with config defaults. Default behavior unchanged when headers are not pre-set. [Spec: 1-3-12-fix-cache-response-headers](.kiro/specs/1-3-12-fix-cache-response-headers/) addresses [#223](https://github.com/63Klabs/cache-data/issues/223)
 
 ## v1.3.11 (2026-04-09)
 
