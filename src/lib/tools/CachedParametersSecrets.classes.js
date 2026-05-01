@@ -229,20 +229,26 @@ class CachedParameterSecret {
 	 * This allows us to set an object property such as key with the Class object and 
 	 * then, when the object is put to use through stringify, the object will be 
 	 * converted to a string.
-	 * @returns {string} value of secret or parameter
+	 * @returns {string} value of secret or parameter, or placeholder if unresolved
 	 */
 	toJSON() {
-		return this.sync_getValue();
+		if (this.isValid()) {
+			return this.sync_getValue();
+		}
+		return `[Pending: ${this.name}]`;
 	};
 
 	/**
 	 * This allows us to set an object property such as key with the Class object and 
 	 * then, when the object is put to use through stringify, the object will be 
 	 * converted to a string.	
-	 * @returns {string} value of secret or parameter
+	 * @returns {string} value of secret or parameter, or placeholder if unresolved
 	 */
 	toString() {
-		return this.sync_getValue();
+		if (this.isValid()) {
+			return this.sync_getValue();
+		}
+		return `[Pending: ${this.name}]`;
 	};
 
 	/**

@@ -143,8 +143,11 @@ describe("CachedParametersSecrets Edge Case Tests", () => {
 		it("should handle toJSON() method when value not loaded", () => {
 			const secret = new CachedSecret("test-to-json", { refreshAfter: 400 });
 			
-			// toJSON() calls sync_getValue() which throws if not loaded
-			expect(() => secret.toJSON()).toThrow('CachedParameterSecret Error');
+			// toJSON() returns a placeholder string when value is not loaded (bugfix: no longer throws)
+			const result = secret.toJSON();
+			expect(typeof result).toBe('string');
+			expect(result).toContain("Pending");
+			expect(result).toContain("test-to-json");
 		});
 
 		it("should handle getNameTag() method", () => {
