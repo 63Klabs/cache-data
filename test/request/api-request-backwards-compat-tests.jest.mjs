@@ -103,6 +103,35 @@ describe('ApiRequest Backwards Compatibility', () => {
 	});
 
 	describe('Response Format Compatibility', () => {
+		beforeEach(() => {
+			jest.spyOn(ApiRequest.prototype, '_handleRetries').mockImplementation(
+				async function () {
+					const uri = this.getURI();
+					let response;
+
+					if (uri.includes('/status/200')) {
+						response = ApiRequest.responseFormat(true, 200, "SUCCESS", {}, "");
+					} else if (uri.includes('/get')) {
+						response = ApiRequest.responseFormat(true, 200, "SUCCESS", {"content-type": "application/json"}, '{"url":"https://httpbin.org/get"}');
+					} else {
+						response = ApiRequest.responseFormat(false, 500, "ERROR: UNKNOWN", {}, "");
+					}
+
+					this.setResponse(response);
+					return {
+						response,
+						metadata: {
+							retries: {
+								occurred: false,
+								attempts: 1,
+								finalAttempt: 1
+							}
+						}
+					};
+				}
+			);
+		});
+
 		it('should return old format without new features', async () => {
 			const request = {
 				host: 'httpbin.org',
@@ -322,6 +351,35 @@ describe('ApiRequest Backwards Compatibility', () => {
 	});
 
 	describe('Requests Without Pagination Behave Identically', () => {
+		beforeEach(() => {
+			jest.spyOn(ApiRequest.prototype, '_handleRetries').mockImplementation(
+				async function () {
+					const uri = this.getURI();
+					let response;
+
+					if (uri.includes('/get')) {
+						response = ApiRequest.responseFormat(true, 200, "SUCCESS", {"content-type": "application/json"}, '{"url":"https://httpbin.org/get"}');
+					} else if (uri.includes('/headers')) {
+						response = ApiRequest.responseFormat(true, 200, "SUCCESS", {"content-type": "application/json"}, '{"headers":{}}');
+					} else {
+						response = ApiRequest.responseFormat(false, 500, "ERROR: UNKNOWN", {}, "");
+					}
+
+					this.setResponse(response);
+					return {
+						response,
+						metadata: {
+							retries: {
+								occurred: false,
+								attempts: 1,
+								finalAttempt: 1
+							}
+						}
+					};
+				}
+			);
+		});
+
 		it('should make simple GET request without pagination', async () => {
 			const request = {
 				host: 'httpbin.org',
@@ -335,7 +393,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			expect(response.success).toBe(true);
 			expect(response.statusCode).toBe(200);
 			expect(response).not.toHaveProperty('metadata');
-		}, 15000);
+		});
 
 		it('should handle query parameters without pagination', async () => {
 			const request = {
@@ -353,7 +411,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			
 			expect(response.success).toBe(true);
 			expect(response).not.toHaveProperty('metadata');
-		}, 15000);
+		});
 
 		it('should handle headers without pagination', async () => {
 			const request = {
@@ -370,10 +428,41 @@ describe('ApiRequest Backwards Compatibility', () => {
 			
 			expect(response.success).toBe(true);
 			expect(response).not.toHaveProperty('metadata');
-		}, 15000);
+		});
 	});
 
 	describe('Requests Without Retry Behave Identically', () => {
+		beforeEach(() => {
+			jest.spyOn(ApiRequest.prototype, '_handleRetries').mockImplementation(
+				async function () {
+					const uri = this.getURI();
+					let response;
+
+					if (uri.includes('/status/200')) {
+						response = ApiRequest.responseFormat(true, 200, "SUCCESS", {}, "");
+					} else if (uri.includes('/status/500')) {
+						response = ApiRequest.responseFormat(false, 500, "ERROR", {}, "");
+					} else if (uri.includes('/delay/10')) {
+						response = ApiRequest.responseFormat(false, 504, "ERROR: TIMEOUT", {}, "");
+					} else {
+						response = ApiRequest.responseFormat(false, 500, "ERROR: UNKNOWN", {}, "");
+					}
+
+					this.setResponse(response);
+					return {
+						response,
+						metadata: {
+							retries: {
+								occurred: false,
+								attempts: 1,
+								finalAttempt: 1
+							}
+						}
+					};
+				}
+			);
+		});
+
 		it('should make single attempt without retry', async () => {
 			const request = {
 				host: 'httpbin.org',
@@ -387,7 +476,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			expect(response.success).toBe(true);
 			expect(response.statusCode).toBe(200);
 			expect(response).not.toHaveProperty('metadata');
-		}, 15000);
+		});
 
 		it('should fail immediately on error without retry', async () => {
 			const request = {
@@ -404,7 +493,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			expect(response.statusCode).toBeGreaterThanOrEqual(500);
 			expect(response.statusCode).toBeLessThan(600);
 			expect(response).not.toHaveProperty('metadata');
-		}, 15000);
+		});
 
 		it('should handle timeout without retry', async () => {
 			const request = {
@@ -419,7 +508,7 @@ describe('ApiRequest Backwards Compatibility', () => {
 			expect(response.success).toBe(false);
 			expect(response.statusCode).toBe(504);
 			expect(response).not.toHaveProperty('metadata');
-		}, 15000);
+		});
 	});
 
 	describe('Query String Building Compatibility', () => {

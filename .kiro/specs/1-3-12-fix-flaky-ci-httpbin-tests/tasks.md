@@ -1,0 +1,90 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Bug Condition** - HTTP-Dependent Tests Fail Without Mocks
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the 9 HTTP-dependent tests are unreliable without mocks
+  - **Scoped PBT Approach**: Scope the property to the 3 HTTP-dependent describe blocks: "Response Format Compatibility" (3 tests), "Requests Without Pagination Behave Identically" (3 tests), "Requests Without Retry Behave Identically" (3 tests)
+  - Create a property-based test file `test/request/property/api-request-httpbin-fix-property-tests.jest.mjs`
+  - Use fast-check `fc.constantFrom(...)` to select from the 9 HTTP test cases
+  - For each test case, construct an `ApiRequest` with the httpbin.org host/path from the test
+  - Spy on `ApiRequest.prototype._handleRetries` to return the expected mock response (matching design spec)
+  - Assert that with the mock in place: `response.success`, `response.statusCode`, and absence of `response.metadata` match the expected values from the original test assertions
+  - Mock response shapes per endpoint:
+    - `/status/200`: `ApiRequest.responseFormat(true, 200, "SUCCESS", {}, "")` — success, statusCode 200
+    - `/get`: `ApiRequest.responseFormat(true, 200, "SUCCESS", {"content-type": "application/json"}, '{"url":"https://httpbin.org/get"}')` — success, statusCode 200
+    - `/headers`: `ApiRequest.responseFormat(true, 200, "SUCCESS", {"content-type": "application/json"}, '{"headers":{}}')` — success, statusCode 200
+    - `/status/500`: `ApiRequest.responseFormat(false, 500, "ERROR", {}, "")` — success false, statusCode 500
+    - `/delay/10` (with 1000ms timeout): `ApiRequest.responseFormat(false, 504, "ERROR: TIMEOUT", {}, "")` — success false, statusCode 504
+  - Run test on UNFIXED code — the test file currently has NO mocks, so `_handleRetries` spy won't be active in the actual test file
+  - **EXPECTED OUTCOME**: Test FAILS because the unfixed test file makes real HTTP calls to httpbin.org which are unreliable (this confirms the bug exists)
+  - Document counterexamples found: tests that fail due to network timeouts, unexpected status codes, or ECONNREFUSED errors
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 1.1, 1.2, 1.3_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Non-HTTP Tests Unchanged
+  - **IMPORTANT**: Follow observation-first methodology
+  - Create preservation tests in the same file `test/request/property/api-request-httpbin-fix-property-tests.jest.mjs`
+  - Observe: Run the 6 non-HTTP describe blocks on UNFIXED code and confirm they all pass (25 tests total)
+  - The 6 non-HTTP describe blocks are: Constructor Compatibility (5 tests), Static Method Compatibility (3 tests), Public API Compatibility (8 tests), Query String Building Compatibility (4 tests), Redirect Handling Compatibility (2 tests), Options Merging Compatibility (3 tests)
+  - Write property-based test using `fc.constantFrom(...)` to select from the 6 non-HTTP describe block names
+  - For each describe block, assert that the test code in the original file does NOT contain `httpbin.org` references, does NOT call `apiRequest.send()` with a real host, and does NOT have `beforeEach` mock setup added
+  - Additionally verify: the non-HTTP test blocks produce the same number of test cases (25 total) and all pass
+  - Run the full backwards compat test file on UNFIXED code to establish baseline: `node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/request/api-request-backwards-compat-tests.jest.mjs`
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve — the 25 non-HTTP tests pass reliably)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [x] 3. Fix for flaky CI httpbin tests
+
+  - [x] 3.1 Implement the fix in `test/request/api-request-backwards-compat-tests.jest.mjs`
+    - Add `beforeEach` mock to "Response Format Compatibility" describe block:
+      - Spy on `ApiRequest.prototype._handleRetries` using `jest.spyOn`
+      - Mock implementation inspects `this.getURI()` to determine which endpoint is being called
+      - Return `ApiRequest.responseFormat(true, 200, "SUCCESS", {"content-type":"application/json"}, '...')` for `/status/200` and `/get` paths
+      - Set `this.setResponse(response)` within the mock to populate the instance response
+      - Ensure response has no `metadata` property (matching original behavior when pagination/retry not used)
+    - Add `beforeEach` mock to "Requests Without Pagination Behave Identically" describe block:
+      - Same spy pattern on `ApiRequest.prototype._handleRetries`
+      - Return success responses for `/get` and `/headers` paths
+      - Ensure response has no `metadata` property
+    - Add `beforeEach` mock to "Requests Without Retry Behave Identically" describe block:
+      - Same spy pattern on `ApiRequest.prototype._handleRetries`
+      - Return `ApiRequest.responseFormat(true, 200, ...)` for `/status/200`
+      - Return `ApiRequest.responseFormat(false, 500, ...)` for `/status/500`
+      - Return `ApiRequest.responseFormat(false, 504, ...)` for `/delay/10` (simulating timeout)
+    - Remove the extended Jest timeout values (`, 15000`) from the 6 HTTP test cases in "Requests Without Pagination" and "Requests Without Retry" blocks since mocked tests complete instantly
+    - Keep the existing top-level `afterEach(() => jest.restoreAllMocks())` for cleanup — no changes needed there
+    - Do NOT modify any of the 6 non-HTTP describe blocks (Constructor, Static Method, Public API, Query String, Redirect, Options Merging)
+    - Do NOT modify any production code — only the test file changes
+    - _Bug_Condition: isBugCondition(T) where T.describeBlock IN {"Response Format Compatibility", "Requests Without Pagination Behave Identically", "Requests Without Retry Behave Identically"} AND T.httpLayerIsMocked = false_
+    - _Expected_Behavior: All 9 HTTP tests pass reliably with mocked responses matching original assertion expectations_
+    - _Preservation: 25 non-HTTP tests remain completely unchanged and pass identically_
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+  - [x] 3.2 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Mocked HTTP Tests Pass Reliably
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior: all 9 HTTP tests pass with mocked `_handleRetries`
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed — all 9 HTTP tests now use mocks and pass reliably)
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+  - [x] 3.3 Verify preservation tests still pass
+    - **Property 2: Preservation** - Non-HTTP Tests Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions — all 25 non-HTTP tests still pass identically)
+    - Confirm all tests still pass after fix (no regressions)
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Run the full backwards compat test file: `node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/request/api-request-backwards-compat-tests.jest.mjs`
+  - Verify all 34 tests pass (9 HTTP mocked + 25 non-HTTP unchanged)
+  - Run the property test file: `node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/request/property/api-request-httpbin-fix-property-tests.jest.mjs`
+  - Verify both Property 1 (Bug Condition / Expected Behavior) and Property 2 (Preservation) pass
+  - Run the full test suite: `npm test` to ensure no cross-file regressions
+  - Ensure all tests pass, ask the user if questions arise.
