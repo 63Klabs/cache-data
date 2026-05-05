@@ -8,6 +8,22 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
+## v1.3.14 (unreleased)
+
+### Added
+
+- **TypeScript Type Definitions** - Added hand-written `.d.ts` declaration files providing IntelliSense support (autocomplete, parameter hints, return types, hover documentation) for all public APIs without converting the source to TypeScript. Declaration files ship with the package via the `types` field in `package.json`. [Spec: 1-3-14-typescript-type-definitions](.kiro/specs/1-3-14-typescript-type-definitions/)
+  - Tools module: all 18 public classes, 4 utility functions, 4 version variables, 5 generic response modules
+  - Cache module: Cache, CacheableDataAccess, TestHarness classes and related interfaces
+  - Endpoint module: send, get, getDataDirectFromURI functions and EndpointResponse interface
+  - Shared interfaces: ConnectionObject, CacheProfileObject, CacheDataFormat, AppConfigInitOptions
+  - Deprecated exports annotated with `@deprecated` JSDoc tags
+  - AppConfig declared as extensible (supports `class Config extends AppConfig`)
+
+### Dependencies
+
+- Added typescript ^6.0.3 as devDependency (not shipped with package)
+
 ## v1.3.13 (2026-05-04)
 
 ### Added
