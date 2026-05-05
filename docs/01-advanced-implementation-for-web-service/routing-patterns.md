@@ -37,6 +37,46 @@ exports.handler = async (event, context) => {
 };
 ```
 
+## Using getMethod() for Routing
+
+As an alternative to `clientRequest.getProps().method`, you can use the `getMethod()` accessor to retrieve the HTTP method directly. The `getMethod()` method always returns the method in uppercase, regardless of how the event source provides it.
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { ClientRequest, Response } = tools;
+
+exports.handler = async (event, context) => {
+  const clientRequest = new ClientRequest(event, context);
+  const response = new Response(clientRequest);
+  
+  if (!clientRequest.isValid()) {
+    response.setStatusCode(400);
+    response.setBody({ error: 'Invalid request' });
+    return response.finalize();
+  }
+  
+  // Use getMethod() instead of getProps().method
+  const method = clientRequest.getMethod(); // Always uppercase: "GET", "POST", etc.
+  const path = clientRequest.getPath();
+  
+  if (method === 'GET' && path === 'users') {
+    return await getUsers(clientRequest, response);
+  } else if (method === 'POST' && path === 'users') {
+    return await createUser(clientRequest, response);
+  } else if (method === 'PUT' && path.startsWith('users/')) {
+    return await updateUser(clientRequest, response);
+  } else if (method === 'DELETE' && path.startsWith('users/')) {
+    return await deleteUser(clientRequest, response);
+  } else {
+    response.setStatusCode(404);
+    response.setBody({ error: 'Route not found' });
+    return response.finalize();
+  }
+};
+```
+
+> **Note**: `getMethod()` is equivalent to `getProps().method`. Both return the HTTP method normalized to uppercase. Use whichever style fits your routing pattern best.
+
 ## Path-Based Routing
 
 Use path arrays for more flexible routing:

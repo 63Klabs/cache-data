@@ -8,6 +8,12 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
+## v1.3.13 (2026-05-04)
+
+### Added
+
+- **ClientRequest: getMethod() accessor** - Added `getMethod()` instance method that returns the HTTP method in uppercase, providing a direct alternative to `getProps().method`. The `method` property in `#props` is now normalized to uppercase during construction regardless of how the API Gateway event provides it. [Spec: 1-3-13-add-getmethod-to-clientrequest](.kiro/specs/1-3-13-add-getmethod-to-clientrequest/)
+
 ## v1.3.12 (2026-05-03)
 
 ### Fixed

@@ -20,23 +20,23 @@ The changelog (`CHANGELOG.md`) should be kept up to date at the conclusion of a 
 
 ### Unreleased Section
 
-The unreleased section will be marked by the upcoming version number followed by `- unreleased`:
+The unreleased section will be marked by the upcoming version number followed by `(unreleased)`:
 
 ```markdown
-## v0.0.29 - unreleased
+## v0.0.29 (unreleased)
 ```
 
 ### Released Section
 
-Before a release is made, all "Unreleased" entries should be reviewed for accuracy and completeness by the developer. Once entries are properly categorized, the developer will manually change `- unreleased` to the date of the release in `YYYY-MM-DD` format:
+Before a release is made, all "Unreleased" entries should be reviewed for accuracy and completeness by the developer. Once entries are properly categorized, the developer will manually change ` (unreleased)` to the date of the release in `YYYY-MM-DD` format:
 
 ```markdown
-## v0.0.28 - 2026-01-08
+## v0.0.28 (2026-01-08)
 ```
 
 ### New Development Cycle
 
-The developer will create a new entry with the version number in `v0.0.0` format followed by `- unreleased` after a previous release was made, denoting the start of a new development cycle.
+The developer will create a new entry with the version number in `v0.0.0` format followed by `(unreleased)` after a previous release was made, denoting the start of a new development cycle.
 
 ## Available Categories
 
@@ -244,7 +244,7 @@ Before completing a spec, verify the changelog entry:
 ### Example 1: Single Template Non-Breaking Change
 
 ```markdown
-## v0.0.30 - unreleased
+## v0.0.30 (unreleased)
 
 ### Changed
 - **Pipeline: template-pipeline.yml v2.0.20** - Improved error handling in CodeBuild post-build phase [Spec: pipeline-error-handling](../.kiro/specs/pipeline-error-handling/)
@@ -253,7 +253,7 @@ Before completing a spec, verify the changelog entry:
 ### Example 2: Multi-Template Feature Addition
 
 ```markdown
-## v0.0.30 - unreleased
+## v0.0.30 (unreleased)
 
 ### Added
 - **CloudFront Cache Invalidation** [Spec: cloudfront-invalidation](../.kiro/specs/cloudfront-invalidation/) addresses [#92](https://github.com/63klabs/atlantis-cfn-template-repo-for-serverless-deployments/issues/92)
@@ -265,7 +265,7 @@ Before completing a spec, verify the changelog entry:
 ### Example 3: Breaking Change with Migration
 
 ```markdown
-## v0.0.30 - unreleased
+## v0.0.30 (unreleased)
 
 ### Breaking Changes
 - **Storage: template-storage-s3-artifacts-v2-0.yml v2.0.0** - Restructured bucket naming convention and removed legacy encryption parameter [Spec: storage-modernization](../.kiro/specs/storage-modernization/)
@@ -276,7 +276,7 @@ Before completing a spec, verify the changelog entry:
 ### Example 4: Script and Dependency Changes
 
 ```markdown
-## v0.0.30 - unreleased
+## v0.0.30 (unreleased)
 
 ### Changed
 - **Script: sync_templates.sh** - Added support for multi-region synchronization
@@ -289,7 +289,7 @@ Before completing a spec, verify the changelog entry:
 ### Example 5: Bug Fix with Issue Reference
 
 ```markdown
-## v0.0.30 - unreleased
+## v0.0.30 (unreleased)
 
 ### Fixed
 - **Pipeline: template-pipeline-github.yml v2.1.5** - Fixed GitHub connection ARN validation, addresses [#103](https://github.com/63klabs/atlantis-cfn-template-repo-for-serverless-deployments/issues/103)
@@ -299,7 +299,7 @@ Before completing a spec, verify the changelog entry:
 ### Example 6: Documentation Update
 
 ```markdown
-## v0.0.30 - unreleased
+## v0.0.30 (unreleased)
 
 ### Changed
 - **Documentation: Template READMEs** - Updated all pipeline template documentation with new parameter examples and troubleshooting sections [Spec: docs-enhancement](../.kiro/specs/docs-enhancement/)
@@ -308,7 +308,7 @@ Before completing a spec, verify the changelog entry:
 ## Complete Example Release
 
 ```markdown
-## v0.0.30 - unreleased
+## v0.0.30 (unreleased)
 
 ### Breaking Changes
 - **Storage: template-storage-s3-artifacts-v2-0.yml v2.0.0** - Restructured bucket naming convention and removed legacy encryption parameter [Spec: storage-modernization](../.kiro/specs/storage-modernization/)
@@ -334,7 +334,7 @@ Before completing a spec, verify the changelog entry:
 - Updated cfn-lint>=0.85.0 for improved rule coverage
 - Added requests>=2.31.0 for API integration testing
 
-## v0.0.29 - 2026-01-28
+## v0.0.29 (2026-01-28)
 
 ### Added
 - **Comprehensive Documentation**: Full documentation of the repository structure, templates, and contribution guidelines

@@ -459,7 +459,7 @@ class ClientRequest extends RequestInfo {
 		const { resource, resourceArray, path, pathArray } = this.#extractResourceAndPath();
 
 		this.#props = {
-			method: this.#event.httpMethod,
+			method: (this.#event.httpMethod || '').toUpperCase(),
 			path,
 			pathArray,
 			resource,
@@ -1329,6 +1329,19 @@ class ClientRequest extends RequestInfo {
 	getBodyParameters() {
 		return this.#props.bodyParameters || {};
 	};
+
+	/**
+	 * Returns the HTTP method of the request in uppercase.
+	 * The method is normalized to uppercase during construction regardless
+	 * of how the API Gateway event provides it.
+	 * @returns {string} HTTP method in uppercase (e.g., "GET", "POST", "PUT", "DELETE")
+	 * @example
+	 * const method = clientRequest.getMethod();
+	 * // method === "GET"
+	 */
+	getMethod() {
+		return this.#props.method;
+	}
 
 	#authenticate() {
 		// add your authentication logic here
