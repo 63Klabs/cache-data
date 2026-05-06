@@ -254,6 +254,7 @@ The Cache system accepts the following configuration options via `Cache.init()`:
 | `inMemoryCacheDefaultMaxEntries` | number | `1000` | No | Fallback capacity when Lambda memory allocation cannot be determined (when `AWS_LAMBDA_FUNCTION_MEMORY_SIZE` env var is unavailable). |
 | `useToolsHash` | boolean | `false` | No | Use tools.hash() method instead of object-hash for cache key generation. Can also be set via `CACHE_DATA_USE_TOOLS_HASH` env var. |
 | `idHashAlgorithm` | string | `'RSA-SHA256'` | No | Hash algorithm for generating cache key identifiers from connection and cacheProfile objects. Can also be set via `CACHE_DATA_ID_HASH_ALGORITHM` env var. |
+| `inMemoryOnly` | boolean | `false` | No | Enable in-memory-only mode (no DynamoDB/S3/encryption). When active, the cache operates entirely in-memory without requiring any AWS infrastructure. Can also be set via `CACHE_IN_MEMORY_ONLY` env var. |
 | `sharedCacheId` | string | `CACHE_SHARED_ID` env var or `AWS_LAMBDA_FUNCTION_NAME` | No | Shared cache identifier that overrides the default Lambda function name salt used in cache key generation. When set, multiple Lambda functions using the same value will produce identical cache hashes for the same request, enabling cross-function cache sharing. |
 
 #### Basic Configuration
@@ -307,6 +308,7 @@ Cache.init({
   
   // In-memory cache
   useInMemoryCache: true, // CACHE_USE_IN_MEMORY
+  inMemoryOnly: false, // CACHE_IN_MEMORY_ONLY
   inMemoryCacheMaxEntries: 8000, // no environment var
   inMemoryCacheEntriesPerGB: 4000, // no environment var
   inMemoryCacheDefaultMaxEntries: 1500, // no environment var
@@ -332,6 +334,7 @@ CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB=10
 CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS=24
 CACHE_DATA_TIME_ZONE_FOR_INTERVAL=Etc/UTC
 CACHE_USE_IN_MEMORY=false
+CACHE_IN_MEMORY_ONLY=false
 CACHE_DATA_USE_TOOLS_HASH=false
 CACHE_SHARED_ID=my-shared-cache-group
 ```
@@ -412,6 +415,109 @@ const weather = cacheObj.getBody(true);
 Because both functions use `sharedCacheId: "weather-service-group"` and make the same request, they share the same cache entry. If Function A fetches and caches the data first, Function B will get a cache hit instead of making a redundant API call.
 
 > **Warning**: Sharing cache means sharing expiration. If Function A writes a cache entry that expires in 10 minutes, Function B will see that same expiration. Ensure all functions sharing a cache agree on appropriate expiration settings in their cache profiles, or be aware that the first function to populate the cache determines the expiration for all consumers until that entry expires.
+
+### In-Memory Only Mode
+
+For lightweight applications that do not require persistent caching across Lambda invocations, you can enable in-memory-only mode. This mode uses only the in-memory cache (L0 layer) as the sole storage mechanism, bypassing DynamoDB, S3, and encryption entirely.
+
+This is useful for:
+- Heartbeat and health-check services that only need short-lived caching within a single invocation
+- Development and testing environments where you want caching behavior without provisioning AWS infrastructure
+- Tutorial and prototype applications where simplicity is more important than persistence
+
+#### Configuring In-Memory Only Mode
+
+Enable in-memory-only mode by setting `inMemoryOnly: true` in `Cache.init()`:
+
+```javascript
+const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+
+// No secureDataKey, dynamoDbTable, or s3Bucket required
+Cache.init({
+	inMemoryOnly: true
+});
+
+// Use CacheableDataAccess as normal
+const conn = { uri: "https://api.example.com/health" };
+const cacheProfile = { defaultExpirationInSeconds: 30 };
+
+const cacheObj = await CacheableDataAccess.getData(cacheProfile, endpoint.send, conn, null);
+const data = cacheObj.getBody(true);
+```
+
+You can also enable it via the `CACHE_IN_MEMORY_ONLY` environment variable:
+
+```bash
+CACHE_IN_MEMORY_ONLY=true
+```
+
+> **Note**: The `inMemoryOnly` parameter passed to `Cache.init()` takes precedence over the `CACHE_IN_MEMORY_ONLY` environment variable.
+
+#### Trade-Offs
+
+When using in-memory-only mode, be aware of the following trade-offs:
+
+- **No persistence across Lambda invocations**: Cached data is lost when the Lambda execution context is recycled. Each cold start begins with an empty cache.
+- **No sharing between concurrent instances**: Each Lambda instance maintains its own independent in-memory cache. Two concurrent invocations will not share cached data.
+- **No encryption**: Data is stored in plain memory without encryption since there is no `secureDataKey` requirement.
+- **No stale fallback**: If a cache entry expires, there is no remote store to fall back to. The entry is treated as a miss.
+
+#### Interaction with `useInMemoryCache`
+
+The `inMemoryOnly` option and `useInMemoryCache` option serve different purposes:
+
+| Option | Purpose |
+|:-------|:--------|
+| `useInMemoryCache` | Adds an in-memory L0 acceleration layer in front of DynamoDB/S3. Requires full infrastructure. |
+| `inMemoryOnly` | Uses only the in-memory cache as the sole storage. No DynamoDB, S3, or encryption required. |
+
+When `inMemoryOnly: true` is set, the in-memory cache is automatically initialized regardless of the `useInMemoryCache` value. You do not need to set both options. Setting `inMemoryOnly: true` with `useInMemoryCache: false` will still activate the in-memory cache because in-memory-only mode takes precedence.
+
+#### Example: Heartbeat Service
+
+A health-check Lambda that caches upstream service status for a short period:
+
+```javascript
+const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+
+// Minimal configuration for a heartbeat service
+Cache.init({
+	inMemoryOnly: true,
+	inMemoryCacheMaxEntries: 50
+});
+
+exports.handler = async (event) => {
+	const conn = { uri: "https://api.internal.example.com/status" };
+	const cacheProfile = { defaultExpirationInSeconds: 10 };
+
+	const cacheObj = await CacheableDataAccess.getData(cacheProfile, endpoint.send, conn, null);
+	const status = cacheObj.getBody(true);
+
+	return {
+		statusCode: 200,
+		body: JSON.stringify({ healthy: status.ok })
+	};
+};
+```
+
+#### Example: Development Environment
+
+Use in-memory-only mode during local development to avoid provisioning DynamoDB and S3:
+
+```javascript
+const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+
+// Use environment variable to toggle mode based on environment
+// Set CACHE_IN_MEMORY_ONLY=true in local .env file
+Cache.init({
+	inMemoryOnly: process.env.NODE_ENV === "development",
+	secureDataKey: process.env.NODE_ENV === "development" ? undefined : secureKey,
+	dynamoDbTable: process.env.CACHE_DATA_DYNAMO_DB_TABLE,
+	s3Bucket: process.env.CACHE_DATA_S3_BUCKET
+});
+```
+
+> **Tip**: In production, leave `inMemoryOnly` unset (or `false`) to use the full DynamoDB/S3 caching infrastructure with persistence and cross-instance sharing.
 
 ### Deploying a Lambda function to use caching
 

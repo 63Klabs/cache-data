@@ -1423,6 +1423,7 @@ class Cache {
 	static #sharedCacheId = null;
 	static #useInMemoryCache = false;
 	static #inMemoryCache = null;
+	static #inMemoryOnly = false;
 
 	#syncedNowTimestampInSeconds = 0; // consistent time base for calculations
 	#syncedLaterTimestampInSeconds = 0; // default expiration if not adjusted
@@ -1540,6 +1541,25 @@ class Cache {
 		this.#useInMemoryCache = Cache.bool(parameters.useInMemoryCache) || 
 			Cache.bool(process.env.CACHE_USE_IN_MEMORY) || 
 			false;
+
+		// Resolve inMemoryOnly: parameter (priority 1) → env var (priority 2) → false
+		const inMemoryOnly = Cache.bool(parameters.inMemoryOnly) || 
+			Cache.bool(process.env.CACHE_IN_MEMORY_ONLY) || 
+			false;
+
+		// Guard clause: In-memory only mode skips CacheData.init() entirely
+		if (inMemoryOnly) {
+			this.#inMemoryOnly = true;
+			this.#useInMemoryCache = true;
+			const InMemoryCache = require('./utils/InMemoryCache.js');
+			this.#inMemoryCache = new InMemoryCache({
+				maxEntries: parameters.inMemoryCacheMaxEntries,
+				entriesPerGB: parameters.inMemoryCacheEntriesPerGB,
+				defaultMaxEntries: parameters.inMemoryCacheDefaultMaxEntries
+			});
+			tools.DebugAndLog.debug("In-memory only cache mode activated. No DynamoDB/S3 persistence.");
+			return;
+		}
 		
 		// Initialize InMemoryCache if enabled
 		if (this.#useInMemoryCache) {
@@ -1586,6 +1606,7 @@ class Cache {
 	 * 		timeZoneForInterval: string,
 	 * 		offsetInMinutes: number,
 	 * 		useInMemoryCache: boolean,
+	 * 		inMemoryOnly: boolean,
 	 * 		inMemoryCache?: Object
 	 * }} Configuration information object
 	 * @example
@@ -1602,6 +1623,7 @@ class Cache {
 		info.sharedCacheId = this.#sharedCacheId;
 
 		// Add in-memory cache info
+		info.inMemoryOnly = this.#inMemoryOnly;
 		info.useInMemoryCache = this.#useInMemoryCache;
 		if (this.#useInMemoryCache && this.#inMemoryCache !== null) {
 			info.inMemoryCache = this.#inMemoryCache.info();
@@ -2141,6 +2163,23 @@ class Cache {
 		return new Promise(async (resolve) => {
 
 			if ( this.#store !== null ) {
+				resolve(this.#store);
+			} else if (Cache.#inMemoryOnly) {
+				// In-memory only mode: never call CacheData.read(), DynamoDB, or S3
+				const memResult = Cache.#inMemoryCache.get(this.#idHash);
+
+				if (memResult.cache === 1) {
+					// Cache hit
+					this.#store = memResult.data;
+					this.#status = Cache.STATUS_CACHE_IN_MEM;
+					tools.DebugAndLog.debug(`In-memory cache hit (memory-only mode): ${this.#idHash}`);
+				} else {
+					// Expired (-1) or miss (0): treat both as miss, no stale fallback
+					this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
+					this.#status = Cache.STATUS_NO_CACHE;
+					tools.DebugAndLog.debug(`In-memory cache miss (memory-only mode): ${this.#idHash}`);
+				}
+
 				resolve(this.#store);
 			} else {
 				try {
@@ -2902,7 +2941,30 @@ class Cache {
 	async update (body, headers, statusCode = 200, expires = 0, status = null) {
 
 		return new Promise(async (resolve) => {
-				
+
+			// Guard clause: In-memory only mode stores directly without encryption, DynamoDB, or S3
+			if (Cache.#inMemoryOnly) {
+				// Calculate expiration
+				if (isNaN(expires) || expires === 0) {
+					expires = this.calculateDefaultExpires();
+				}
+
+				// Format data into CacheDataFormat structure (no encryption)
+				const formattedData = CacheData.format(expires, body, headers, statusCode);
+
+				// Store in InMemoryCache with expiration in milliseconds
+				const expiresAtMs = expires * 1000;
+				Cache.#inMemoryCache.set(this.#idHash, formattedData, expiresAtMs);
+
+				// Set store and status
+				this.#store = formattedData;
+				this.#status = Cache.STATUS_CACHE_IN_MEM;
+
+				tools.DebugAndLog.debug(`Stored in in-memory cache (memory-only mode): ${this.#idHash}`);
+				resolve(this.#store);
+				return;
+			}
+
 			const prev = {
 				eTag: this.getETag(),
 				modified: this.getLastModified(),

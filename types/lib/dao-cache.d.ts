@@ -66,6 +66,10 @@ export interface CacheInitParameters {
 	 * When set, all functions using the same sharedCacheId produce identical cache hashes
 	 * for the same request. Env: CACHE_SHARED_ID */
 	sharedCacheId?: string;
+	/** Enable in-memory-only mode where all cache operations use only the InMemoryCache
+	 * with no DynamoDB, S3, or encryption. When true, secureDataKey, dynamoDbTable, and
+	 * s3Bucket are not required. Env: CACHE_IN_MEMORY_ONLY */
+	inMemoryOnly?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -175,6 +179,7 @@ export class Cache {
 		useInMemoryCache: boolean;
 		inMemoryCache?: object;
 		sharedCacheId: string | null;
+		inMemoryOnly: boolean;
 	};
 
 	/**
