@@ -3114,11 +3114,14 @@ class CacheableDataAccess {
 			const cache = new Cache(idToHash, cachePolicy);
 			const idHash = cache.getIdHash();
 
+			// Extract forceRefresh from connection options (strict boolean check)
+			const forceRefresh = connection?.options?.forceRefresh === true;
+
 			try {
 				
 				await cache.read();
 
-				if ( cache.needsRefresh() ) {
+				if ( forceRefresh || cache.needsRefresh() ) {
 
 					tools.DebugAndLog.debug("Cache needs refresh.");
 
@@ -3156,7 +3159,9 @@ class CacheableDataAccess {
 							} else {
 								let body = ( typeof originalSource.body !== "object" ) ? originalSource.body : JSON.stringify(originalSource.body);
 								await CacheData.prime(); // can't proceed until we have the secrets
-								await cache.update(body, originalSource.headers, originalSource.statusCode);
+								// Pass STATUS_FORCED when forceRefresh triggered the fetch on non-expired cache
+								const status = (forceRefresh && !cache.needsRefresh()) ? Cache.STATUS_FORCED : null;
+								await cache.update(body, originalSource.headers, originalSource.statusCode, 0, status);
 							}
 							
 						} catch (error) {

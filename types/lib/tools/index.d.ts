@@ -2284,8 +2284,13 @@ export interface ConnectionObject {
 	body?: string | null;
 	/** A note for logging purposes */
 	note?: string;
-	/** Request options (e.g., timeout) */
-	options?: { timeout?: number } | null;
+	/** Request options (e.g., timeout, forceRefresh) */
+	options?: {
+		/** Request timeout in milliseconds */
+		timeout?: number;
+		/** When true, bypasses cache expiration check and always fetches from origin */
+		forceRefresh?: boolean;
+	} | null;
 	/** Cache profiles for this connection */
 	cache?: CacheProfileObject[];
 }

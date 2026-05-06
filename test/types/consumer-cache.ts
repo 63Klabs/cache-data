@@ -227,3 +227,42 @@ const internals = cache.TestHarness.getInternals();
 const cacheDataClass: any = internals.CacheData;
 const s3CacheClass: any = internals.S3Cache;
 const dynamoDbCacheClass: any = internals.DynamoDbCache;
+
+// ---------------------------------------------------------------------------
+// forceRefresh option in ConnectionObject
+// ---------------------------------------------------------------------------
+// Verify forceRefresh compiles in connection options
+const connectionWithForceRefresh: cacheData.tools.ConnectionObject = {
+	host: "api.example.com",
+	path: "/users",
+	options: {
+		timeout: 5000,
+		forceRefresh: true
+	}
+};
+
+// Verify forceRefresh: false compiles
+const connectionWithoutForceRefresh: cacheData.tools.ConnectionObject = {
+	host: "api.example.com",
+	path: "/users",
+	options: {
+		timeout: 5000,
+		forceRefresh: false
+	}
+};
+
+// Verify options with only forceRefresh compiles
+const connectionOnlyForceRefresh: cacheData.tools.ConnectionObject = {
+	host: "api.example.com",
+	path: "/users",
+	options: {
+		forceRefresh: true
+	}
+};
+
+// Verify null options still compiles
+const connectionNullOptions: cacheData.tools.ConnectionObject = {
+	host: "api.example.com",
+	path: "/users",
+	options: null
+};

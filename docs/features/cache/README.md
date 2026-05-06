@@ -173,6 +173,61 @@ Most of the time you will want to send all your request information in the `conn
 
 However, there may be times you need to send additional information that is used to process the request, but does not affect the response. For example, the database username and password, application wide API key, standard, static parameters, a function that calculates time remaining.
 
+#### Force Refresh Option
+
+You can bypass the cache and always fetch fresh data from the origin by setting `forceRefresh: true` in the connection options:
+
+```javascript
+const connection = {
+	host: "api.example.com",
+	path: "/v1/users",
+	headers: {},
+	options: {
+		timeout: 6000,
+		forceRefresh: false  // Always fetch from origin - Set to true only in scheduled functions, or after an authorization check
+	}
+};
+
+if (userIsAdmin) {
+  connection.options.forceRefresh = true;
+}
+
+const cacheObj = await CacheableDataAccess.getData(
+	cacheProfile,
+	endpoint.send,
+	connection,
+	null
+);
+```
+
+**When to use `forceRefresh`:**
+- Admin-triggered cache invalidation (e.g., webhook handler)
+- Scheduled pre-warming (e.g., Lambda on a schedule)
+- Data correction after fixing bad data at the origin
+- Development and debugging
+
+**Behavior:**
+
+| forceRefresh | Cache State | Origin Response | Result |
+|:-------------|:------------|:----------------|:-------|
+| `true` | Valid | 200 (success) | Fresh data returned, cache updated, status: `"original:cache-update-forced"` |
+| `true` | Valid | 304 (not modified) | Cached body preserved, expiration extended |
+| `true` | Valid | Error (5xx) | Stale cached data returned, expiration extended |
+| `true` | Expired | 200 (success) | Fresh data returned, cache updated |
+| `true` | Empty | 200 (success) | Fresh data returned, cache created |
+| `true` | Empty | Error (5xx) | Empty cache returned with error status |
+| `false`/absent | Valid | — | Cached data returned (no origin call) |
+| `false`/absent | Expired | 200 (success) | Fresh data returned, cache updated |
+
+**Key characteristics:**
+- The cache is still read for conditional headers (ETag, If-Modified-Since) and error fallback
+- If the origin returns 304 Not Modified, the cache expiration is extended without overwriting the body
+- If the origin fails, stale cached data is returned as a fallback
+- The `forceRefresh` flag does not affect the cache key — forced and non-forced requests share the same cache entry
+- Only the boolean value `true` triggers forced refresh. String `"true"`, `1`, `null`, `undefined`, and `0` do not trigger it.
+
+> **Warning**: Do not expose `forceRefresh` directly to end users without rate limiting. It should be used in scheduled functions, admin endpoints, or behind authentication to prevent cache-busting DoS attacks.
+
 ### Configuring and Initializing the Cache using `Cache.init()`
 
 In order to use the cache functions you must first initialize it outside of your Lambda handler (This is done so that it is only initialized during a cold start and can be reused on subsequent invocations.)
@@ -404,6 +459,7 @@ switch (status) {
 - **`STATUS_CACHE_IN_MEM`** (`"cache:memory"`): Data served from in-memory cache
 - **`STATUS_CACHE`** (`"cache"`): Data served from DynamoDB/S3
 - **`STATUS_NO_CACHE`** (`"original"`): No cached data available
+- **`STATUS_FORCED`** (`"original:cache-update-forced"`): Data fetched from origin due to `forceRefresh: true`
 - **`STATUS_CACHE_ERROR`** (`"error:cache"`): Error occurred, stale data returned if available
 
 ### Response Headers
