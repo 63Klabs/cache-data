@@ -62,6 +62,10 @@ export interface CacheInitParameters {
 	inMemoryCacheEntriesPerGB?: number;
 	/** Default maximum entries for in-memory cache */
 	inMemoryCacheDefaultMaxEntries?: number;
+	/** Optional shared cache identifier to override the default Lambda function name salt.
+	 * When set, all functions using the same sharedCacheId produce identical cache hashes
+	 * for the same request. Env: CACHE_SHARED_ID */
+	sharedCacheId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +174,7 @@ export class Cache {
 		offsetInMinutes: number;
 		useInMemoryCache: boolean;
 		inMemoryCache?: object;
+		sharedCacheId: string | null;
 	};
 
 	/**

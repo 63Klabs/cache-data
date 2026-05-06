@@ -1420,6 +1420,7 @@ class Cache {
 
 	static #idHashAlgorithm = null;
 	static #useToolsHash = null; // gets set in Cache.init()
+	static #sharedCacheId = null;
 	static #useInMemoryCache = false;
 	static #inMemoryCache = null;
 
@@ -1550,7 +1551,17 @@ class Cache {
 			});
 			tools.DebugAndLog.debug('In-memory cache initialized');
 		}
-		
+
+		// Resolve sharedCacheId: parameter → CACHE_SHARED_ID env var → null (use default)
+		if ("sharedCacheId" in parameters && parameters.sharedCacheId !== null && parameters.sharedCacheId !== undefined) {
+			if (typeof parameters.sharedCacheId !== "string") {
+				throw new Error("Cache.init() sharedCacheId must be a string, null, or undefined");
+			}
+			this.#sharedCacheId = parameters.sharedCacheId;
+		} else if (process.env.CACHE_SHARED_ID !== undefined) {
+			this.#sharedCacheId = process.env.CACHE_SHARED_ID;
+		}
+
 		// Let CacheData handle the rest of the initialization
 		CacheData.init(parameters);
 	};
@@ -1587,6 +1598,9 @@ class Cache {
 	static info() {
 		const info = Object.assign({ idHashAlgorithm: this.#idHashAlgorithm }, CacheData.info()); // merge into 1 object
 		
+		// Add shared cache id info
+		info.sharedCacheId = this.#sharedCacheId;
+
 		// Add in-memory cache info
 		info.useInMemoryCache = this.#useInMemoryCache;
 		if (this.#useInMemoryCache && this.#inMemoryCache !== null) {
@@ -1876,8 +1890,8 @@ class Cache {
 		// Now safe to use structuredClone - deep clone idObject so we don't change the original
 		const clonedIdObject = structuredClone(cleanObject);
 			
-		// set salt to process.env.AWS_LAMBDA_FUNCTION_NAME if it exists, otherwise use ""
-		const salt = process.env?.AWS_LAMBDA_FUNCTION_NAME || "";
+		// resolve salt: sharedCacheId (if configured) takes priority over AWS_LAMBDA_FUNCTION_NAME
+		const salt = this.#sharedCacheId !== null ? this.#sharedCacheId : (process.env?.AWS_LAMBDA_FUNCTION_NAME || "");
 
 		// remove connection.options from clonedIdObject
 		if ( clonedIdObject.connection?.options ) { delete clonedIdObject.connection.options; }

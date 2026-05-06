@@ -254,6 +254,7 @@ The Cache system accepts the following configuration options via `Cache.init()`:
 | `inMemoryCacheDefaultMaxEntries` | number | `1000` | No | Fallback capacity when Lambda memory allocation cannot be determined (when `AWS_LAMBDA_FUNCTION_MEMORY_SIZE` env var is unavailable). |
 | `useToolsHash` | boolean | `false` | No | Use tools.hash() method instead of object-hash for cache key generation. Can also be set via `CACHE_DATA_USE_TOOLS_HASH` env var. |
 | `idHashAlgorithm` | string | `'RSA-SHA256'` | No | Hash algorithm for generating cache key identifiers from connection and cacheProfile objects. Can also be set via `CACHE_DATA_ID_HASH_ALGORITHM` env var. |
+| `sharedCacheId` | string | `CACHE_SHARED_ID` env var or `AWS_LAMBDA_FUNCTION_NAME` | No | Shared cache identifier that overrides the default Lambda function name salt used in cache key generation. When set, multiple Lambda functions using the same value will produce identical cache hashes for the same request, enabling cross-function cache sharing. |
 
 #### Basic Configuration
 
@@ -308,7 +309,10 @@ Cache.init({
   useInMemoryCache: true, // CACHE_USE_IN_MEMORY
   inMemoryCacheMaxEntries: 8000, // no environment var
   inMemoryCacheEntriesPerGB: 4000, // no environment var
-  inMemoryCacheDefaultMaxEntries: 1500 // no environment var
+  inMemoryCacheDefaultMaxEntries: 1500, // no environment var
+
+  // Shared cache identifier
+  sharedCacheId: "my-shared-cache-group" // CACHE_SHARED_ID
 });
 ```
 
@@ -329,11 +333,85 @@ CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS=24
 CACHE_DATA_TIME_ZONE_FOR_INTERVAL=Etc/UTC
 CACHE_USE_IN_MEMORY=false
 CACHE_DATA_USE_TOOLS_HASH=false
+CACHE_SHARED_ID=my-shared-cache-group
 ```
 
 > **Note**: Parameters passed to `Cache.init()` take precedence over environment variables.
 
 By default, In-Memory Caching is disabled. To enable it, or to learn more about it, refer to the [In-Memory Cache documentation](./In-Memory-Cache.md).
+
+#### Shared Cache
+
+By default, each Lambda function produces unique cache keys because `Cache.generateIdHash()` uses the Lambda function name (`AWS_LAMBDA_FUNCTION_NAME`) as a salt. This means two different Lambda functions fetching the same data from the same endpoint will store separate cache entries.
+
+The `sharedCacheId` option allows multiple Lambda functions to share cache entries by using the same salt value for cache key generation. When two functions are configured with the same `sharedCacheId`, identical requests will produce identical cache hashes, allowing them to read and write to the same cache entry in DynamoDB/S3.
+
+##### Priority Resolution Order
+
+The salt used in cache key generation is resolved in the following order:
+
+1. `sharedCacheId` parameter passed to `Cache.init()` (highest priority)
+2. `CACHE_SHARED_ID` environment variable
+3. `AWS_LAMBDA_FUNCTION_NAME` environment variable
+4. Empty string (if none of the above are available)
+
+##### Configuring Shared Cache
+
+```javascript
+const {cache: {Cache}} = require("@63klabs/cache-data");
+
+Cache.init({
+	secureDataKey: new CachedSsmParameter("/param/store/path/CacheData_SecureDataKey"),
+	dynamoDbTable: "shared-cache-table",
+	s3Bucket: "shared-cache-bucket",
+	sharedCacheId: "my-shared-cache-group"
+});
+```
+
+##### Example: Two Lambda Functions Sharing Cache
+
+Consider two Lambda functions that both fetch weather data from the same API. Without `sharedCacheId`, each function stores its own copy of the cached response. With `sharedCacheId`, they share a single cache entry:
+
+**Function A** (`GetWeatherForDashboard`):
+
+```javascript
+const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+
+// Both functions use the same sharedCacheId
+Cache.init({
+	secureDataKey: new CachedSsmParameter("/param/store/path/CacheData_SecureDataKey"),
+	sharedCacheId: "weather-service-group"
+});
+
+const conn = { uri: "https://api.weather.example.com/current" };
+const cacheProfile = { defaultExpirationInSeconds: 300 };
+
+const cacheObj = await CacheableDataAccess.getData(cacheProfile, endpoint.send, conn, null);
+const weather = cacheObj.getBody(true);
+```
+
+**Function B** (`GetWeatherForNotifications`):
+
+```javascript
+const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+
+// Same sharedCacheId as Function A
+Cache.init({
+	secureDataKey: new CachedSsmParameter("/param/store/path/CacheData_SecureDataKey"),
+	sharedCacheId: "weather-service-group"
+});
+
+const conn = { uri: "https://api.weather.example.com/current" };
+const cacheProfile = { defaultExpirationInSeconds: 300 };
+
+// This will read from the same cache entry as Function A
+const cacheObj = await CacheableDataAccess.getData(cacheProfile, endpoint.send, conn, null);
+const weather = cacheObj.getBody(true);
+```
+
+Because both functions use `sharedCacheId: "weather-service-group"` and make the same request, they share the same cache entry. If Function A fetches and caches the data first, Function B will get a cache hit instead of making a redundant API call.
+
+> **Warning**: Sharing cache means sharing expiration. If Function A writes a cache entry that expires in 10 minutes, Function B will see that same expiration. Ensure all functions sharing a cache agree on appropriate expiration settings in their cache profiles, or be aware that the first function to populate the cache determines the expiration for all consumers until that entry expires.
 
 ### Deploying a Lambda function to use caching
 
