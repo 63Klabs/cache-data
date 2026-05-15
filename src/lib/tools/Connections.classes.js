@@ -176,7 +176,7 @@ class Connection {
 	/**
 	 * Given an object (associative array) create a Connection
 	 *
-	 * @param {{name: string, method: string, uri: string, protocol: string, host: string, path: string, parameters: Array, headers: Array, options: object, note: string, authentication: object|ConnectionAuthentication, cache: Array}} obj
+	 * @param {{name: string, method: string, uri: string, protocol: string, host: string, path: string, parameters: Array, headers: Array, options: object, note: string, authentication: object|ConnectionAuthentication, cache: Array, pagination: object, retry: object}} obj
 	 */
 	constructor(obj = null) {
 		this._init(obj);
@@ -195,6 +195,8 @@ class Connection {
 	_note = null;
 	_authentication = null; // new ConnectionAuthentication();
 	_cacheProfiles = null; // {}
+	_pagination = null;
+	_retry = null;
 
 	_cachedAuthObject = null;
 
@@ -225,6 +227,8 @@ class Connection {
 			if ( "note" in obj && obj.note !== null ) { this._note = obj.note; }
 			if ( "authentication" in obj && obj.authentication !== null ) { this._setAuthentication(obj.authentication); }
 			if ( "cache" in obj && obj.cache !== null) { this._setCacheProfiles(obj.cache); }
+			if ( "pagination" in obj && obj.pagination !== null ) { this._pagination = obj.pagination; }
+			if ( "retry" in obj && obj.retry !== null ) { this._retry = obj.retry; }
 
 		}
 
@@ -342,6 +346,8 @@ class Connection {
 		if ( Object.keys(authObj).length > 0 ) { obj.authentication = authObj; }
 
 		if ( this._cacheProfiles !== null ) { obj.cache = this._cacheProfiles; }
+		if ( this._pagination !== null ) { obj.pagination = this._pagination; }
+		if ( this._retry !== null ) { obj.retry = this._retry; }
 
 		return obj;
 	};

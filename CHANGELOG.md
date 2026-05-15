@@ -23,6 +23,10 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
   - Deprecated exports annotated with `@deprecated` JSDoc tags
   - AppConfig declared as extensible (supports `class Config extends AppConfig`)
 
+### Fixed
+
+- **Connection class dropping `pagination` and `retry` properties** - `Connection._init()` now stores `pagination` and `retry` configuration objects, and `toObject()` includes them in its output. Previously these properties were silently ignored, causing `ApiRequest` to always default to `{ enabled: false }` for both pagination and retry when configured at the connection level. [Spec: 1-3-14-connection-drops-pagination-retry](.kiro/specs/1-3-14-connection-drops-pagination-retry/) from [Connection class drops pagination and retry properties — ApiRequest never receives them #229](https://github.com/63Klabs/cache-data/issues/229)
+
 ### Dependencies
 
 - Added typescript ^6.0.3 as devDependency (not shipped with package)
