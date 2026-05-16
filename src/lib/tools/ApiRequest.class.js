@@ -1059,9 +1059,13 @@ class ApiRequest {
 	 * const pageItems = pageBody.items;
 	 */
 	async _fetchPage(offset, offsetLabel, limitLabel) {
+		// Strip query string from URI so the constructor rebuilds it from parameters
+		const baseUri = this.#request.uri ? this.#request.uri.split("?")[0] : "";
+
 		// Clone the current request
 		const pageRequest = {
 			...this.#request,
+			uri: baseUri, // Use base URI without query string; constructor will append parameters
 			parameters: {
 				...this.#request.parameters,
 				[offsetLabel]: offset
