@@ -645,6 +645,20 @@ class ApiRequest {
 			req.options.timeout = timeOutInMilliseconds;
 		}
 
+		/* if pagination is enabled and no explicit limit parameter is provided, inject defaultLimit */
+		if (req.pagination.enabled === true) {
+			const limitLabel = req.pagination.limitLabel;
+			const defaultLimit = req.pagination.defaultLimit;
+
+			if (request.parameters === null || request.parameters === undefined) {
+				request.parameters = {};
+			}
+
+			if (request.parameters[limitLabel] === undefined || request.parameters[limitLabel] === null) {
+				request.parameters[limitLabel] = defaultLimit;
+			}
+		}
+
 		/* if we have a uri, set it, otherwise form one using host and path */
 		if ( "uri" in request && request.uri !== null && request.uri !== "" ) {
 			req.uri = request.uri;
@@ -661,6 +675,7 @@ class ApiRequest {
 			){
 
 			req.uri += this._queryStringFromObject(request.parameters, req.options);
+			req.parameters = request.parameters;
 		}
 
 		this.#request = req;
