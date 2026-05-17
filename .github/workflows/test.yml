@@ -32,11 +32,12 @@ jobs:
         run: npm install
 
       - name: Run tests
-        run: npm test
+        if: matrix.node-version != '24'
+        run: npm test -- --silent --no-verbose
 
       - name: Run tests with coverage
         if: matrix.node-version == '24'
-        run: npm test -- --coverage
+        run: npm test -- --silent --no-verbose --coverage
 
       - name: Upload coverage report
         if: matrix.node-version == '24'

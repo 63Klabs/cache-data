@@ -164,7 +164,7 @@ describe("CacheableDataAccess Integration - In-Memory Only Mode", () => {
 					pathId: "/integration/expiration-test",
 					profile: "default",
 					overrideOriginHeaderExpiration: false,
-					defaultExpirationInSeconds: 1,
+					defaultExpirationInSeconds: 2,
 					expirationIsOnInterval: false,
 					headersToRetain: "",
 					hostEncryption: "public"
@@ -184,8 +184,8 @@ describe("CacheableDataAccess Integration - In-Memory Only Mode", () => {
 					process.exit(1);
 				}
 
-				// Wait for expiration (1 second + buffer)
-				await new Promise(resolve => setTimeout(resolve, 1500));
+				// Wait for expiration (2 seconds + buffer for timing granularity)
+				await new Promise(resolve => setTimeout(resolve, 3000));
 
 				// Second call - should be expired, fetches fresh data
 				const result2 = await CacheableDataAccess.getData(
