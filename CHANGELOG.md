@@ -8,6 +8,24 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
+## v1.3.15 (unreleased)
+
+### Added
+
+- **AWS Lambda Powertools Integration** — Transparent backend enhancement providing structured JSON logging, enhanced X-Ray tracing with custom subsegments, and CloudWatch EMF metrics when Powertools packages are installed. All capabilities are opt-in via optional peer dependencies and auto-detected at module load time. Existing users are completely unaffected unless they install Powertools packages. [Spec: 1-3-15-powertools-integration](.kiro/specs/1-3-15-powertools-integration/) addresses [#228](https://github.com/63Klabs/cache-data/issues/228)
+  - **Tracer**: TracingProvider abstraction with PowertoolsTracerProvider, RawXRayProvider, and NoOpTracingProvider. Powertools Tracer takes precedence over raw X-Ray when both are available, preventing double-instrumentation. Custom subsegments for cache-read, cache-write, and endpoint-request operations.
+  - **Logger**: LoggerBridge delegates DebugAndLog output to Powertools Logger for structured JSON with Lambda context enrichment and X-Ray trace ID correlation. Level mapping preserves existing filtering semantics.
+  - **Metrics**: MetricsHelper emits CloudWatch EMF metrics for CacheHit, CacheMiss, ReadLatency, WriteLatency, EndpointLatency, EndpointError, and ColdStart with operation dimensions. Auto-flushed via Response.finalize().
+  - **Configuration**: Environment variables `CACHE_DATA_POWERTOOLS`, `CACHE_DATA_POWERTOOLS_TRACER`, `CACHE_DATA_POWERTOOLS_LOGGER`, `CACHE_DATA_POWERTOOLS_METRICS` for granular control. Master switch disables all; individual flags disable specific capabilities.
+  - **Exported**: `tools.flushMetrics()` for manual metrics flush in handlers not using Response.finalize(). `tools.PowertoolsInit.getState()` for programmatic capability querying.
+
+### Dependencies
+
+- Added @aws-lambda-powertools/tracer ^2.0.0 as optional peerDependency
+- Added @aws-lambda-powertools/logger ^2.0.0 as optional peerDependency
+- Added @aws-lambda-powertools/metrics ^2.0.0 as optional peerDependency
+- Added all three Powertools packages to devDependencies for testing
+
 ## v1.3.14 (2026-05-16)
 
 ### Added

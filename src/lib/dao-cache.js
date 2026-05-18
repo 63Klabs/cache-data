@@ -27,6 +27,19 @@
 
 const tools = require("./tools/index.js");
 
+/* Lazy-loaded Powertools helpers to avoid circular dependencies */
+let _powertoolsInit = null;
+function _getPowertoolsInit() {
+	if (_powertoolsInit === null) {
+		try {
+			_powertoolsInit = require("./tools/PowertoolsInit.js");
+		} catch {
+			_powertoolsInit = { getMetricsHelper: () => null, getActiveTracingProvider: () => null };
+		}
+	}
+	return _powertoolsInit;
+}
+
 /* for hashing and encrypting */
 const crypto = require("crypto"); // included by aws so don't need to add to package.json
 const objHash = require('object-hash');
@@ -828,9 +841,20 @@ class CacheData {
 		return new Promise(async (resolve) => {
 
 			let cache = this.format(syncedLater);
+			let subsegment = null;
+			const startTime = Date.now();
 
 			try {
-				
+				// Open tracing subsegment for cache read
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider) {
+						subsegment = provider.openSubsegment("cache-read");
+					}
+				} catch {
+					// Instrumentation errors never interrupt cache operations
+				}
+
 				const result = await DynamoDbCache.read(idHash);
 
 				/* if we have a cached object, provide it for evaluation */
@@ -846,8 +870,40 @@ class CacheData {
 				}
 
 			} catch (error) {
+				// Record error on subsegment if available
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider && subsegment) {
+						provider.addError(error, subsegment);
+					}
+				} catch {
+					// Instrumentation errors never interrupt cache operations
+				}
 				tools.DebugAndLog.error(`CacheData.read(${idHash}) failed ${error?.message || 'Unknown error'}`, error?.stack);
 			} finally {
+				// Record metrics and close subsegment
+				try {
+					const durationMs = Date.now() - startTime;
+					const metricsHelper = _getPowertoolsInit().getMetricsHelper();
+					if (metricsHelper && metricsHelper.isActive) {
+						const isHit = cache.cache.body !== null;
+						if (isHit) {
+							metricsHelper.recordCacheHit(durationMs);
+						} else {
+							metricsHelper.recordCacheMiss(durationMs);
+						}
+					}
+				} catch {
+					// Metrics errors never interrupt cache operations
+				}
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider && subsegment) {
+						provider.closeSubsegment(subsegment);
+					}
+				} catch {
+					// Instrumentation errors never interrupt cache operations
+				}
 				resolve(cache);
 			};
 			
@@ -897,8 +953,19 @@ class CacheData {
 		return new Promise(async (resolve) => {
 
 			const taskList = [];
+			let subsegment = null;
+			const startTime = Date.now();
 
 			try {
+				// Open tracing subsegment for cache write
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider) {
+						subsegment = provider.openSubsegment("cache-write");
+					}
+				} catch {
+					// Instrumentation errors never interrupt cache operations
+				}
 
 				tools.DebugAndLog.debug(`Updating Cache for ${idHash} now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} ... `);
 
@@ -987,10 +1054,38 @@ class CacheData {
 				taskList.push(DynamoDbCache.write(item)); // ADD_PROMISE_COLLECTION_HERE
 
 			} catch (error) {
+				// Record error on subsegment if available
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider && subsegment) {
+						provider.addError(error, subsegment);
+					}
+				} catch {
+					// Instrumentation errors never interrupt cache operations
+				}
 				tools.DebugAndLog.error(`CacheData.write for ${idHash} FAILED now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} failed. ${error?.message || 'Unknown error'}`, error?.stack);
 				cacheData = CacheData.format(0);
 			} finally {
 				await Promise.all(taskList);
+				// Record write latency metric
+				try {
+					const durationMs = Date.now() - startTime;
+					const metricsHelper = _getPowertoolsInit().getMetricsHelper();
+					if (metricsHelper && metricsHelper.isActive) {
+						metricsHelper.recordCacheWrite(durationMs);
+					}
+				} catch {
+					// Metrics errors never interrupt cache operations
+				}
+				// Close tracing subsegment
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider && subsegment) {
+						provider.closeSubsegment(subsegment);
+					}
+				} catch {
+					// Instrumentation errors never interrupt cache operations
+				}
 				resolve(cacheData); // ADD_PROMISE_COLLECTION_HERE
 			}
 		});

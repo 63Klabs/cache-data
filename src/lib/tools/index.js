@@ -36,6 +36,7 @@ const textGenericResponse = require('./generic.response.text');
 const { printMsg, sanitize, obfuscate, hashThisData} = require('./utils');
 const { CachedParameterSecrets, CachedParameterSecret, CachedSsmParameter, CachedSecret } = require('./CachedParametersSecrets.classes')
 const { Connections, Connection, ConnectionRequest, ConnectionAuthentication } = require('./Connections.classes')
+const { flushMetrics } = require('./PowertoolsInit')
 
 /*
  * -----------------------------------------------------------------------------
@@ -573,5 +574,6 @@ module.exports = {
 	printMsg,
 	sanitize,
 	obfuscate,
-	hashThisData
+	hashThisData,
+	flushMetrics
 };

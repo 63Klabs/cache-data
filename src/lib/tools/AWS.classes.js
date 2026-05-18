@@ -49,6 +49,83 @@ const initializeXRay = () => {
 	return AWSXRay;
 };
 
+/* =============================================================================
+ * TracingProvider Integration
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Get the active TracingProvider from PowertoolsInit if available.
+ * Returns null if PowertoolsInit has not been initialized yet or is not available.
+ * This allows AWS.classes.js to use the TracingProvider when it's ready,
+ * while falling back to direct AWSXRay usage during early module load.
+ * 
+ * @private
+ * @returns {Object|null} The active TracingProvider instance, or null
+ */
+function getTracingProvider() {
+	try {
+		const { getActiveTracingProvider } = require("./PowertoolsInit");
+		return getActiveTracingProvider();
+	} catch {
+		// PowertoolsInit not available - fall back to existing behavior
+		return null;
+	}
+}
+
+/**
+ * Instrument an AWS SDK v3 client using the active TracingProvider or direct AWSXRay.
+ * 
+ * Precedence:
+ * 1. If a TracingProvider is available from PowertoolsInit, use provider.instrumentClient()
+ * 2. If AWSXRay is initialized (USE_XRAY is true), use AWSXRay.captureAWSv3Client() directly
+ * 3. Otherwise, return the client uninstrumented
+ * 
+ * @private
+ * @param {Object} client - AWS SDK v3 client instance to instrument
+ * @returns {Object} Instrumented client, or original client if no tracing is active
+ */
+function instrumentClient(client) {
+	// Check for TracingProvider first (Powertools takes precedence)
+	const provider = getTracingProvider();
+	if (provider) {
+		return provider.instrumentClient(client);
+	}
+
+	// Fall back to direct AWSXRay usage (existing behavior)
+	if (initializeXRay() !== null) {
+		try {
+			return AWSXRay.captureAWSv3Client(client);
+		} catch (error) {
+			return client;
+		}
+	}
+
+	return client;
+}
+
+/**
+ * Capture HTTP/HTTPS using the active TracingProvider or direct AWSXRay.
+ * 
+ * Precedence:
+ * 1. If a TracingProvider is available from PowertoolsInit, use provider.captureHttp()
+ * 2. If AWSXRay is initialized (USE_XRAY is true), use AWSXRay.captureHTTPsGlobal() directly
+ * 3. Otherwise, do nothing
+ * 
+ * Note: This is called during initializeXRay() for backwards compatibility.
+ * When PowertoolsInit is active, it handles HTTP capture via the TracingProvider.
+ * 
+ * @private
+ */
+function captureHttp() {
+	const provider = getTracingProvider();
+	if (provider) {
+		provider.captureHttp();
+		return;
+	}
+
+	// Direct AWSXRay capture is handled in initializeXRay() for backwards compatibility
+}
+
 /**
  * AWS Helper Functions - Functions to perform common get and put operations for DynamoDB, S3, and SSM parameter store.
  * Uses AWS SDK v2 or v3 depending on the Node.js version. It will perform this check for you and utilize the proper SDK.
@@ -241,9 +318,9 @@ class AWS {
 
 				return {
 					dynamo: {
-						client: (DynamoDBDocumentClient.from(
-							(AWS.#XRayOn) ? AWSXRay.captureAWSv3Client(new DynamoDBClient({ region: AWS.REGION }))
-							: new DynamoDBClient({ region: AWS.REGION })) ),
+						client: DynamoDBDocumentClient.from(
+							instrumentClient(new DynamoDBClient({ region: AWS.REGION }))
+						),
 						put: (client, params) => client.send(new PutCommand(params)),
 						get: (client, params) => client.send(new GetCommand(params)),
 						scan: (client, params) => client.send(new ScanCommand(params)),
@@ -257,9 +334,7 @@ class AWS {
 						}	
 					},
 					s3: {
-						client: (
-							(AWS.#XRayOn) ? AWSXRay.captureAWSv3Client(new S3())
-							: new S3()),
+						client: instrumentClient(new S3()),
 						put: (client, params) => client.send(new PutObjectCommand(params)),
 						get: (client, params) => client.send(new GetObjectCommand(params)),
 						sdk: {
@@ -270,9 +345,7 @@ class AWS {
 
 					},
 					ssm: {
-						client: (
-							(AWS.#XRayOn) ? AWSXRay.captureAWSv3Client(new SSMClient({ region: AWS.REGION }))
-							: new SSMClient({ region: AWS.REGION })),
+						client: instrumentClient(new SSMClient({ region: AWS.REGION })),
 						getByName: (client, query) => client.send(new GetParametersCommand(query)),
 						getByPath: (client, query) => client.send(new GetParametersByPathCommand(query)),
 						sdk: {

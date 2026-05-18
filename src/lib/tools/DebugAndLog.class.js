@@ -1,6 +1,47 @@
 const { sanitize } = require("./utils");
 const util = require('util');
 
+/**
+ * Lazy getter for LoggerBridge from PowertoolsInit.
+ * Uses lazy require to avoid circular dependency issues during module load.
+ * Returns the active LoggerBridge instance, or null if not initialized or not active.
+ * 
+ * @returns {Object|null} The active LoggerBridge instance, or null
+ * @private
+ */
+let _loggerBridgeAccessor = null;
+function _getLoggerBridge() {
+	if (_loggerBridgeAccessor === null) {
+		try {
+			_loggerBridgeAccessor = require("./PowertoolsInit").getLoggerBridge;
+		} catch {
+			// PowertoolsInit not available — return null
+			_loggerBridgeAccessor = () => null;
+		}
+	}
+	return _loggerBridgeAccessor();
+}
+
+/**
+ * Lazy getter for LoggerBridge class (for static mapLevel method).
+ * Uses lazy require to avoid circular dependency issues during module load.
+ * 
+ * @returns {typeof import("../utils/LoggerBridge").LoggerBridge|null} The LoggerBridge class, or null
+ * @private
+ */
+let _LoggerBridgeClass = null;
+function _getLoggerBridgeClass() {
+	if (_LoggerBridgeClass === null) {
+		try {
+			_LoggerBridgeClass = require("../utils/LoggerBridge").LoggerBridge;
+		} catch {
+			// LoggerBridge not available
+			_LoggerBridgeClass = false; // sentinel to avoid re-trying
+		}
+	}
+	return _LoggerBridgeClass || null;
+}
+
 const _getNodeEnv = function() {
 	return process.env?.NODE_ENV === "development" ? "development" : "production";
 };
@@ -397,6 +438,48 @@ class DebugAndLog {
 	 * // Output: [ERROR] Database connection failed
 	 */
 	static async writeLog(tag, message, obj = null) {
+
+		// Delegate to Powertools Logger when active
+		const bridge = _getLoggerBridge();
+		if (bridge && bridge.isActive) {
+			const LoggerBridgeClass = _getLoggerBridgeClass();
+			if (LoggerBridgeClass) {
+				const lvl = (this.#logLevel > -1) ? this.#logLevel : DebugAndLog.INFO_LEVEL_NUM;
+				const tagUpper = tag.toUpperCase();
+
+				// Apply same log level filtering as existing implementation
+				let shouldLog = false;
+				switch (tagUpper) {
+					case DebugAndLog.ERROR:
+						shouldLog = true; // ERROR always logs
+						break;
+					case DebugAndLog.WARN:
+						shouldLog = (lvl >= DebugAndLog.WARN_LEVEL_NUM);
+						break;
+					case DebugAndLog.INFO:
+						shouldLog = (lvl >= DebugAndLog.INFO_LEVEL_NUM);
+						break;
+					case DebugAndLog.MSG:
+						shouldLog = (lvl >= DebugAndLog.MSG_LEVEL_NUM);
+						break;
+					case DebugAndLog.DIAG:
+						shouldLog = (lvl >= DebugAndLog.DIAG_LEVEL_NUM);
+						break;
+					case DebugAndLog.DEBUG:
+						shouldLog = (lvl >= DebugAndLog.DEBUG_LEVEL_NUM);
+						break;
+					default:
+						shouldLog = true; // LOG and unknown tags always log
+						break;
+				}
+
+				if (shouldLog) {
+					const level = LoggerBridgeClass.mapLevel(tagUpper);
+					bridge.log(level, message, obj);
+				}
+				return true;
+			}
+		}
 
 		const logLevels = {
 			error: console.error,

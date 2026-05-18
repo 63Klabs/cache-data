@@ -56,6 +56,22 @@
 const DebugAndLog = require("./tools/DebugAndLog.class.js");
 const ApiRequest = require("./tools/ApiRequest.class.js");
 
+/* Lazy-loaded Powertools helpers to avoid circular dependencies */
+let _powertoolsInit = null;
+function _getPowertoolsInit() {
+	if (_powertoolsInit === null) {
+		try {
+			_powertoolsInit = require("./tools/PowertoolsInit.js");
+		} catch {
+			_powertoolsInit = { getMetricsHelper: () => null, getActiveTracingProvider: () => null };
+		}
+	}
+	return _powertoolsInit;
+}
+
+/* Cold start tracking for endpoint metrics */
+let _coldStartRecorded = false;
+
 /**
  * Makes a request to a remote endpoint with the specified connection configuration.
  * 
@@ -278,8 +294,34 @@ class Endpoint {
 
 		if (this.response === null) {
 
+			let subsegment = null;
+			const startTime = Date.now();
+
 			// send the call
 			try {
+
+				// Record cold start metric on first invocation
+				try {
+					if (!_coldStartRecorded) {
+						const metricsHelper = _getPowertoolsInit().getMetricsHelper();
+						if (metricsHelper && metricsHelper.isActive) {
+							metricsHelper.recordColdStart();
+						}
+						_coldStartRecorded = true;
+					}
+				} catch {
+					// Instrumentation errors never interrupt endpoint operations
+				}
+
+				// Open tracing subsegment for endpoint request
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider) {
+						subsegment = provider.openSubsegment("endpoint-request");
+					}
+				} catch {
+					// Instrumentation errors never interrupt endpoint operations
+				}
 
 				DebugAndLog.debug("Sending call", this.request);
 				this.response = await this._call();                
@@ -300,7 +342,49 @@ class Endpoint {
 				}
 
 			} catch (error) {
+				// Record error on subsegment if available
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider && subsegment) {
+						provider.addError(error, subsegment);
+					}
+				} catch {
+					// Instrumentation errors never interrupt endpoint operations
+				}
+
+				// Record EndpointError metric for exceptions
+				try {
+					const durationMs = Date.now() - startTime;
+					const metricsHelper = _getPowertoolsInit().getMetricsHelper();
+					if (metricsHelper && metricsHelper.isActive) {
+						metricsHelper.recordEndpointRequest(durationMs, 500);
+					}
+				} catch {
+					// Metrics errors never interrupt endpoint operations
+				}
+
 				DebugAndLog.error(`Error in call to remote endpoint (${this.request.note}): ${error.message}`, error.stack);
+			} finally {
+				// Record metrics and close subsegment (only if no exception was thrown)
+				if (this.response !== null) {
+					try {
+						const durationMs = Date.now() - startTime;
+						const metricsHelper = _getPowertoolsInit().getMetricsHelper();
+						if (metricsHelper && metricsHelper.isActive) {
+							metricsHelper.recordEndpointRequest(durationMs, this.response.statusCode || 0);
+						}
+					} catch {
+						// Metrics errors never interrupt endpoint operations
+					}
+				}
+				try {
+					const provider = _getPowertoolsInit().getActiveTracingProvider();
+					if (provider && subsegment) {
+						provider.closeSubsegment(subsegment);
+					}
+				} catch {
+					// Instrumentation errors never interrupt endpoint operations
+				}
 			}
 
 		}

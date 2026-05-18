@@ -6,6 +6,7 @@ const xmlGenericResponse = require('./generic.response.xml');
 const textGenericResponse = require('./generic.response.text');
 const ClientRequest = require('./ClientRequest.class');
 const DebugAndLog = require('./DebugAndLog.class');
+const { flushMetrics } = require('./PowertoolsInit');
 
 /**
  * Response class for creating and managing HTTP responses with support for multiple content types.
@@ -695,6 +696,9 @@ class Response {
 			this.reset({statusCode: 500});
 			bodyAsString = JSON.stringify(this._body); // we reset to 500 so stringify it
 		}
+
+		// Flush Powertools metrics at end of invocation (never throws)
+		flushMetrics();
 
 		return {
 			statusCode: this._statusCode,
