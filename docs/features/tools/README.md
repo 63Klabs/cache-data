@@ -1452,6 +1452,10 @@ See JSDoc in source files for complete method signatures, parameters, return typ
 
 ## Related Documentation
 
+- [AWS Lambda Powertools Integration](./powertools-integration.md) - Structured logging, enhanced tracing, and CloudWatch metrics
+- [ApiRequest X-Ray Tracking](./api-request-xray.md) - X-Ray tracing for API requests
+- [ApiRequest Pagination](./api-request-pagination.md) - Automatic pagination
+- [ApiRequest Retry](./api-request-retry.md) - Automatic retry logic
 - [Cache Module](../cache/README.md) - Caching functionality
 - [Endpoint Module](../endpoint/README.md) - HTTP request handling
 - [Quick Start Guide](../../00-quick-start-implementation/README.md) - Getting started

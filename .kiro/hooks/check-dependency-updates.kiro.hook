@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Check Dependency Updates",
+  "description": "Checks all package.json dependencies for available updates, prioritizing security vulnerabilities. After identifying updates, ensures all tests pass with the updated dependencies.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check all dependencies in package.json for available updates. Prioritize security updates (run `npm audit` first to identify vulnerabilities). For each dependency, check the current version vs latest available. Suggest updates grouped by: 1) Security fixes (critical/high first), 2) Major version updates (note breaking changes), 3) Minor/patch updates. After identifying updates, install them and run `npm test` to verify all tests still pass. If tests fail after an update, revert that specific update and note the incompatibility. Provide a summary of what was updated, what was skipped, and any security issues that remain."
+  }
+}
