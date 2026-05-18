@@ -50,7 +50,7 @@ function extractCodeExamples(content, filePath) {
 	let lineNumber = 0;
 	
 	lines.forEach((line, index) => {
-		if (line.trim().startsWith('```javascript') || line.trim().startsWith('```js')) {
+		if (/^```(javascript|js)\s*$/.test(line.trim())) {
 			inCodeBlock = true;
 			lineNumber = index + 1;
 			currentExample = {

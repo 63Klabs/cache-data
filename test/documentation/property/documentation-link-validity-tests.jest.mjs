@@ -32,7 +32,15 @@ function extractMarkdownLinks(content) {
 	// Match markdown links: [text](url)
 	const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
 	
+	let inCodeBlock = false;
+	
 	lines.forEach((line, lineIndex) => {
+		if (line.trim().startsWith('```')) {
+			inCodeBlock = !inCodeBlock;
+			return; // skip this line
+		}
+		if (inCodeBlock) return; // skip lines inside code blocks
+		
 		let match;
 		while ((match = linkPattern.exec(line)) !== null) {
 			links.push({
@@ -134,9 +142,10 @@ function findMarkdownFiles(dir, fileList = []) {
 		const stat = fs.statSync(filePath);
 		
 		if (stat.isDirectory()) {
-			// Skip node_modules, .git, and .kiro/steering directories
+			// Skip node_modules, .git, .kiro/steering, and .kiro/specs directories
 			// Steering documents may contain example links that don't exist
-			if (file !== 'node_modules' && file !== '.git' && !filePath.includes('.kiro/steering')) {
+			// Spec documents may reference link-like patterns in prose (e.g., [text](url)) as examples
+			if (file !== 'node_modules' && file !== '.git' && !filePath.includes('.kiro/steering') && !filePath.includes('.kiro/specs')) {
 				findMarkdownFiles(filePath, fileList);
 			}
 		} else if (file.endsWith('.md')) {

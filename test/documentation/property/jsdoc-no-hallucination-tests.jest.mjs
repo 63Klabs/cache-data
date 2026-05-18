@@ -132,7 +132,8 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 
 				// Improved pattern that better matches JSDoc with their actual functions
 				// This pattern ensures we capture the complete function declaration including private/internal markers
-				const combinedPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:const\s+)?([_#]?\w+)\s*[=:]?\s*(?:async\s+)?(?:function\s*)?\(([^)]*)\)\s*(?:=>)?\s*\{/g;
+				// Uses tempered greedy token (?:(?!\*\/)[\s\S])*? to prevent matching across */ boundaries
+				const combinedPattern = /\/\*\*((?:(?!\*\/)[\s\S])*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:const\s+)?([_#]?\w+)\s*[=:]?\s*(?:async\s+)?(?:function\s*)?\(([^)]*)\)\s*(?:=>)?\s*\{/g;
 
 				let match;
 				while ((match = combinedPattern.exec(content)) !== null) {
@@ -224,7 +225,8 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 			const issues = [];
 
 			// Improved pattern that captures private/internal functions correctly
-			const methodPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
+			// Uses tempered greedy token (?:(?!\*\/)[\s\S])*? to prevent matching across */ boundaries
+			const methodPattern = /\/\*\*((?:(?!\*\/)[\s\S])*?)\*\/\s*(?:static\s+)?(?:async\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
 
 			let match;
 			while ((match = methodPattern.exec(content)) !== null) {
@@ -295,7 +297,8 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 			const issues = [];
 
 			// Improved pattern that captures private/internal functions correctly
-			const functionPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:function\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
+			// Uses tempered greedy token (?:(?!\*\/)[\s\S])*? to prevent matching across */ boundaries
+			const functionPattern = /\/\*\*((?:(?!\*\/)[\s\S])*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:function\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
 
 			let match;
 			while ((match = functionPattern.exec(content)) !== null) {
@@ -366,7 +369,8 @@ describe("JSDoc No Hallucinated Documentation - Property-Based Tests", () => {
 			const issues = [];
 
 			// Improved pattern that captures private/internal functions correctly
-			const functionPattern = /\/\*\*([\s\S]*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:function\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
+			// Uses tempered greedy token (?:(?!\*\/)[\s\S])*? to prevent matching across */ boundaries
+			const functionPattern = /\/\*\*((?:(?!\*\/)[\s\S])*?)\*\/\s*(?:static\s+)?(?:async\s+)?(?:function\s+)?([_#]?\w+)\s*\(([^)]*)\)\s*\{/g;
 
 			let match;
 			while ((match = functionPattern.exec(content)) !== null) {
