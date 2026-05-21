@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Assign & Spec GitHub Issues",
+  "description": "Checks the 63klabs/cache-data GitHub repository for unassigned issues, assigns them to the currently logged-in GitHub user, pulls issue details (labels like bug/enhancement, title, body), and creates a new Kiro spec directory with requirements.md containing the issue metadata and a link back to the issue.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check the GitHub repository 63klabs/cache-data for unassigned issues using the GitHub CLI (`gh`). For each unassigned issue found:\n\n1. Assign the issue to the currently logged-in GitHub user (`gh api user --jq '.login'` to get the username, then `gh issue edit <number> --repo 63klabs/cache-data --add-assignee <username>`).\n\n2. Get the issue details including title, body, labels, and number using `gh issue view <number> --repo 63klabs/cache-data --json number,title,body,labels,url`.\n\n3. Read the current version from package.json (for example: 1.3.15). Convert dots to hyphens (1-3-15).\n\n4. Create a new spec directory at `.kiro/specs/{version}-{feature-name}/` where feature-name is derived from the issue title in kebab-case.\n\n5. Create a `requirements.md` file in that spec directory with the following structure:\n\n```markdown\n# {Issue Title}\n\n## Metadata\n\n- **GitHub Issue**: [#{number}]({url})\n- **Type**: {labels - e.g., bug, enhancement, documentation, etc.}\n- **Assigned**: {username}\n- **Created from issue**: {date}\n\n## Description\n\n{Issue body content}\n\n## Requirements\n\n- [ ] FR1: {Derive initial requirement from issue description}\n```\n\nIf there are no unassigned issues, report that there are no unassigned issues to process.\n\nList all issues found and specs created when done."
+  },
+  "workspaceFolderName": "npm-63klabs-cache-data",
+  "shortName": "assign-github-issues"
+}
