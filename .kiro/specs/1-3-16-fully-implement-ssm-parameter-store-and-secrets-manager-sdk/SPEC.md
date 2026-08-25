@@ -16,8 +16,8 @@ Glossary:
 
 We need to:
 
-- Extend functionality of this class to fall back on handling it's own retreival using the SDK if the lambda layer is not being used.
-- Detect if the lambda layer is available, if not, fall back and handle own retreival
+- Extend functionality of this class to fall back on handling it's own retrieval using the SDK if the lambda layer is not being used.
+- Detect if the lambda layer is available, if not, fall back and handle own retrieval
 - Continue full support of both existing Config SSM Parameter and Layer implementation.
 - Add Secrets Manager support to the Config SSM Parameter implementation.
 - The lambda layer implementation should continue to support the current method of individually defining the parameters using the classes `CachedSsmParameter` and `CachedSecret` but also support the method by which Config SSM Parameter Implementation consumes the parameters to load (using path and specific names)
