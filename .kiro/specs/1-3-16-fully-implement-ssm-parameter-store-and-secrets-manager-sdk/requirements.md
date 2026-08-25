@@ -8,7 +8,9 @@ Bundled with the feature is remediation of five defects in `AppConfig._getParame
 
 Both existing implementations are fully preserved. The Lambda layer remains supported and preferred when present, individual `CachedSsmParameter` / `CachedSecret` construction is unchanged, and no public signature changes. The one intentional behavior change is that consumers without the layer installed now receive working values instead of `null`, which introduces new IAM requirements.
 
-This work supersedes Requirement 9 of [1-3-9-appconfig-async-init-optimization](../1-3-9-appconfig-async-init-optimization/requirements.md), which specified that `_initParameters()` remain unchanged.
+The three-layer method seam `_initParameters()` → `_getParameters()` → `_getParametersFromStore()` is retained with identical signatures and return contracts, marked deprecated in favor of the new public API but plumbed through to the new implementation. This keeps the documented subclass pattern working unchanged and means consumers on that pattern receive the pagination, batching, and key-safety fixes without touching their code.
+
+Consequently this work supersedes only clause 4 of Requirement 9 of [1-3-9-appconfig-async-init-optimization](../1-3-9-appconfig-async-init-optimization/requirements.md) — "THE SSM parameters initialization behavior SHALL be identical to the current implementation" — which no bug fix to that path can satisfy. Clauses 1 through 3 of that requirement remain satisfied.
 
 ## Glossary
 
@@ -282,17 +284,24 @@ This work supersedes Requirement 9 of [1-3-9-appconfig-async-init-optimization](
 9. WHEN the Layer Implementation is available, retrieval behavior SHALL be identical to the previous version
 10. THE `refreshAfter` option SHALL continue to accept and store any integer value, including zero and negative values
 
-### Requirement 18: Internal Contract Changes
+### Requirement 18: Legacy Method Seam Preservation
 
-**User Story:** As a maintainer, I want the internal contract changes recorded, so that test updates and changelog entries are complete and intentional.
+**User Story:** As an existing user who loads parameters via the documented subclass pattern, I want my `_initParameters()` call to keep working exactly as before while picking up the pagination and key-safety fixes, so that I get the benefit of this release without changing any code.
 
 #### Acceptance Criteria
 
-1. `AppConfig._ssmParameters` SHALL resolve to a boolean rather than to the paramstore, consistent with the other initialization promises
-2. THE tests reading `AppConfig._ssmParameters` for parameter data SHALL be updated to use `AppConfig.parameters()`
-3. THE changelog SHALL record the `_ssmParameters` resolution change
-4. `AppConfig._initParameters()` SHALL delegate to the key-safety utility, superseding Requirement 9 of spec 1-3-9
-5. THE new resolved-value fields SHALL be declared alongside the existing `_settings` and `_connections` static fields
+1. `AppConfig._initParameters(parameters)` SHALL retain its current signature, accepting an array of parameter location entries
+2. `AppConfig._initParameters(parameters)` SHALL continue to return a promise resolving to the paramstore, and SHALL NOT resolve to a boolean or a wrapper object
+3. `AppConfig._getParameters(parameters)` SHALL be retained with its current signature and return contract
+4. `AppConfig._getParametersFromStore(parameters)` SHALL be retained with its current signature and SHALL continue to return the `{ group: { name: value } }` paramstore
+5. THE three methods SHALL delegate to the new implementation so that callers receive the Requirement 1 through 6 fixes
+6. THE three methods SHALL be marked `@deprecated` in JSDoc, directing callers to `AppConfig.init({ ssmParameters })` with `AppConfig.parameters()`
+7. WHEN a deprecated method is called, THE system SHALL log a deprecation notice at most once per process to avoid log volume in high-traffic functions
+8. `AppConfig._ssmParameters` SHALL continue to resolve to the paramstore, preserving the existing internal contract
+9. THE promise registered via `AppConfig.add()` for `options.ssmParameters` SHALL be a derived promise that contains errors per Requirement 16, leaving `_ssmParameters` itself unwrapped
+10. WHEN parameter retrieval fails, THE derived registered promise SHALL resolve while `_ssmParameters` retains its original rejection behavior, and no unhandled rejection SHALL be emitted
+11. THE existing `test/config/appconfig-async-init-*` tests SHALL pass without modification, including the assertion that `await AppConfig._ssmParameters` equals the paramstore and the practice of mocking via direct assignment to `AppConfig._initParameters`
+12. THE new resolved-value fields SHALL be declared alongside the existing `_settings` and `_connections` static fields
 
 ### Requirement 19: Type Definitions
 
@@ -321,7 +330,8 @@ This work supersedes Requirement 9 of [1-3-9-appconfig-async-init-optimization](
 5. THE documentation SHALL provide guidance for migrating away from the Lambda layer
 6. THE changelog SHALL record the SDK fallback under Added with an explicit note that IAM permission changes are required
 7. THE changelog SHALL record the pagination, batching, and key-safety fixes under Fixed
-8. THE changelog SHALL be added under an unreleased v1.3.16 section and SHALL reference this spec
+8. THE changelog SHALL record the `_initParameters()`, `_getParameters()`, and `_getParametersFromStore()` deprecations under Deprecated, noting they remain fully supported and now carry the fixes
+9. THE changelog SHALL be added under an unreleased v1.3.16 section and SHALL reference this spec
 
 ### Requirement 21: Test Coverage
 
@@ -338,9 +348,10 @@ This work supersedes Requirement 9 of [1-3-9-appconfig-async-init-optimization](
 7. THE test suite SHALL verify pagination for more than 10 parameters under a path
 8. THE test suite SHALL verify batching for more than 10 enumerated names
 9. THE tests SHALL establish a known registry state, either via the clear method or subprocess isolation
-10. ALL existing tests SHALL pass, in particular the four `test/config/appconfig-async-init-*` files and the cached parameter `toString` preservation property tests
-11. THE tests SHALL NOT invoke `npm test` from within a test file
-12. THE tests SHALL be Jest files using the `.jest.mjs` extension
+10. ALL existing tests SHALL pass without modification, in particular the four `test/config/appconfig-async-init-*` files and the cached parameter `toString` preservation property tests
+11. THE test suite SHALL include a regression test asserting that a rejecting parameter load does not emit an unhandled rejection while `AppConfig.promise()` still resolves
+12. THE tests SHALL NOT invoke `npm test` from within a test file
+13. THE tests SHALL be Jest files using the `.jest.mjs` extension
 
 ### Requirement 22: Prior Version Deprecation
 
@@ -373,7 +384,7 @@ This work supersedes Requirement 9 of [1-3-9-appconfig-async-init-optimization](
 | 15. Resolved value accessors | WS-6 | Q18 sync getter populated on resolve |
 | 16. Configuration path error containment | WS-6 | Q16 wrap to match siblings |
 | 17. Backwards compatibility | All | C1 through C4 |
-| 18. Internal contract changes | WS-6 | Q18 consequence |
+| 18. Legacy method seam preservation | WS-6 | Q18 via derived promise, keeps `_ssmParameters` unwrapped |
 | 19. Type definitions | WS-8 | C6 |
 | 20. Documentation | WS-8 | Q20 Added plus IAM note |
 | 21. Test coverage | All | — |
@@ -393,6 +404,6 @@ This work supersedes Requirement 9 of [1-3-9-appconfig-async-init-optimization](
 - [SPEC.md](SPEC.md) - Original feature intent
 - [PLAN.md](PLAN.md) - Workstreams, sequencing, and answered design questions
 - [FINDINGS.md](FINDINGS.md) - Security evaluation that sourced Requirements 1 through 3
-- [1-3-9-appconfig-async-init-optimization](../1-3-9-appconfig-async-init-optimization/requirements.md) - Requirement 9 superseded here
+- [1-3-9-appconfig-async-init-optimization](../1-3-9-appconfig-async-init-optimization/requirements.md) - Requirement 9 clause 4 superseded here; clauses 1 through 3 remain satisfied per Requirement 18
 - [1-3-10-security-fixes-for-tests](../1-3-10-security-fixes-for-tests/) - Original CWE-471 remediation extended by Requirement 1
 - [1-3-12-connections-info-cached-ssm-param-error](../1-3-12-connections-info-cached-ssm-param-error/) - `toString` and `toJSON` contract preserved by Requirement 17

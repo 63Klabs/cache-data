@@ -37,6 +37,11 @@ const { printMsg, sanitize, obfuscate, hashThisData} = require('./utils');
 const { CachedParameterSecrets, CachedParameterSecret, CachedSsmParameter, CachedSecret } = require('./CachedParametersSecrets.classes')
 const { Connections, Connection, ConnectionRequest, ConnectionAuthentication } = require('./Connections.classes')
 const { flushMetrics } = require('./PowertoolsInit')
+const ParameterStoreLoader = require('../utils/ParameterStoreLoader.class.js');
+
+// >! Tracks which deprecated method names have already emitted a notice so the
+// >! log entry is written at most once per process (Req 18.7).
+const _deprecationNoticed = new Set();
 
 /*
  * -----------------------------------------------------------------------------
@@ -106,6 +111,8 @@ class AppConfig {
 	static _connections = null;
 	static _settings = null;
 	static _ssmParameters = null;
+	static _parametersResolved = null;
+	static _secretsResolved = null;
 
 	/**
 	 * Initialize the Config class with asynchronous parallel execution.
@@ -128,7 +135,8 @@ class AppConfig {
 	 * @param {object} options.responses.xmlResponses
 	 * @param {object} options.responses.rssResponses
 	 * @param {object} options.responses.textResponses
-	 * @param {object} options.ssmParameters Parameter Store
+	 * @param {Array<{group: string, path: string, names?: string[], recursive?: boolean}>} [options.ssmParameters] SSM Parameter Store entries
+	 * @param {Array<{group: string, names: string[], parseJson?: boolean}>} [options.secrets] Secrets Manager entries
 	 * @param {boolean} [options.debug=false] Enable debug logging
 	 * @returns {boolean} True if initialization started successfully, false on synchronous error
 	 * @example
@@ -232,8 +240,39 @@ class AppConfig {
 				}
 
 				if (options.ssmParameters) {
+					// >! _ssmParameters keeps its existing contract: resolves to the paramstore
+					// >! (not a boolean), preserving Req 18.8 and the existing tests (Req 18.11).
+					// >! A separate derived promise registers the error-contained wrapper and
+					// >! populates _parametersResolved for the new parameters() accessor (Req 15).
+					// >! Verified: holding a second reference to a rejecting promise does not
+					// >! emit an unhandled rejection when a .then().catch() handler is attached.
 					AppConfig._ssmParameters = AppConfig._initParameters(options.ssmParameters);
-					AppConfig.add(AppConfig._ssmParameters);
+					const registeredParams = AppConfig._ssmParameters
+						.then((paramstore) => {
+							AppConfig._parametersResolved = paramstore;
+							return true;
+						})
+						.catch((error) => {
+							DebugAndLog.error(`SSM parameter initialization failed: ${error.message}`, error.stack);
+							return false;
+						});
+					AppConfig.add(registeredParams);
+				}
+
+				if (options.secrets) {
+					const SecretsManagerLoader = require('../utils/SecretsManagerLoader.class.js');
+					const secretsPromise = new Promise((resolve) => {
+						SecretsManagerLoader.load(options.secrets)
+							.then((result) => {
+								AppConfig._secretsResolved = result.store;
+								resolve(true);
+							})
+							.catch((error) => {
+								DebugAndLog.error(`Secrets initialization failed: ${error.message}`, error.stack);
+								resolve(false);
+							});
+					});
+					AppConfig.add(secretsPromise);
 				}
 
 				return true;
@@ -267,8 +306,34 @@ class AppConfig {
 	};
 
 	/**
-	 * 
-	 * @returns {Connections}
+	 * Get the resolved SSM parameters store. Returns null until AppConfig.promise() settles.
+	 * Matches the pattern of settings() and connections().
+	 *
+	 * @returns {object|null} Paramstore as {group: {name: value}} or null
+	 * @example
+	 * await Config.promise();
+	 * const host = Config.parameters()?.db?.host;
+	 */
+	static parameters() {
+		return AppConfig._parametersResolved;
+	}
+
+	/**
+	 * Get the resolved Secrets Manager secrets store. Returns null until AppConfig.promise() settles.
+	 *
+	 * @returns {object|null} Secrets store as {group: {secretName: value}} or null
+	 * @example
+	 * await Config.promise();
+	 * const credentials = Config.secrets()?.db?.['myapp/db/credentials'];
+	 */
+	static secrets() {
+		return AppConfig._secretsResolved;
+	}
+
+	/**
+	 * Get the Connections instance.
+	 *
+	 * @returns {Connections|null} The Connections instance or null if not initialized
 	 */
 	static connections() {
 		return AppConfig._connections;
@@ -369,133 +434,62 @@ class AppConfig {
 
 	
 	/**
-	 * Retrieve all the parameters (listed in const params) from the
-	 * parameter store and parse out the name. Then return the name
-	 * along with their value.
-	 * 
-	 * This will automatically decrypt any encrypted values (it will
-	 * leave any String and StringList parameters as their normal,
-	 * unencrypted self (WithDecryption is ignored for them))
-	 * 
-	 * @returns {Promise<array>} parameters and their values
+	 * Retrieve all the parameters listed in the parameters array from AWS Systems Manager
+	 * Parameter Store, group them by the caller-supplied `group` key, and return the
+	 * resulting store object.
+	 *
+	 * This method decrypts SecureString parameters automatically.  String and StringList
+	 * parameters are returned in their stored form (WithDecryption is a no-op for them).
+	 *
+	 * Delegates to ParameterStoreLoader which fixes five defects present in the original
+	 * implementation:
+	 *   - Prototype-reachable key leakage (CWE-471)
+	 *   - GetParameters limit of 10 names per call (batching)
+	 *   - GetParametersByPath truncation at 10 results (pagination)
+	 *   - TypeError when a path lacked a trailing slash
+	 *   - Silent data loss when a returned parameter matched no configured entry
+	 *
+	 * @deprecated Use `AppConfig.init({ ssmParameters })` and `AppConfig.parameters()` instead.
+	 *   The method remains fully supported and now carries all defect fixes.
+	 * @param {Array<{group: string, path: string, names?: string[], recursive?: boolean}>} parameters
+	 * @returns {Promise<object>} Parameters from the parameter store as `{group: {name: value}}`
 	 */
 	static async _getParametersFromStore (parameters) {
-
-		let paramstore = {};
-
-		/* go through PARAMS and compile all parameters with 
-		their paths pre-pended into a list of names */
-		const paramNames = function () {
-			let names = [];
-			let paths = [];
-
-			/* we have two levels to work through, the base path has param names 
-			grouped under it. So get all the names within each base path grouping. */
-			parameters.forEach(function(item) {
-				if ("names" in item) {
-					item.names.forEach(function(p) {
-						names.push(item.path+p);
-					});                    
-				} else {
-					paths.push(item.path);
-				}
-				
-			});
-
-			return { names: names, paths: paths};
-		};
-
-		let pNames = paramNames();
-
-		if (pNames.names.length > 0 || pNames.paths.length > 0 ) {
-
-			let paramResultsArr = [];
-
-			// process all params by name and place promise in results array
-			if (pNames.names.length > 0) {
-
-				// put the list of full path names into query.Names
-				const query = {
-					'Names': pNames.names,
-					'WithDecryption': true
-				};
-
-				DebugAndLog.debug("Param by name query:",query);
-				
-				// get parameters from query - wait for the promise to resolve
-				paramResultsArr.push(AWS.ssm.getByName(query));
-
-			}
-
-			// process all params by path and place each promise into results array
-			if (pNames.paths.length > 0) {
-
-				pNames.paths.forEach( function (path) {
-					const query = {
-						'Path': path,
-						'WithDecryption': true
-					};
-
-					DebugAndLog.debug("Param by path query", query);
-
-					paramResultsArr.push(AWS.ssm.getByPath(query));
-
-				});
-
-			}
-
-			// wait for all parameter request promises to resolve then combine
-			let promiseArray = await Promise.all(paramResultsArr); // wait
-			let results = [];
-			promiseArray.forEach( function (result) { // add parameter list in each result promise to an array
-				results.push.apply(results, result.Parameters);
-				//DebugAndLog.debug("added results", result.Parameters);
-			}); 
-			
-			//DebugAndLog.debug("Parameters", results );
-
-			/* now that the promise has resolved and we've combined them,
-			crop off the path and store key and value within the group */
-			results.forEach(param => {
-				let nameSections = param.Name.split('/'); // get the last part of the name
-				const name = nameSections.pop(); // return last section and return as variable name
-				const groupPath = nameSections.join('/')+"/"; // since we removed the last section, join rest together for path
-
-				// put the parameter into its group
-				const obj = parameters.find(o => o.path === groupPath);
-				const group = obj.group;
-
-				// >! Guard against prototype pollution (CWE-471)
-				const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
-				if (DANGEROUS_KEYS.includes(group) || DANGEROUS_KEYS.includes(name)) {
-					DebugAndLog.warn(`Skipping dangerous parameter key: group="${group}", name="${name}"`);
-					return;
-				}
-
-				if ( !(group in paramstore)) {
-					paramstore[group] = {};
-				}
-
-				// store key and value
-				paramstore[group][name] = param.Value;
-			});
-		
+		if (!_deprecationNoticed.has('_getParametersFromStore')) {
+			_deprecationNoticed.add('_getParametersFromStore');
+			DebugAndLog.warn(
+				'AppConfig._getParametersFromStore() is deprecated. ' +
+				'Use AppConfig.init({ ssmParameters }) and AppConfig.parameters() instead.'
+			);
 		}
 
-		// return an array of keys and values
-		return paramstore;
+		const result = await ParameterStoreLoader.load(parameters);
+		return result.store;
 	};
 
 	/**
-	 * This is an intermediary wait
-	 * @param {*} parameters 
-	 * @returns {Promise<array>} parameters and their values
+	 * Retrieve parameters from the store.
+	 *
+	 * @deprecated Use `AppConfig.init({ ssmParameters })` and `AppConfig.parameters()` instead.
+	 * @param {Array} parameters
+	 * @returns {Promise<object>} Parameters from the parameter store
 	 */
 	static async _getParameters(parameters) {
+		if (!_deprecationNoticed.has('_getParameters')) {
+			_deprecationNoticed.add('_getParameters');
+			DebugAndLog.warn(
+				'AppConfig._getParameters() is deprecated. ' +
+				'Use AppConfig.init({ ssmParameters }) and AppConfig.parameters() instead.'
+			);
+		}
 		return await this._getParametersFromStore(parameters);
 	};
 
 	/**
+	 * Retrieve and return all SSM parameters defined in the parameters array.
+	 *
+	 * @deprecated Use `AppConfig.init({ ssmParameters })` and `AppConfig.parameters()` instead.
+	 *   The method remains fully supported and now carries pagination, batching, and key-safety fixes.
 	 * @example
 	 *
 	 * let params = await this._initParameters(
@@ -520,8 +514,15 @@ class AppConfig {
 	 * @returns {Promise<object>} Parameters from the parameter store
 	 */
 	static async _initParameters(parameters) {
+		if (!_deprecationNoticed.has('_initParameters')) {
+			_deprecationNoticed.add('_initParameters');
+			DebugAndLog.warn(
+				'AppConfig._initParameters() is deprecated. ' +
+				'Use AppConfig.init({ ssmParameters }) and AppConfig.parameters() instead.'
+			);
+		}
 		// make the call to get the parameters and wait before proceeding to the return
-		return await this._getParameters(parameters);        
+		return await this._getParameters(parameters);
 	};
 
 	// static async _initS3File(paths) {

@@ -162,22 +162,19 @@ describe('Security Bugfix Exploration Tests — Bug Condition Property', () => {
 		});
 
 		it('Bug Condition: __proto__ as group should NOT modify Object.prototype', async () => {
-			// Mock AWS.ssm to return parameters with __proto__ as group
-			const mockGetByName = jest.fn().mockResolvedValue({
-				Parameters: [
-					{ Name: '/app/__proto__/polluted', Value: 'exploitValue' }
-				]
-			});
-
+			// Use path-discovery (no names array) so the group rejection warns-and-skips
+			// rather than throwing. The group "__proto__" is the dangerous key under test.
 			jest.spyOn(AWS, 'ssm', 'get').mockReturnValue({
 				client: {},
-				getByName: mockGetByName,
-				getByPath: jest.fn().mockResolvedValue({ Parameters: [] }),
+				getByName: jest.fn().mockResolvedValue({ Parameters: [], InvalidParameters: [] }),
+				getByPath: jest.fn().mockResolvedValue({
+					Parameters: [{ Name: '/app/__proto__/polluted', Value: 'exploitValue' }]
+				}),
 				sdk: {}
 			});
 
 			const parameters = [
-				{ group: '__proto__', path: '/app/__proto__/', names: ['polluted'] }
+				{ group: '__proto__', path: '/app/__proto__/' }
 			];
 
 			// Save Object.prototype state before
@@ -195,21 +192,17 @@ describe('Security Bugfix Exploration Tests — Bug Condition Property', () => {
 		});
 
 		it('Bug Condition: constructor as group should NOT modify Object.prototype', async () => {
-			const mockGetByName = jest.fn().mockResolvedValue({
-				Parameters: [
-					{ Name: '/app/constructor/testKey', Value: 'exploitValue' }
-				]
-			});
-
 			jest.spyOn(AWS, 'ssm', 'get').mockReturnValue({
 				client: {},
-				getByName: mockGetByName,
-				getByPath: jest.fn().mockResolvedValue({ Parameters: [] }),
+				getByName: jest.fn().mockResolvedValue({ Parameters: [], InvalidParameters: [] }),
+				getByPath: jest.fn().mockResolvedValue({
+					Parameters: [{ Name: '/app/constructor/testKey', Value: 'exploitValue' }]
+				}),
 				sdk: {}
 			});
 
 			const parameters = [
-				{ group: 'constructor', path: '/app/constructor/', names: ['testKey'] }
+				{ group: 'constructor', path: '/app/constructor/' }
 			];
 
 			const paramstore = await AppConfig._getParametersFromStore(parameters);
@@ -219,21 +212,17 @@ describe('Security Bugfix Exploration Tests — Bug Condition Property', () => {
 		});
 
 		it('Bug Condition: prototype as group should NOT modify Object.prototype', async () => {
-			const mockGetByName = jest.fn().mockResolvedValue({
-				Parameters: [
-					{ Name: '/app/prototype/testKey', Value: 'exploitValue' }
-				]
-			});
-
 			jest.spyOn(AWS, 'ssm', 'get').mockReturnValue({
 				client: {},
-				getByName: mockGetByName,
-				getByPath: jest.fn().mockResolvedValue({ Parameters: [] }),
+				getByName: jest.fn().mockResolvedValue({ Parameters: [], InvalidParameters: [] }),
+				getByPath: jest.fn().mockResolvedValue({
+					Parameters: [{ Name: '/app/prototype/testKey', Value: 'exploitValue' }]
+				}),
 				sdk: {}
 			});
 
 			const parameters = [
-				{ group: 'prototype', path: '/app/prototype/', names: ['testKey'] }
+				{ group: 'prototype', path: '/app/prototype/' }
 			];
 
 			const paramstore = await AppConfig._getParametersFromStore(parameters);
@@ -243,21 +232,19 @@ describe('Security Bugfix Exploration Tests — Bug Condition Property', () => {
 		});
 
 		it('Bug Condition: __proto__ as name should NOT modify Object.prototype', async () => {
-			const mockGetByName = jest.fn().mockResolvedValue({
-				Parameters: [
-					{ Name: '/app/config/__proto__', Value: 'exploitValue' }
-				]
-			});
-
+			// When a dangerous key appears as a discovered name (via path-discovery),
+			// the loader warns and skips it. Use path-discovery to get warn-and-skip behavior.
 			jest.spyOn(AWS, 'ssm', 'get').mockReturnValue({
 				client: {},
-				getByName: mockGetByName,
-				getByPath: jest.fn().mockResolvedValue({ Parameters: [] }),
+				getByName: jest.fn().mockResolvedValue({ Parameters: [], InvalidParameters: [] }),
+				getByPath: jest.fn().mockResolvedValue({
+					Parameters: [{ Name: '/app/config/__proto__', Value: 'exploitValue' }]
+				}),
 				sdk: {}
 			});
 
 			const parameters = [
-				{ group: 'config', path: '/app/config/', names: ['__proto__'] }
+				{ group: 'config', path: '/app/config/' }
 			];
 
 			const paramstore = await AppConfig._getParametersFromStore(parameters);
@@ -274,22 +261,21 @@ describe('Security Bugfix Exploration Tests — Bug Condition Property', () => {
 					fc.constantFrom(...DANGEROUS_KEYS),
 					fc.stringMatching(/^[a-z]{1,8}$/),
 					async (dangerousGroup, paramName) => {
-						// Mock SSM
-						const mockGetByName = jest.fn().mockResolvedValue({
-							Parameters: [
-								{ Name: `/app/${dangerousGroup}/${paramName}`, Value: 'exploit' }
-							]
-						});
-
+						// Use path-discovery (no names array) so the group rejection
+						// goes through warn-and-skip rather than throwing (Req 2.3)
 						jest.spyOn(AWS, 'ssm', 'get').mockReturnValue({
 							client: {},
-							getByName: mockGetByName,
-							getByPath: jest.fn().mockResolvedValue({ Parameters: [] }),
+							getByName: jest.fn().mockResolvedValue({ Parameters: [], InvalidParameters: [] }),
+							getByPath: jest.fn().mockResolvedValue({
+								Parameters: [
+									{ Name: `/app/${dangerousGroup}/${paramName}`, Value: 'exploit' }
+								]
+							}),
 							sdk: {}
 						});
 
 						const parameters = [
-							{ group: dangerousGroup, path: `/app/${dangerousGroup}/`, names: [paramName] }
+							{ group: dangerousGroup, path: `/app/${dangerousGroup}/` }
 						];
 
 						const protoBefore = Object.keys(Object.getOwnPropertyDescriptors(Object.prototype));

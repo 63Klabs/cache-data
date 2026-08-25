@@ -179,12 +179,25 @@ function captureHttp() {
  * @property {object} ssm.sdk V2: { SSM }, V3: { SSMClient, GetParameterCommand, GetParametersByPathCommand }
  * @property {object} ssm.getByName function(query) Given SSM Parameter Store query, uses the correct SDK version to perform the getParameters command
  * @property {object} ssm.getByPath function(query) Given SSM Parameter Store query, uses the correct SDK version to perform the getParametersByPath command
+ * @property {object} secrets
+ * @property {boolean} secrets.available true when the Secrets Manager SDK was loaded successfully
+ * @property {string|null} secrets.reason null when available; the error message when unavailable
+ * @property {object|null} secrets.client SecretsManagerClient instance or null when unavailable
+ * @property {object|null} secrets.sdk { SecretsManagerClient, GetSecretValueCommand } or null when unavailable
+ * @property {function} secrets.get function(params) Sends a GetSecretValueCommand using the secrets client
  * @property {object} AWSXRay
  */
 class AWS {
 
 	static #nodeVer = [];
 	static #aws_region = null;
+
+	/**
+	 * Memoized Secrets Manager SDK. Null until first access.
+	 * { client, sdk } on success; { client: null, sdk: null, error } when unavailable.
+	 * @private
+	 */
+	static #secretsSdk = null;
 
 	/**
 	 * @private
@@ -436,6 +449,64 @@ class AWS {
 			getByName: ( query ) => this.#SDK.ssm.getByName(this.#SDK.ssm.client, query),
 			getByPath: ( query ) => this.#SDK.ssm.getByPath(this.#SDK.ssm.client, query),
 			sdk: this.#SDK.ssm.sdk
+		};
+	}
+
+	/**
+	 * Provides a lazy Secrets Manager client and helper functions.
+	 *
+	 * The SDK package is required on first access (not at module load) so that an
+	 * absent package does not throw for consumers that never use secrets (Req 8.3-8.4).
+	 * The client is memoized after the first successful construction (Req 8.6).
+	 *
+	 * @returns {{
+	 *   client: object|null,
+	 *   get: function,
+	 *   sdk: object|null,
+	 *   available: boolean,
+	 *   reason: string|null
+	 * }}
+	 * @example
+	 * const secret = await AWS.secrets.get({ SecretId: 'myapp/db/credentials' });
+	 * console.log(secret.SecretString);
+	 */
+	static get secrets() {
+		// >! Build the memoized SDK object lazily on first access so the
+		// >! @aws-sdk/client-secrets-manager require does not run at module load.
+		// >! If the package is absent the accessor stays available=false rather
+		// >! than throwing, so consumers without Secrets Manager needs are unaffected.
+		if (AWS.#secretsSdk === null) {
+			try {
+				const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");
+				const client = instrumentClient(new SecretsManagerClient({ region: AWS.REGION }));
+				AWS.#secretsSdk = {
+					client,
+					get: (params) => client.send(new GetSecretValueCommand(params)),
+					sdk: { SecretsManagerClient, GetSecretValueCommand },
+					available: true,
+					reason: null
+				};
+			} catch (error) {
+				// >! Package absent or instantiation failed — record the reason and
+				// >! return a non-throwing accessor shape so callers can inspect .available.
+				AWS.#secretsSdk = {
+					client: null,
+					get: () => Promise.reject(new Error(`AWS.secrets is unavailable: ${error.message}`)),
+					sdk: null,
+					available: false,
+					reason: error.message
+				};
+			}
+		}
+
+		// Return a fresh object literal per access so jest.spyOn(AWS, 'secrets', 'get')
+		// continues to work identically to the ssm/dynamo/s3 accessor pattern (Req 8.1).
+		return {
+			client: AWS.#secretsSdk.client,
+			get: AWS.#secretsSdk.get,
+			sdk: AWS.#secretsSdk.sdk,
+			available: AWS.#secretsSdk.available,
+			reason: AWS.#secretsSdk.reason
 		};
 	}
 

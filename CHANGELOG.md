@@ -8,6 +8,45 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
+## v1.3.16 (unreleased)
+
+### Added
+
+- **SSM Parameter Store and Secrets Manager SDK Transport** — `CachedSsmParameter` and `CachedSecret` now fall back to the AWS SDK automatically when the `AWS-Parameters-and-Secrets-Lambda-Extension` layer is unavailable. Transport is selected once per container: if `AWS_SESSION_TOKEN` is absent the SDK is used immediately; otherwise the extension is tried and a `ECONNREFUSED` transparently falls back to SDK. No application code changes required to benefit. [Spec: 1-3-16-fully-implement-ssm-parameter-store-and-secrets-manager-sdk](.kiro/specs/1-3-16-fully-implement-ssm-parameter-store-and-secrets-manager-sdk/)
+  - **Action required for consumers removing the layer**: Add `ssm:GetParameters`, `ssm:GetParametersByPath`, `secretsmanager:GetSecretValue`, and `kms:Decrypt` to your Lambda execution role. See [docs/features/ssm-secrets-sdk-transport.md](docs/features/ssm-secrets-sdk-transport.md).
+
+- **Secrets Manager in the configuration path** — `AppConfig.init()` now accepts an `options.secrets` array (`{ group, names, parseJson? }`). Secrets are retrieved in parallel with other initialization, and the resolved store is accessible via `AppConfig.secrets()` after `AppConfig.promise()` settles.
+
+- **`AppConfig.parameters()` and `AppConfig.secrets()` accessors** — Synchronous accessors returning `null` until `AppConfig.promise()` settles, then the resolved stores. Follow the same pattern as `settings()` and `connections()`.
+
+- **`CachedParameterSecrets.init()`** — Accepts `{ ssmParameters, secrets }` groupings (same shape as `AppConfig.init()`), constructs and registers `CachedSsmParameter` / `CachedSecret` instances, seeds discovered values to avoid redundant retrieval, and returns a promise suitable for `AppConfig.add()`.
+
+- **`CachedParameterSecrets.info()`** — Returns a diagnostic snapshot of availability state, transport, hostname, port, and registered entries. Never includes parameter or secret values.
+
+- **`CachedParameterSecrets.clear()`** — Resets the registry. Primarily a test seam for isolating tests.
+
+- **`AWS.secrets` accessor** — Lazy Secrets Manager client accessor following the same shape as `AWS.ssm`. The SDK package is loaded on first access; if absent, `AWS.secrets.available` is false rather than throwing.
+
+- **Recursive path retrieval** — `ssmParameters` entries now accept `recursive: true` to retrieve parameters from nested hierarchies. Defaults to false. See [docs/features/ssm-secrets-sdk-transport.md](docs/features/ssm-secrets-sdk-transport.md) for the transitive-access security note.
+
+### Fixed
+
+- **Path pagination truncation (silent data loss)** — `GetParametersByPath` has a hard ceiling of 10 results per call. The previous implementation did not follow `NextToken`, so any application with more than 10 parameters under a configured path silently received only the first 10 with no error or warning. The loader now follows `NextToken` until exhausted and sets `MaxResults: 10` explicitly on every call.
+
+- **Name batching limit** — `GetParameters` rejects with a `ValidationException` when more than 10 names are requested. The previous implementation sent all names in a single call. The loader now partitions names into chunks of 10 and issues parallel calls.
+
+- **Prototype-reachable key leakage (CWE-471, expanded)** — The 1.3.10 guard checked only `__proto__`, `constructor`, and `prototype`. The `in` operator also resolves to inherited properties (`toString`, `valueOf`, `hasOwnProperty`, etc.), causing parameter values to be written onto process-global built-in function objects and silently disappear from `Object.keys(store)`. All `Object.prototype` own-property names are now blocked via a secondary denylist in addition to the allowlist.
+
+- **Path mismatch `TypeError`** — A configured path without a trailing slash caused `parameters.find()` to return `undefined`, throwing `TypeError: Cannot read properties of undefined (reading 'group')` and rejecting `AppConfig.promise()`. Paths are now normalised to a trailing slash before use, and unmatched parameters warn-and-skip rather than throwing.
+
+### Changed
+
+- **`AppConfig.promise()` no longer rejects on `ssmParameters` failure** — Previously the `ssmParameters` init block was the only option that allowed a rejection to escape into `AppConfig.promise()`. It now matches the error-containment pattern of `settings`, `connections`, `validations`, and `responses`. If SSM retrieval fails, `promise()` still resolves (the registered promise resolves `false`) and `AppConfig.parameters()` returns `null`.
+
+### Deprecated
+
+- **`AppConfig._initParameters()`**, **`AppConfig._getParameters()`**, **`AppConfig._getParametersFromStore()`** — These three internal methods remain fully functional and now include all the pagination, batching, and key-safety fixes. They are deprecated in favour of `AppConfig.init({ ssmParameters })` with `AppConfig.parameters()`. A deprecation notice is logged at most once per process when any of them is called.
+
 ## v1.3.15 (2026-06-11)
 
 ### Added

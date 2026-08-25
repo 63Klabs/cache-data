@@ -34,10 +34,91 @@ export interface AppConfigInitOptions {
 		rssResponses?: object;
 		textResponses?: object;
 	};
-	/** Parameter Store configuration for SSM parameters */
-	ssmParameters?: object;
+	/**
+	 * SSM Parameter Store configuration.
+	 * Each entry specifies a group, a path, and optional names or recursive flag.
+	 */
+	ssmParameters?: AppConfigSsmParameterEntry[];
+	/**
+	 * Secrets Manager configuration.
+	 * Each entry specifies a group and secret names to retrieve.
+	 */
+	secrets?: AppConfigSecretEntry[];
 	/** Enable debug logging during initialization */
 	debug?: boolean;
+}
+
+/**
+ * A single SSM Parameter Store configuration entry for AppConfig.init({ ssmParameters }).
+ */
+export interface AppConfigSsmParameterEntry {
+	/** Group name used to access the parameters (e.g. params.app.authUsername) */
+	group: string;
+	/** Parameter path including trailing slash (e.g. '/myapp/prod/') */
+	path: string;
+	/** Specific parameter names to retrieve beneath the path. Omit to discover all names under the path. */
+	names?: string[];
+	/** When true, retrieves parameters from nested paths. Defaults to false. */
+	recursive?: boolean;
+}
+
+/**
+ * A single Secrets Manager configuration entry for AppConfig.init({ secrets }).
+ */
+export interface AppConfigSecretEntry {
+	/** Group name used to access the secrets */
+	group: string;
+	/** Secret IDs to retrieve (e.g. ['myapp/db/credentials']) */
+	names: string[];
+	/**
+	 * When true, the SecretString is parsed as JSON and nested under the secret name.
+	 * Defaults to false (raw string storage).
+	 */
+	parseJson?: boolean;
+}
+
+/**
+ * Options for CachedParameterSecrets.init().
+ */
+export interface CachedParameterSecretsInitOptions {
+	/** SSM Parameter Store entries to load and register. */
+	ssmParameters?: AppConfigSsmParameterEntry[];
+	/** Secrets Manager entries to load and register. */
+	secrets?: AppConfigSecretEntry[];
+}
+
+/**
+ * Information returned by CachedParameterSecrets.info().
+ */
+export interface CachedParameterSecretsInfo {
+	/** Current extension availability state */
+	availability: {
+		state: 'unknown' | 'available' | 'unavailable';
+		reason: string | null;
+		hostname: string;
+		port: string;
+		transport: 'layer' | 'sdk';
+	};
+	/** Registered parameter and secret entries (no values included) */
+	registered: Array<{
+		name: string;
+		type: string;
+		isValid: boolean;
+		isRefreshing: boolean;
+		needsRefresh: boolean;
+		cache: {
+			lastRefresh: number;
+			status: number;
+			refreshAfter: number;
+		};
+	}>;
+	/** Summary counts */
+	counts: {
+		total: number;
+		valid: number;
+		refreshing: number;
+		needsRefresh: number;
+	};
 }
 
 // ---------------------------------------------------------------------------
@@ -141,6 +222,24 @@ export class AWS {
 		 */
 		getByPath(query: object): Promise<any>;
 		sdk: object;
+	};
+
+	/**
+	 * Secrets Manager client and helper functions.
+	 * Loaded lazily on first access. Check `available` before calling `get()`.
+	 */
+	static readonly secrets: {
+		client: object | null;
+		/**
+		 * Retrieve a secret value from Secrets Manager.
+		 * @param params - GetSecretValueCommand parameters (must include SecretId)
+		 */
+		get(params: object): Promise<any>;
+		sdk: object | null;
+		/** True when the @aws-sdk/client-secrets-manager package was loaded successfully */
+		available: boolean;
+		/** null when available; the error message when the package could not be loaded */
+		reason: string | null;
 	};
 
 	/** AWS X-Ray SDK (null if X-Ray is not enabled) */
@@ -1611,6 +1710,28 @@ export class AppConfig {
 	static settings(): object | null;
 
 	/**
+	 * Get the resolved SSM parameters store.
+	 * Returns null until AppConfig.promise() settles.
+	 *
+	 * @returns Paramstore as `{ group: { name: value } }` or null
+	 * @example
+	 * await Config.promise();
+	 * const host = Config.parameters()?.db?.host;
+	 */
+	static parameters(): object | null;
+
+	/**
+	 * Get the resolved Secrets Manager secrets store.
+	 * Returns null until AppConfig.promise() settles.
+	 *
+	 * @returns Secrets store as `{ group: { secretName: value } }` or null
+	 * @example
+	 * await Config.promise();
+	 * const creds = Config.secrets()?.db?.['myapp/db/credentials'];
+	 */
+	static secrets(): object | null;
+
+	/**
 	 * Get the Connections instance.
 	 *
 	 * @returns Connections instance or null if not initialized
@@ -1938,6 +2059,44 @@ export class CachedParameterSecrets {
 	 * await CachedParameterSecrets.prime();
 	 */
 	static prime(): Promise<boolean>;
+
+	/**
+	 * Initialize parameters and secrets from path and name groupings.
+	 * Constructs and registers CachedSsmParameter and CachedSecret instances.
+	 * Returns a promise suitable for registration via AppConfig.add().
+	 *
+	 * @param options - Configuration specifying ssmParameters and/or secrets
+	 * @returns Promise resolving to a result summary
+	 * @example
+	 * await CachedParameterSecrets.init({
+	 *   ssmParameters: [{ group: 'app', path: '/myapp/prod/', names: ['authUsername'] }],
+	 *   secrets: [{ group: 'db', names: ['myapp/db/credentials'] }]
+	 * });
+	 */
+	static init(options?: CachedParameterSecretsInitOptions): Promise<{
+		registered: number;
+		discovered: number;
+		skipped: Array<{ name: string; reason: string }>;
+	}>;
+
+	/**
+	 * Returns a diagnostic snapshot of the registry and availability state.
+	 * Does not include any parameter or secret values.
+	 *
+	 * @returns Availability state, registered entries, and counts
+	 * @example
+	 * const info = CachedParameterSecrets.info();
+	 * console.log(info.availability.state); // 'available' | 'unavailable' | 'unknown'
+	 */
+	static info(): CachedParameterSecretsInfo;
+
+	/**
+	 * Clears the registry. Primarily a test seam for ensuring isolation between tests.
+	 *
+	 * @example
+	 * beforeEach(() => { CachedParameterSecrets.clear(); });
+	 */
+	static clear(): void;
 }
 
 // ---------------------------------------------------------------------------

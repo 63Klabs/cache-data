@@ -305,6 +305,71 @@ describe('AWS.classes', () => {
 
 	});
 
+	describe('Secrets Manager Client (Req 8.1-8.8)', () => {
+
+		it('should have the same shape as ssm — client, get, sdk, available, reason', () => {
+			const secrets = AWS.secrets;
+			expect(typeof secrets).toBe('object');
+			expect(secrets).toHaveProperty('client');
+			expect(secrets).toHaveProperty('get');
+			expect(secrets).toHaveProperty('sdk');
+			expect(secrets).toHaveProperty('available');
+			expect(secrets).toHaveProperty('reason');
+		});
+
+		it('available should be true when @aws-sdk/client-secrets-manager is installed (Req 8.6)', () => {
+			// The package is in devDependencies so it should be available in this environment
+			const secrets = AWS.secrets;
+			expect(secrets.available).toBe(true);
+			expect(secrets.reason).toBeNull();
+			expect(secrets.client).not.toBeNull();
+		});
+
+		it('get should be a function (Req 8.2)', () => {
+			expect(typeof AWS.secrets.get).toBe('function');
+		});
+
+		it('sdk should contain SecretsManagerClient and GetSecretValueCommand (Req 8.7)', () => {
+			const { sdk } = AWS.secrets;
+			expect(sdk).not.toBeNull();
+			expect(typeof sdk.SecretsManagerClient).toBe('function');
+			expect(typeof sdk.GetSecretValueCommand).toBe('function');
+		});
+
+		it('returns a fresh object literal per access so getter spying works (Req 8.1)', () => {
+			// Each access must return a new object — same pattern as ssm/dynamo/s3
+			const a = AWS.secrets;
+			const b = AWS.secrets;
+			expect(a).not.toBe(b);            // different references
+			expect(a.available).toBe(b.available); // same underlying state
+		});
+
+		it('client is memoized — same client instance on repeated access (Req 8.6)', () => {
+			const client1 = AWS.secrets.client;
+			const client2 = AWS.secrets.client;
+			expect(client1).toBe(client2);
+		});
+
+		it('can be spied on with jest.spyOn getter pattern (Req 8.1)', () => {
+			const tools = AWS; // same reference
+			const mockGet = jest.fn().mockResolvedValue({ SecretString: '{"key":"value"}' });
+
+			jest.spyOn(tools, 'secrets', 'get').mockReturnValue({
+				client: {},
+				get: mockGet,
+				sdk: null,
+				available: true,
+				reason: null
+			});
+
+			const result = AWS.secrets;
+			expect(result.get).toBe(mockGet);
+
+			jest.restoreAllMocks();
+		});
+
+	});
+
 	describe('X-Ray', () => {
 
 		/**

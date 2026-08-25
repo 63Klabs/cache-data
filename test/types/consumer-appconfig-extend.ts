@@ -81,9 +81,13 @@ Config.init({
 		rssResponses: {},
 		textResponses: {}
 	},
-	ssmParameters: {
-		"/myapp/api/key": {}
-	},
+	ssmParameters: [
+		{
+			group: "app",
+			path: "/myapp/api/",
+			names: ["key", "secret"]
+		}
+	],
 	debug: false
 });
 
@@ -115,6 +119,27 @@ const cacheProfile: object | null = connAndProfile.cacheProfile;
 // Wait for all initialization to complete
 async function testConfigPromise(): Promise<void> {
 	const results: any[] = await Config.promise();
+}
+
+// Test new resolved-value accessors
+const parameters: object | null = Config.parameters();
+const secrets: object | null = Config.secrets();
+
+// Test AWS.secrets accessor
+const secretsAccessor = cacheData.tools.AWS.secrets;
+const secretsAvailable: boolean = secretsAccessor.available;
+const secretsReason: string | null = secretsAccessor.reason;
+
+// Test CachedParameterSecrets new methods
+async function testCachedParameterSecretsNew(): Promise<void> {
+	await cacheData.tools.CachedParameterSecrets.init({
+		ssmParameters: [{ group: 'app', path: '/test/', names: ['x'] }],
+		secrets: [{ group: 'db', names: ['myapp/db/creds'], parseJson: true }]
+	});
+	const info: cacheData.tools.CachedParameterSecretsInfo = cacheData.tools.CachedParameterSecrets.info();
+	const state: string = info.availability.state;
+	const total: number = info.counts.total;
+	cacheData.tools.CachedParameterSecrets.clear();
 }
 
 // ---------------------------------------------------------------------------
