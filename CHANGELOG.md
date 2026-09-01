@@ -39,6 +39,12 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 - **Path mismatch `TypeError`** — A configured path without a trailing slash caused `parameters.find()` to return `undefined`, throwing `TypeError: Cannot read properties of undefined (reading 'group')` and rejecting `AppConfig.promise()`. Paths are now normalised to a trailing slash before use, and unmatched parameters warn-and-skip rather than throwing.
 
+- **Secrets Manager: unsafe secret names silently corrupted results** — A secret whose name matched a dangerous key (`__proto__`, `constructor`, `prototype`) or any inherited `Object.prototype` member (e.g. `toString`, `hasOwnProperty`) previously caused the value to be silently discarded, or in some cases corrupted the internal object holding retrieved secrets so that other values became unreadable or a native method stopped working. Loading a secret with such a name now throws a clear, diagnosable error at initialization instead of failing silently. [Spec: 1-3-16-fix-ssm-param-security](.kiro/specs/1-3-16-fix-ssm-param-security/)
+- **Secrets Manager: invalid secret configuration now rejected before any API call** — An unsafe secret name or group is now detected and rejected before any Secrets Manager request is issued, avoiding a wasted call for a configuration that could never have succeeded.
+- **`normalizePath` performance** — Path normalization no longer uses a regular expression pattern that could take polynomially longer to evaluate on certain crafted inputs, removing a potential denial-of-service vector during initialization.
+
+Behavior for every secret name that worked correctly before is unchanged, including multi-segment names (e.g. `myapp/db/credentials`) and full ARNs.
+
 ### Changed
 
 - **`AppConfig.promise()` no longer rejects on `ssmParameters` failure** — Previously the `ssmParameters` init block was the only option that allowed a rejection to escape into `AppConfig.promise()`. It now matches the error-containment pattern of `settings`, `connections`, `validations`, and `responses`. If SSM retrieval fails, `promise()` still resolves (the registered promise resolves `false`) and `AppConfig.parameters()` returns `null`.

@@ -1,0 +1,233 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Write preservation baseline tests (BEFORE any source change)": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185050
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225194811
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225937964
+      }
+    ],
+    "2. Write bug condition tests (BEFORE implementing fixes)": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185159
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225941644
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227072137
+      }
+    ],
+    "3. Implement secret name validation in `ParameterKeySafety`": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185237
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227075640
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227265268
+      }
+    ],
+    "4. Implement secret assignment entry points in `ParameterKeySafety`": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185327
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227268723
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227389442
+      }
+    ],
+    "5. Rewrite `normalizePath`": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185440
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227393121
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227499435
+      }
+    ],
+    "6.1 Add the validation pre-pass": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185523
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227504441
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227608264
+      }
+    ],
+    "6.2 Make `#resolveValue` pure": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185601
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227613124
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227773731
+      }
+    ],
+    "6.3 Delegate all writes": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185683
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227777511
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227937724
+      }
+    ],
+    "6.4 Add the chokepoint compliance test (Property A12)": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185768
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788227942295
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228034551
+      }
+    ],
+    "7. Verify the bug condition tests now pass": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185864
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228039285
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228148260
+      }
+    ],
+    "8. Run the full preservation gate": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225185958
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228153051
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228254442
+      }
+    ],
+    "9. Amend the introducing spec's Known Limitation 1": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225186030
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228259432
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228719493
+      }
+    ],
+    "10. Update CHANGELOG": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788225186107
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228259493
+      },
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228719604
+      }
+    ],
+    "6. Rewrite `SecretsManagerLoader`": [
+      {
+        "executionId": "99ae96d2-5ec7-41c7-9135-305c1f808247",
+        "chatSessionId": "sess_04b1b43b-8282-44f3-a0a1-99c33531f0fa",
+        "timestamp": 1788228034671
+      }
+    ]
+  }
+}
