@@ -298,9 +298,25 @@ class ParameterKeySafety {
 				skipped.push({ key, reason: keyCheck.reason });
 				continue;
 			}
-			// >! Direct bracket assignment with the validated parsed key.
+			// >! Defense in depth on top of the checkKey guard above: use
+			// >! Object.defineProperty instead of bracket assignment. Bracket
+			// >! assignment on a target with no own "__proto__" data property
+			// >! invokes the inherited Object.prototype.__proto__ accessor setter,
+			// >! which is the mechanism static analyzers flag as a
+			// >! prototype-polluting assignment sink. Object.defineProperty never
+			// >! invokes that accessor — it defines an own data property directly —
+			// >! so it cannot pollute the prototype chain even if key were somehow
+			// >! "__proto__". writable/enumerable/configurable are all set to true
+			// >! to keep the resulting property identical to what bracket
+			// >! assignment would have produced (Object.keys inclusion, value
+			// >! reads, and re-assignment on subsequent calls all continue to work).
 			// >! String(value) preserves the current coercion.
-			container[key] = String(parsed[key]);
+			Object.defineProperty(container, key, {
+				value: String(parsed[key]),
+				writable: true,
+				enumerable: true,
+				configurable: true
+			});
 		}
 
 		return { assigned: true, reason: null, skipped };

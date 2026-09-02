@@ -480,6 +480,33 @@ describe('ParameterKeySafety: setGroupedSecretMap', () => {
 		expect(typeof store.app['my-secret'].toString).toBe('function');
 	});
 
+	it('writes land via Object.defineProperty with writable/enumerable/configurable true (defense-in-depth hardening)', () => {
+		const store = {};
+		ParameterKeySafety.setGroupedSecretMap(store, 'app', 'my-secret', { user: 'alice', pass: 's3cr3t', count: 7 });
+
+		const container = store.app['my-secret'];
+
+		for (const key of ['user', 'pass', 'count']) {
+			const descriptor = Object.getOwnPropertyDescriptor(container, key);
+			expect(descriptor).toBeDefined();
+			expect(descriptor.writable).toBe(true);
+			expect(descriptor.enumerable).toBe(true);
+			expect(descriptor.configurable).toBe(true);
+		}
+		expect(container.user).toBe('alice');
+		expect(container.pass).toBe('s3cr3t');
+		expect(container.count).toBe('7');
+
+		// Re-assignment on a later call for the same secret must still succeed
+		// (configurable: true permits redefinition via defineProperty).
+		ParameterKeySafety.setGroupedSecretMap(store, 'app', 'my-secret', { user: 'bob' });
+		expect(container.user).toBe('bob');
+		const redescriptor = Object.getOwnPropertyDescriptor(container, 'user');
+		expect(redescriptor.writable).toBe(true);
+		expect(redescriptor.enumerable).toBe(true);
+		expect(redescriptor.configurable).toBe(true);
+	});
+
 	it('Object.prototype gains no own property across all rejection and skip cases', () => {
 		const before = Object.getOwnPropertyNames(Object.prototype);
 		const store = {};
