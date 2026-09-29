@@ -136,7 +136,7 @@ This is a PATCH release (v1.3.17). No public API signature changes, no runtime b
 #### Acceptance Criteria
 
 1. WHEN a `nodejsNN.x` runtime appears in AWS's live data with no corresponding row in the stored matrix, THE runbook SHALL report a "new version detected" trigger for that runtime
-2. WHEN a runtime already in the matrix shows AWS Lambda Status changing from `Preview` to `GA`, THE runbook SHALL report a "version reached GA" trigger for that runtime
+2. WHEN a runtime already in the matrix shows AWS Lambda Status changing from `Preview` to `GA`, THE runbook SHALL report a "version reached GA" trigger for that runtime AND SHALL recommend updating the example Lambda runtimes in documentation (e.g., `docs/00-example-implementation/example-template-lambda-function.yml`, `docs/features/tools/*.md`, `docs/lambda-optimization/README.md`, and any other CloudFormation templates or docs referencing a specific `nodejsNN.x` runtime) to the newly-GA version, as part of the follow-up spec recommended in criterion 6
 3. WHEN a runtime's Package Policy is `Supported` AND the earlier of (upstream Node EOL date, Lambda deprecation date) falls within 6 months of the date the runbook is run, THE runbook SHALL report an "EOL within 6 months" trigger for that runtime
 4. WHEN a runtime's Package Policy is `Supported` or `Deprecated (warn)` AND the date the runbook is run is past that runtime's Lambda block-update date, THE runbook SHALL report an "EOL passed" trigger for that runtime
 5. FOR a "new version detected" trigger where the runtime's AWS Lambda Status is `Preview`, THE runbook SHALL recommend recording the runtime in the matrix only, with no follow-up spec

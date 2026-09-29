@@ -1,0 +1,399 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Write property test for the hard floor predicate": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478586640
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478993407
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479409139
+      }
+    ],
+    "2.1 Add the `NODE_DEPRECATION_NOTICES` registry constant": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478586739
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478624768
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478986678
+      }
+    ],
+    "2.2 Add the `checkNodeDeprecationNotices(runningMajor = nodeVerMajor)` helper": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478586840
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478994361
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479410415
+      }
+    ],
+    "2.3 Invoke the walker exactly once at module load": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478586927
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479426477
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480813872
+      }
+    ],
+    "2.4 Write property test — warning fires at most once per process (Property 1)": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587020
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479427435
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479612302
+      }
+    ],
+    "2.5 Write property test — warns iff a matching active entry exists, with exact text (Property 2)": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587095
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479428761
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480512546
+      }
+    ],
+    "2.6 Write property test — inactive/non-matching entries never warn (Property 3)": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587176
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479430284
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480737419
+      }
+    ],
+    "2.7 Write property test — only Node 20 warns under the initial registry (Property 4)": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587256
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479431481
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480737550
+      }
+    ],
+    "3.1 Write subprocess-isolated test for supported-runtime module load (Property 6)": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587333
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480818368
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481330643
+      }
+    ],
+    "3.2 Write test for the floor exit-code-1 / process.exit wiring (Property 5)": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587414
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480820841
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481272105
+      }
+    ],
+    "3.3 Write backwards-compatibility export-surface snapshot test (Property 7)": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587501
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480821525
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481273580
+      }
+    ],
+    "3.4 Write structural test for registry initial state and documenting comment": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587585
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480822087
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481274937
+      }
+    ],
+    "4. Checkpoint - runtime code and its tests": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587667
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481572916
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481621735
+      }
+    ],
+    "5.1 Write structural test for the CI matrix": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587749
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481371609
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481560790
+      }
+    ],
+    "6.1 Write structural test for engines.node and README": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587835
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481371795
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481562084
+      }
+    ],
+    "7.1 Write structural test for the CHANGELOG entry": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587913
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481373254
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481563530
+      }
+    ],
+    "8.1 Write structural test for the runbook document": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478587999
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481374384
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481564262
+      }
+    ],
+    "9. Checkpoint - config, docs, and runbook": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478588101
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481625018
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481671710
+      }
+    ],
+    "10. Verify the full suite on Node.js 26 (Requirement 1)": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478588199
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481675233
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790521377080
+      }
+    ],
+    "11. Final checkpoint - full suite green": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478588276
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790521380570
+      },
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790521452283
+      }
+    ],
+    "1. Update the hard version floor in `src/lib/tools/vars.js`": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790478621707
+      },
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790479409249
+      }
+    ],
+    "2. Add the deprecation notice registry and walker to `src/lib/tools/index.js`": [
+      {
+        "executionId": "894424d0-d01f-4676-ab18-6cb2072ccbc2",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790480814027
+      }
+    ],
+    "3. Add subprocess-isolated module-load tests for floor and warning behavior": [
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481330818
+      }
+    ],
+    "5. Update the CI test matrix in `.github/workflows/test.yml`": [
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481560943
+      }
+    ],
+    "6. Reconcile `engines.node` and README minimum Node version": [
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481562249
+      }
+    ],
+    "7. Add the CHANGELOG entry in `CHANGELOG.md`": [
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481563659
+      }
+    ],
+    "8. Create the `.kiro/steering/cache-data-node-support.md` runbook": [
+      {
+        "executionId": "9e0e838c-0781-47ce-9792-979914920205",
+        "chatSessionId": "sess_35e464d6-8179-41cf-92b3-83daaf6a0d15",
+        "timestamp": 1790481564368
+      }
+    ]
+  }
+}

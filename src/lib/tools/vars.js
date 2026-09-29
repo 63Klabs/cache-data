@@ -21,8 +21,12 @@ const nodeVerMinor = AWS.NODE_VER_MINOR;
 
 const nodeVerMajorMinor = AWS.NODE_VER_MAJOR_MINOR;
 
-if (nodeVerMajor < 16) {
-	console.error(`Node.js version 16 or higher is required for @63klabs/cache-data. Version ${nodeVer} detected. Please install at least Node version 16 (>18 preferred) in your environment.`);
+// >! Hard floor: refuse to run on Node.js majors below the current minimum.
+// >! Node 20 is NOT rejected here in v1.3.17 (it only warns, see the
+// >! NODE_DEPRECATION_NOTICES registry in tools/index.js). The floor rises to
+// >! < 22 in the v1.4.0 removal spec.
+if (nodeVerMajor < 20) {
+	console.error(`Node.js version 20 or higher is required for @63klabs/cache-data. Version ${nodeVer} detected. Please install at least Node.js 20 (22 or later recommended) in your environment.`);
 	process.exit(1);
 }
 

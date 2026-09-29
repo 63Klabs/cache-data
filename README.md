@@ -76,7 +76,7 @@ However, if you want to write your own templates and code, follow the following 
    - Use the [key generation script](./docs/00-example-implementation/generate-put-ssm.py) during [the build](./docs/00-example-implementation/example-buildspec.yml) to establish a key to encrypt your data.
 2. Lambda CloudFormation Template:
    - See [Lambda template example](./docs/00-example-implementation/example-template-lambda-function.yml) 
-   - Node: AWS Lambda supported version of Node (>=20.0.0)
+   - Node: AWS Lambda supported version of Node (>=22.0.0)
    - Memory: Allocate at least 512MB (1024MB+ recommended)
    - Environment Variables: Add the cache-data environment variables to your Lambda function.
    - Execution Role: Include access to S3 and DynamoDB in your Lambda's execution role.

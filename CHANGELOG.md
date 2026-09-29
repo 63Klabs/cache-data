@@ -8,6 +8,25 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
+## v1.3.17 (unreleased)
+
+### Added
+
+- **Node.js 26 support** — The package is now verified against Node.js 26 and Node 26 is added to the CI test matrix. Node.js 26 is currently available on AWS Lambda as a public preview runtime (no SLA), so it is added to CI as a non-blocking (`continue-on-error`) leg and is not yet the default example runtime. The example CloudFormation templates continue to target `nodejs24.x`. [Spec: 1-3-17-node-26-support](.kiro/specs/1-3-17-node-26-support/)
+
+### Deprecated
+
+- **Node.js 20** — Node.js 20 reached end-of-life on 2026-04-30 and is no longer tested by @63klabs/cache-data. It remains fully functional in this release and is not removed; a deprecation notice is logged at most once per process when the running Node.js major version is 20, advising an upgrade to Node.js 22 or later. Node 20 is deprecated with no fixed sunset date. Removal is deferred to a future v1.4.0 release, gated on AWS Lambda's `nodejs26.x` runtime reaching general availability. [Spec: 1-3-17-node-26-support](.kiro/specs/1-3-17-node-26-support/)
+
+### Changed
+
+- **Minimum Node.js version guidance reconciled** — `engines.node` and the README "Requirements" section now state a single, consistent minimum of Node.js 22 (`>=22.0.0`). This is advisory per npm's default behavior and does not cause `npm install` to fail on Node 20. The hard version floor in `src/lib/tools/vars.js` now enforces a minimum of Node.js 20 with an updated message (Node 20 still runs and only warns).
+
+### Notes
+
+- **Node.js 26 verification** — Running the full Jest suite on Node.js 26 confirmed the static-analysis conclusion that `src/` contains no deprecated-API usage removed in the Node 26 semver-major line; no source changes were required for Node 26 compatibility.
+- **Changelog convention follow-up** — The `changelog-convention` steering document describes a CloudFormation-specific "24-month support period" sunset format for deprecations. That format is aimed at CloudFormation template releases and does not clearly apply to npm package runtime deprecations, so this entry uses the project's plain "deprecated, no fixed sunset date" format (matching the v1.3.16 `AppConfig._initParameters()` precedent). Reviewing that stray CloudFormation 24-month-sunset reference for npm applicability is tracked as a Phase 2 / v1.4.0 follow-up and is not resolved in this spec.
+
 ## v1.3.16 (2026-09-03)
 
 ### Added

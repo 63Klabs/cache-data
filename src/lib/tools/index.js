@@ -43,6 +43,66 @@ const ParameterStoreLoader = require('../utils/ParameterStoreLoader.class.js');
 // >! log entry is written at most once per process (Req 18.7).
 const _deprecationNoticed = new Set();
 
+/**
+ * @typedef {Object} NodeDeprecationNotice
+ * @property {number} version - Node.js major version the notice applies to (e.g. 20)
+ * @property {boolean} active - Whether the notice is currently emitted; false = removed version kept for audit
+ * @property {string} message - Exact warning text logged via DebugAndLog.warn()
+ */
+
+// >! Node version deprecation notices are data, not bespoke conditionals.
+// >! Ordered, append-only registry: when a Node major's support is later
+// >! removed, set active:false rather than deleting the entry so the removal
+// >! history and exact message text stay auditable (Req 4.4). New entries are
+// >! added by the follow-up specs recommended by the runbook:
+// >! .kiro/steering/cache-data-node-support.md (Req 4.6).
+const NODE_DEPRECATION_NOTICES = [
+	{
+		version: 20,
+		active: true, // flips to false in the v1.4.0 removal spec, not deleted
+		message: "Node.js 20 reached end-of-life on 2026-04-30 and is no longer tested by @63klabs/cache-data; please upgrade to Node.js 22 or later."
+	}
+	// Future cycles append here, e.g.:
+	// { version: 22, active: true, message: "..." }
+];
+
+/**
+ * Emit a one-time deprecation warning for the running Node.js major version,
+ * driven by the NODE_DEPRECATION_NOTICES registry.
+ *
+ * Walks the registry once and, for any active entry whose version matches the
+ * running Node major version, logs the entry's message via DebugAndLog.warn().
+ * Reuses the existing _deprecationNoticed Set so each notice is emitted at most
+ * once per process. Emitting a warning has no effect on module initialization
+ * or exported values.
+ *
+ * @private
+ * @param {number} [runningMajor=nodeVerMajor] - Running Node.js major version. Parameterized for testability.
+ * @returns {void}
+ * @example
+ * // Called once at module load; not part of the public API.
+ * checkNodeDeprecationNotices();
+ */
+function checkNodeDeprecationNotices(runningMajor = nodeVerMajor) {
+	for (const notice of NODE_DEPRECATION_NOTICES) {
+		if (!notice.active || notice.version !== runningMajor) {
+			continue;
+		}
+		const guardKey = `node-major-${notice.version}`;
+		if (_deprecationNoticed.has(guardKey)) {
+			continue;
+		}
+		_deprecationNoticed.add(guardKey);
+		DebugAndLog.warn(notice.message);
+	}
+}
+
+// Once-per-load invocation: emit any applicable Node.js deprecation notice for
+// the running runtime. Runs after the vars.js hard floor (required above),
+// after DebugAndLog and nodeVerMajor are available, and has no effect on the
+// module's exports (Req 8.1, 8.4).
+checkNodeDeprecationNotices();
+
 /*
  * -----------------------------------------------------------------------------
  * Object definitions
