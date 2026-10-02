@@ -1,28 +1,30 @@
-# This workflow runs Jest tests and publishes the package to NPM when a GitHub
-# release is published.
+# This workflow runs Jest tests and stages the package on NPM when a GitHub
+# release is published. A maintainer then approves the staged version with 2FA
+# before it goes live. See docs/ or CONTRIBUTING.md for the approval steps.
 #
 # Authentication uses npm Trusted Publishing (OIDC) -- there is no NPM_TOKEN.
 # npm exchanges the GitHub Actions OIDC token for a short-lived publish token.
 #
-# Requirements (see https://docs.npmjs.com/trusted-publishers):
+# Requirements (https://docs.npmjs.com/trusted-publishers):
 #   1. A trusted publisher must be configured on npmjs.com for this package:
 #        Settings -> Trusted publishing -> GitHub Actions
 #          Organization or user: 63Klabs
 #          Repository:           cache-data
 #          Workflow filename:    npm-publish.yml   <- must match this file name
 #          Environment name:     (leave blank, this job uses no environment)
-#          Allowed actions:      allow "npm publish"
+#          Allowed actions:      "npm stage publish"
+#      This workflow runs `npm stage publish`, which a trusted publisher is
+#      ALWAYS permitted to do. Direct `npm publish` is a separate permission
+#      that this package does not grant, so do not use it here -- the registry
+#      answers a disallowed publish with a misleading "404 Not Found - PUT".
 #   2. id-token: write permission (below).
-#   3. npm CLI >= 11.5.1 and Node >= 22.14.0. Node 24 ships npm 11.19+, so the
-#      bundled npm is sufficient and no global npm upgrade step is needed.
+#   3. npm CLI >= 11.15.0 (for `npm stage`) and Node >= 22.14.0. Node 24 ships
+#      npm 11.19+, so the bundled npm is sufficient. The guard step below fails
+#      fast with a clear message if that ever regresses.
 #   4. GitHub-hosted runner. Self-hosted runners are not supported.
 #
 # Do NOT set NODE_AUTH_TOKEN in this workflow. A configured auth token takes
-# precedence over OIDC, and a stale token makes the registry answer the publish
-# with a misleading "404 Not Found - PUT" instead of an auth error.
-#
-# Provenance attestations are generated automatically for trusted publishes of
-# public packages from public repos; the --provenance flag is not needed.
+# precedence over OIDC, so npm would never start the token exchange.
 
 name: Publish Package
 
@@ -47,8 +49,19 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
-      - name: Report npm version
-        run: npm --version
+      - name: Verify npm supports staged publishing
+        run: |
+          npm_version="$(npm --version)"
+          echo "npm ${npm_version}, node $(node --version)"
+          node -e '
+            const [maj, min] = process.argv[1].split(".").map(Number);
+            if (maj < 11 || (maj === 11 && min < 15)) {
+              console.error(
+                `npm ${process.argv[1]} is too old for "npm stage publish"; need >= 11.15.0`
+              );
+              process.exit(1);
+            }
+          ' "$npm_version"
 
       - name: Install dependencies
         run: npm ci
@@ -56,5 +69,16 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Publish package
-        run: npm publish --access public
+      # Submits the tarball to npm's staging area. Nothing is public yet.
+      # Approve with 2FA via `npm stage approve <stage-id>` or the
+      # "Staged Packages" tab on npmjs.com to make the version live.
+      - name: Stage package for approval
+        run: npm stage publish
+
+      - name: Next steps
+        run: |
+          echo "Staged @63klabs/cache-data. To publish it live, a maintainer must:"
+          echo "  npm stage list @63klabs/cache-data"
+          echo "  npm stage view <stage-id>"
+          echo "  npm stage approve <stage-id>   # prompts for 2FA"
+          echo "Or approve from the Staged Packages tab on npmjs.com."
