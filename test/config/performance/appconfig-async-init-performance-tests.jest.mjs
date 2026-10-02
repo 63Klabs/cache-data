@@ -16,6 +16,47 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 const tools = await import('../../../src/lib/tools/index.js');
 const { AppConfig, Connections, ClientRequest, Response } = tools.default;
 
+/**
+ * Whether this process can force a garbage collection.
+ *
+ * `global.gc` only exists when Node is started with `--expose-gc`, which the
+ * `npm test` script does not do. Without a forced GC on both sides of the
+ * measurement, a `heapUsed` delta reflects allocation churn inside the window
+ * (lazy module loading, JIT compilation, V8 hidden-class transitions, and V8
+ * coverage instrumentation when the suite runs under `--coverage`) rather than
+ * memory actually retained by the objects under test.
+ */
+const CAN_FORCE_GC = typeof global.gc === 'function';
+
+/**
+ * Upper bound for a retained-memory assertion.
+ *
+ * When a GC can be forced the delta is close to true retention, so a tight
+ * bound is meaningful. Otherwise the delta is dominated by unrelated
+ * allocation noise and only a generous bound is defensible — matching the
+ * other memory assertions in this file.
+ *
+ * @param {number} retainedBytes - Bound to apply when GC can be forced.
+ * @returns {number} Bound in bytes appropriate for the current process.
+ */
+function memoryBound(retainedBytes) {
+	return CAN_FORCE_GC ? retainedBytes : 512 * 1024;
+}
+
+/**
+ * Force a garbage collection when the runtime allows it.
+ *
+ * Call immediately before each `process.memoryUsage()` sample so the delta
+ * between two samples approximates retained memory.
+ *
+ * @returns {void}
+ */
+function collectGarbage() {
+	if (CAN_FORCE_GC) {
+		global.gc();
+	}
+}
+
 describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 	
 	beforeEach(() => {
@@ -341,12 +382,8 @@ describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 	describe('6.3 Memory Overhead', () => {
 		
 		it('should measure memory overhead of promise objects', async () => {
-			// Force garbage collection if available
-			if (global.gc) {
-				global.gc();
-			}
-			
 			// Measure memory before initialization
+			collectGarbage();
 			const memBefore = process.memoryUsage();
 			
 			// Initialize with all options
@@ -389,7 +426,10 @@ describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 			AppConfig.init(options);
 			await AppConfig.promise();
 			
-			// Measure memory after initialization
+			// Measure memory after initialization. The GC here discards the
+			// transient allocations made during init so the delta reflects what
+			// the resolved configuration actually retains.
+			collectGarbage();
 			const memAfter = process.memoryUsage();
 			
 			// Calculate overhead
@@ -405,11 +445,13 @@ describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 			console.log(`  External After: ${(memAfter.external / 1024).toFixed(2)} KB`);
 			console.log(`  External Diff: ${(externalDiff / 1024).toFixed(2)} KB`);
 			
-			// Verify overhead is reasonable
-			// Note: Memory measurements can be noisy, so we use a generous threshold
-			// The actual promise overhead should be minimal (< 1KB per promise)
-			// But we allow up to 100KB for the entire initialization including data
-			expect(heapUsedDiff).toBeLessThan(100 * 1024); // Less than 100KB
+			// Verify overhead is reasonable.
+			// The promise overhead itself should be minimal (< 1KB per promise);
+			// 100KB covers the entire initialization including the config data.
+			// That bound only holds when a GC can be forced on both sides of the
+			// measurement — see memoryBound() for why it is relaxed otherwise.
+			console.log(`  Bound: ${(memoryBound(100 * 1024) / 1024).toFixed(2)} KB (forced GC: ${CAN_FORCE_GC})`);
+			expect(heapUsedDiff).toBeLessThan(memoryBound(100 * 1024));
 			
 			// Verify initialization completed correctly
 			expect(AppConfig._settings).toEqual(options.settings);
@@ -417,12 +459,8 @@ describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 		});
 		
 		it('should verify promise overhead is negligible', async () => {
-			// Force garbage collection if available
-			if (global.gc) {
-				global.gc();
-			}
-			
 			// Measure memory with minimal options
+			collectGarbage();
 			const memBefore = process.memoryUsage();
 			
 			const options = {
@@ -432,6 +470,7 @@ describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 			AppConfig.init(options);
 			await AppConfig.promise();
 			
+			collectGarbage();
 			const memAfter = process.memoryUsage();
 			
 			const heapUsedDiff = memAfter.heapUsed - memBefore.heapUsed;
@@ -439,22 +478,19 @@ describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 			// Log results
 			console.log(`\nMinimal Memory Overhead:`);
 			console.log(`  Heap Used Diff: ${(heapUsedDiff / 1024).toFixed(2)} KB`);
+			console.log(`  Bound: ${(memoryBound(50 * 1024) / 1024).toFixed(2)} KB (forced GC: ${CAN_FORCE_GC})`);
 			
-			// Verify minimal overhead (single promise + small settings object)
-			// CI environments may show higher heap diff due to lazy module loading,
-			// JIT compilation, and V8 hidden class transitions on first execution
-			expect(heapUsedDiff).toBeLessThan(512 * 1024); // Less than 512KB (allows for CI environment variance)
+			// A single promise plus a small settings object retains very little.
+			// Relaxed to 512KB without a forced GC, where the delta is dominated
+			// by lazy module loading, JIT compilation, and coverage instrumentation.
+			expect(heapUsedDiff).toBeLessThan(memoryBound(50 * 1024));
 			
 			// Verify initialization completed
 			expect(AppConfig._settings).toEqual(options.settings);
 		});
 		
 		it('should measure memory overhead with multiple promises', async () => {
-			// Force garbage collection if available
-			if (global.gc) {
-				global.gc();
-			}
-			
+			collectGarbage();
 			const memBefore = process.memoryUsage();
 			
 			// Initialize with all options to create multiple promises
@@ -483,6 +519,7 @@ describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 			await AppConfig.promise();
 			
 			// Measure memory after promise resolution
+			collectGarbage();
 			const memAfterResolve = process.memoryUsage();
 			
 			const heapUsedDiffInit = memAfterInit.heapUsed - memBefore.heapUsed;
@@ -495,8 +532,10 @@ describe('AppConfig Async Initialization - Performance Benchmarks', () => {
 			console.log(`  Promise Count: ${4}`); // 4 promises (settings, connections, validations, responses)
 			console.log(`  Avg per Promise: ${(heapUsedDiffInit / 4 / 1024).toFixed(2)} KB`);
 			
-			// Verify reasonable overhead
-			expect(heapUsedDiffResolve).toBeLessThan(512 * 1024); // Less than 512KB total (includes one-time AWS class initialization overhead)
+			// Verify reasonable overhead. 128KB covers four promises plus the
+			// one-time AWS class initialization; relaxed without a forced GC.
+			console.log(`  Bound: ${(memoryBound(128 * 1024) / 1024).toFixed(2)} KB (forced GC: ${CAN_FORCE_GC})`);
+			expect(heapUsedDiffResolve).toBeLessThan(memoryBound(128 * 1024));
 			
 			// Verify all operations completed
 			expect(AppConfig._settings).toEqual(options.settings);
