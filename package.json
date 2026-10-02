@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/63klabs/cache-data.git"
+    "url": "git+https://github.com/63Klabs/cache-data.git"
   },
   "main": "src/index.js",
   "types": "types/index.d.ts",

@@ -1,5 +1,28 @@
-# This workflow runs Jest tests and publishes the package to NPM when a version tag is pushed.
-# For more information see: https://help.github.com/actions/language-and-framework-guides/publishing-nodejs-packages
+# This workflow runs Jest tests and publishes the package to NPM when a GitHub
+# release is published.
+#
+# Authentication uses npm Trusted Publishing (OIDC) -- there is no NPM_TOKEN.
+# npm exchanges the GitHub Actions OIDC token for a short-lived publish token.
+#
+# Requirements (see https://docs.npmjs.com/trusted-publishers):
+#   1. A trusted publisher must be configured on npmjs.com for this package:
+#        Settings -> Trusted publishing -> GitHub Actions
+#          Organization or user: 63Klabs
+#          Repository:           cache-data
+#          Workflow filename:    npm-publish.yml   <- must match this file name
+#          Environment name:     (leave blank, this job uses no environment)
+#          Allowed actions:      allow "npm publish"
+#   2. id-token: write permission (below).
+#   3. npm CLI >= 11.5.1 and Node >= 22.14.0. Node 24 ships npm 11.19+, so the
+#      bundled npm is sufficient and no global npm upgrade step is needed.
+#   4. GitHub-hosted runner. Self-hosted runners are not supported.
+#
+# Do NOT set NODE_AUTH_TOKEN in this workflow. A configured auth token takes
+# precedence over OIDC, and a stale token makes the registry answer the publish
+# with a misleading "404 Not Found - PUT" instead of an auth error.
+#
+# Provenance attestations are generated automatically for trusted publishes of
+# public packages from public repos; the --provenance flag is not needed.
 
 name: Publish Package
 
@@ -8,12 +31,13 @@ on:
     types: [published]
 
 permissions:
-  id-token: write  # Required for OIDC
+  id-token: write # Required for OIDC trusted publishing
   contents: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
 
@@ -21,18 +45,16 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      - name: Upgrade npm for OIDC support
-        run: npm install -g npm@latest
+          package-manager-cache: false
+
+      - name: Report npm version
+        run: npm --version
 
       - name: Install dependencies
-        run: npm install
-        # env:
-        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm ci
 
       - name: Run tests
         run: npm test
 
       - name: Publish package
         run: npm publish --access public
-        # env:
-        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
