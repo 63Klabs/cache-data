@@ -460,6 +460,22 @@ describe('ParameterKeySafety: setGroupedSecretMap', () => {
 		expect(Object.keys(store)).toHaveLength(0);
 	});
 
+	// A name that is safe as a whole but carries a reserved "/"-delimited
+	// segment must be rejected here too, not just by checkSecretName(). A
+	// leading "/" produces an empty first segment, which is itself harmless.
+	it.each([
+		['/__proto__', 'dangerous-segment'],
+		['myapp/__proto__/db', 'dangerous-segment'],
+		['myapp/constructor', 'dangerous-segment'],
+		['myapp/toString', 'prototype-segment'],
+		['/hasOwnProperty', 'prototype-segment']
+	])('rejects secret name %s with reason %s and writes nothing', (secretName, reason) => {
+		const store = {};
+		const result = ParameterKeySafety.setGroupedSecretMap(store, 'app', secretName, { user: 'alice' });
+		expect(result).toEqual({ assigned: false, reason, skipped: [] });
+		expect(Object.keys(store)).toHaveLength(0);
+	});
+
 	it('unsafe parsed keys are pushed to skipped and remaining keys are still stored', () => {
 		const store = {};
 		const result = ParameterKeySafety.setGroupedSecretMap(store, 'app', 'my-secret', {
@@ -521,12 +537,21 @@ describe('ParameterKeySafety: setGroupedSecretMap', () => {
 		const DANGEROUS = new Set(['__proto__', 'constructor', 'prototype']);
 		const PROTO_KEYS = new Set(Object.getOwnPropertyNames(Object.prototype));
 		const isSafeSsmKey = s => !DANGEROUS.has(s) && !PROTO_KEYS.has(s);
+		// >! checkSecretName() rejects not only a name that is itself a reserved
+		// >! key, but also a name that is safe as a whole while carrying a
+		// >! dangerous or prototype-reachable "/"-delimited segment — e.g.
+		// >! "/__proto__" or "app/toString". The secret-name charset below is the
+		// >! only one of the three that includes "/", so the generator must apply
+		// >! that same segment rule. Filtering on the whole string alone lets the
+		// >! generator emit names this property's own precondition excludes,
+		// >! which surfaces as a rare seed-dependent failure rather than a real
+		// >! defect. Empty segments are skipped to match the implementation.
+		const isSafeSecretName = s =>
+			isSafeSsmKey(s) && s.split('/').every(seg => seg.length === 0 || isSafeSsmKey(seg));
 		fc.assert(
 			fc.property(
 				fc.stringMatching(/^[a-zA-Z0-9_.-]{1,20}$/).filter(isSafeSsmKey),
-				fc.stringMatching(/^[a-zA-Z0-9_.+=@:/-]{1,20}$/).filter(
-					s => !DANGEROUS.has(s) && !PROTO_KEYS.has(s)
-				),
+				fc.stringMatching(/^[a-zA-Z0-9_.+=@:/-]{1,20}$/).filter(isSafeSecretName),
 				fc.dictionary(
 					fc.stringMatching(/^[a-zA-Z0-9_.-]{1,15}$/).filter(isSafeSsmKey),
 					fc.string({ maxLength: 30 }),
@@ -542,7 +567,11 @@ describe('ParameterKeySafety: setGroupedSecretMap', () => {
 					}
 				}
 			),
-			{ numRuns: 100 }
+			{
+				numRuns: 100,
+				// Set FC_SEED to reproduce a reported counterexample locally.
+				seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
+			}
 		);
 	});
 
