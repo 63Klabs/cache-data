@@ -3,10 +3,15 @@
  * support and the Node.js 20 deprecation.
  *
  * This test reads `CHANGELOG.md` as text and asserts on the structure of the
- * `## v1.3.17 (unreleased)` section rather than parsing Markdown, so it is
- * resilient to formatting while still enforcing the required content.
+ * `## v1.3.17` section rather than parsing Markdown, so it is resilient to
+ * formatting while still enforcing the required content.
  *
- * Requirement 7.1: a new entry exists under the current unreleased version.
+ * The heading match deliberately accepts either `(unreleased)` or a stamped
+ * release date (e.g. `(2026-10-02)`). The entry's required content does not
+ * change when the version is released, so pinning the test to `(unreleased)`
+ * would break the suite the moment the release date is written in.
+ *
+ * Requirement 7.1: a new entry exists for the current package version.
  * Requirement 7.2: Node.js 26 support is recorded under `Added`.
  * Requirement 7.3: the Node.js 20 deprecation is recorded under `Deprecated`
  *   using the plain "deprecated, no fixed sunset date" format (matching the
@@ -27,6 +32,34 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
 const SPEC_DIR_REFERENCE = '.kiro/specs/1-3-17-node-26-support';
+
+/**
+ * Heading pattern for the v1.3.17 entry. Matches both the pre-release form
+ * (`## v1.3.17 (unreleased)`) and the released form with a date stamp
+ * (`## v1.3.17 (2026-10-02)`), while not matching a different version such as
+ * `## v1.3.170`.
+ */
+const V1_3_17_HEADING = /^##\s+v1\.3\.17\s*(\((?:unreleased|\d{4}-\d{2}-\d{2})\))?\s*$/im;
+
+/** Heading pattern for the immediately preceding released version. */
+const V1_3_16_HEADING = /^##\s+v1\.3\.16\b/i;
+
+/**
+ * Find the index of the first line matching a pattern.
+ *
+ * @param {string} markdown - Full Markdown source.
+ * @param {RegExp} headingPattern - Pattern matching the target heading line.
+ * @returns {number} Zero-based line index, or -1 if not found.
+ */
+function findHeadingLine(markdown, headingPattern) {
+	const lines = markdown.split('\n');
+	for (let i = 0; i < lines.length; i++) {
+		if (headingPattern.test(lines[i])) {
+			return i;
+		}
+	}
+	return -1;
+}
 
 /**
  * Extract the body of a single `## <heading>` section from a Markdown
@@ -104,21 +137,21 @@ describe('CHANGELOG v1.3.17 entry: Node.js 26 support and Node.js 20 deprecation
 
 	beforeAll(() => {
 		changelog = readFileSync(changelogPath, 'utf-8');
-		section = extractSection(changelog, /^##\s+v1\.3\.17\s+\(unreleased\)/);
+		section = extractSection(changelog, V1_3_17_HEADING);
 	});
 
-	describe('Requirement 7.1: unreleased v1.3.17 section exists', () => {
-		it('has a "## v1.3.17 (unreleased)" heading', () => {
+	describe('Requirement 7.1: v1.3.17 section exists', () => {
+		it('has a "## v1.3.17" heading', () => {
 			expect(section).not.toBeNull();
-			expect(section).toMatch(/^##\s+v1\.3\.17\s+\(unreleased\)/);
+			expect(section).toMatch(V1_3_17_HEADING);
 		});
 
 		it('appears above the released v1.3.16 section', () => {
-			const posThis = changelog.indexOf('## v1.3.17 (unreleased)');
-			const posPrev = changelog.indexOf('## v1.3.16');
-			expect(posThis).toBeGreaterThanOrEqual(0);
-			expect(posPrev).toBeGreaterThanOrEqual(0);
-			expect(posThis).toBeLessThan(posPrev);
+			const lineThis = findHeadingLine(changelog, V1_3_17_HEADING);
+			const linePrev = findHeadingLine(changelog, V1_3_16_HEADING);
+			expect(lineThis).toBeGreaterThanOrEqual(0);
+			expect(linePrev).toBeGreaterThanOrEqual(0);
+			expect(lineThis).toBeLessThan(linePrev);
 		});
 	});
 
