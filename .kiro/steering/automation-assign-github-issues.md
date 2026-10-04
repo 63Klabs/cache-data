@@ -13,7 +13,7 @@ Check the GitHub repository 63klabs/cache-data for unassigned issues with the la
 
 4. Create a new spec directory at `.kiro/specs/{version}-{feature-name}/` where feature-name is derived from the issue title in kebab-case.
 
-5. Create a `requirements.md` file in that spec directory with the following structure:
+5. Create a `issue.md` file in that spec directory with the following structure:
 
 ```markdown
 # {Issue Title}
@@ -25,13 +25,12 @@ Check the GitHub repository 63klabs/cache-data for unassigned issues with the la
 - **Assigned**: {username}
 - **Created from issue**: {date}
 
+> **Note:** Since this issue was imported directly from GitHub it should be reviewed before a plan or requirements document is generated. Verify the behavior empirically rather than trusting the issue report. All recommendations should be reviewed and challenged to find the correct solution that fits within the project scope and parameters. While the goal may be good, there may be better paths to reaching it. Review every issue as a senior level architect, software engineer, and security analyst before providing recommendations for plan, specs, requirements, design, etc.
+
 ## Description
 
 {Issue body content}
 
-## Requirements
-
-- [ ] FR1: {Derive initial requirement from issue description}
 ```
 
 If there are no unassigned issues, report that there are no unassigned issues to process.
