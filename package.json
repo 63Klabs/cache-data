@@ -75,10 +75,16 @@
   "keywords": [
     "api",
     "cache",
-    "AWS S3",
-    "AWS DynamoDb",
     "aws",
-    "AWS Lambda"
+    "Amazon S3",
+    "Amazon DynamoDb",
+    "AWS Lambda",
+    "AWS X-Ray",
+    "Amazon API Gateway",
+    "AWS serverless",
+    "logger",
+    "api request routing",
+    "web service"
   ],
   "bugs": {
     "url": "https://github.com/63klabs/cache-data/issues"

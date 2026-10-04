@@ -8,6 +8,8 @@ This spec fixes the two confirmed instances, closes the audit on the defect clas
 
 **No `src/` changes are in scope.** `ParameterKeySafety` behaved correctly in every observed case; the defects are entirely in the tests' preconditions. Because `test` and `.kiro` are both excluded by `.npmignore`, this work changes nothing in the published package: no API surface, no runtime behavior, no consumer-visible change. Its value is release-pipeline reliability.
 
+This spec targets **v1.4.0**, matching the current `package.json` version.
+
 ## Verified Findings
 
 The issue report was validated empirically before writing this document rather than taken at face value. A throwaway harness sampled each suspect generator 100,000 times and checked every draw against the implementation's own predicate. Findings that differ from or add to the issue report are called out.
@@ -50,6 +52,23 @@ The suite has 638 `fc.assert` call sites across 113 files; 12 files pass a `seed
 So the issue's proposed pattern does not merely add redundant code — replicated across the suite it would make a global seed sweep impossible, and the 12 files already using it are currently immune to one. The per-call-site pattern should be removed in favor of the global, not propagated.
 
 With `FC_SEED` unset, `fc.configureGlobal` is never called and seeding behavior is unchanged, so normal CI runs keep their current randomized coverage.
+
+### A global seed alone will not make the suite replayable: `Math.random` feeds test inputs in four files
+
+`FC_SEED` controls fast-check's PRNG only. Seven call sites across four property-test files call `Math.random()` to build or select the value actually under test, so those tests would remain unreproducible even after Requirement 5 lands:
+
+| File | Lines | What `Math.random` decides |
+|------|-------|----------------------------|
+| `test/utils/property/prefix-resolution-property-tests.jest.mjs` | 131 | which permutation of names is tested |
+| `test/security/parameter-key-safety-tests.jest.mjs` | 888 | which permutation of names is tested |
+| `test/security/property/jsdoc-parsing-property-tests.jest.mjs` | 51, 182, 228 | which type wrapper is applied to the input |
+| `test/security/property/shell-injection-prevention-property-tests.jest.mjs` | 51, 52 | which shell metacharacter, and where it is inserted |
+
+This is an analytic consequence of `Math.random` being independent of fast-check's generator, not a measured result. It matters because it would make Requirement 5's replay guarantee false for precisely the kind of randomized security test where a rare counterexample is most expensive to lose. It is addressed by Requirement 9.
+
+A further, separable observation: both permutation sites use `sort(() => Math.random() - 0.5)`, an inconsistent comparator. The resulting order is implementation-defined and biased rather than a uniform shuffle. The properties assert permutation invariance, so any permutation is still a valid input and the tests are not wrong — but the idiom explores the permutation space far less evenly than it appears to.
+
+Separately, `Math.random` is also used in three files purely to build unique temp-file and temp-table names. Those uses do not influence any assertion and are out of scope.
 
 ## Glossary
 
@@ -133,7 +152,7 @@ Both fixes remove violating draws from the generators. Without Requirement 3 tha
 1. THE suite SHALL support setting the fast-check seed for every property test in the run from a single `FC_SEED` environment variable
 2. THE mechanism SHALL be a Jest setup module registered via `setupFilesAfterEnv` that calls `fc.configureGlobal({ seed })`, so that no per-call-site edits are required
 3. WHEN `FC_SEED` is not set, THE setup module SHALL NOT call `fc.configureGlobal` with a seed, and every property test SHALL retain its current randomized per-run seeding
-4. WHEN `FC_SEED` is set to an integer, THE same command SHALL produce identical generated inputs across repeated runs for every property test that does not pass its own `seed`
+4. WHEN `FC_SEED` is set to an integer, THE same command SHALL produce identical generated inputs across repeated runs for every property test that does not pass its own `seed` and does not draw test input from a source outside fast-check's control (see Requirement 9)
 5. THE 12 existing call-site `seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined` options SHALL be removed, because an explicit `seed: undefined` overrides the global configuration and would exempt those call sites from a seed sweep
 6. THE `seed:` option SHALL NOT be added to any additional `fc.assert` call site as part of this spec
 7. WHERE a property test legitimately requires a fixed seed independent of `FC_SEED`, THE call site MAY retain an explicit integer `seed`, and the reason SHALL be documented in an inline comment
@@ -181,6 +200,20 @@ Both fixes remove violating draws from the generators. Without Requirement 3 tha
 6. THE `CHANGELOG.md` entry SHALL state that the change is test-only with no effect on the published package
 7. THE number of test cases SHALL not decrease as a net effect of this spec; the deterministic cases added under Requirement 3 SHALL compensate for the rejection-path draws removed from the generators
 
+### Requirement 9: Bring test input under fast-check's control
+
+**User Story:** As a maintainer replaying a reported seed, I want every input the property actually tested to be determined by that seed, so that Requirement 5's replay guarantee is true for the whole suite rather than most of it.
+
+#### Acceptance Criteria
+
+1. WHERE a property test uses `Math.random()` to construct or select a value that influences an assertion, THE randomness SHALL be replaced by a fast-check arbitrary so the value is determined by the run's seed
+2. THE permutation sites SHALL use a fast-check-controlled shuffle rather than `sort(() => Math.random() - 0.5)`, so that the permutation is both seed-determined and drawn from a well-defined distribution
+3. THE metacharacter selection and insertion position in `shell-injection-prevention-property-tests.jest.mjs` SHALL be drawn from fast-check arbitraries
+4. THE type-wrapper selection in `jsdoc-parsing-property-tests.jest.mjs` SHALL be drawn from a fast-check arbitrary
+5. THE properties' existing assertions and intent SHALL be preserved; this requirement changes how inputs are drawn, not what is asserted
+6. `Math.random()` uses that only generate unique temp-file or temp-resource names, and do not influence any assertion, SHALL be left unchanged
+7. WHEN `FC_SEED` is set to a fixed integer, THE affected test files SHALL exercise identical inputs across repeated runs, and this SHALL be verified by observation rather than assumed
+
 ## Non-Goals
 
 - Changing any file under `src/`. `ParameterKeySafety` is correct as written; every observed counterexample was correctly rejected.
@@ -192,6 +225,49 @@ Both fixes remove violating draws from the generators. Without Requirement 3 tha
 
 ## Open Questions
 
-1. **Version placement.** `package.json` is at `1.3.17`, but this spec directory is prefixed `1-4-0`, as are four sibling specs. Per `.kiro/steering/spec-naming-convention-from-npm-package.md` the prefix should come from the current `package.json` version. Since the work is test-only and invisible to consumers, it carries no semver weight and could ship with any release. Confirm whether `package.json` should be bumped to `1.4.0` or this spec re-prefixed `1-3-18`.
-2. **Sweep budget.** Requirement 6 does not fix a cron frequency or iteration count. The issue notes a 40-seed sweep over a single file finishes in well under a minute locally; a full-suite sweep is substantially more expensive. The design document should set both against available Actions minutes.
-3. **Audit boundary.** Requirement 4 scopes enumeration to generators whose charset contains `/`, `:`, or `.`. The general defect class is "precondition weaker than acceptance predicate," which is broader than separator characters. Confirm whether the separator-based bound is acceptable for this spec, or whether the audit should also cover non-`stringMatching` arbitraries such as `fc.string` and `fc.constantFrom` feeding acceptance assertions.
+### 1. Version placement — RESOLVED
+
+`package.json` has been bumped to `1.4.0`; this spec targets v1.4.0 and the directory prefix `1-4-0` is correct. Recorded in the Introduction.
+
+### 2. Sweep budget — recommendation below, one decision needed
+
+Measured on this machine: the full suite is 223 files / 3,096 tests in **25s** at full parallelism and **48s** capped at two workers, which is the better model for a GitHub standard runner. Direct sampling of one generator is **0.71s for 500,000 draws**.
+
+Those two figures make the seed sweep a poor primary control. Against a defect at the rate measured in this spec (~1 in 50,000 draws, on an assert configured at `numRuns: 200`):
+
+| Control | Cost | Detection probability |
+|---------|------|----------------------:|
+| Full-suite sweep, 40 seeds | ~33 min runner time | 14.8% |
+| Full-suite sweep, 100 seeds | ~83 min | 33.0% |
+| Full-suite sweep, 500 seeds | ~7 h | 86.5% |
+| Direct generator sampling, 100,000 draws | 0.17s | 86.5% |
+| Direct generator sampling, 500,000 draws | 0.71s | 99.995% |
+
+A seed sweep re-runs 3,096 tests to buy 200 extra draws of the one generator that matters. Direct sampling spends the entire budget on the thing under test, which is why it reaches better sensitivity roughly 2,800x cheaper.
+
+**Recommendation.** Split the two goals that Requirement 6 currently conflates:
+
+- **Goal A — catch this defect class.** A deterministic precondition-audit test that samples each safety-critical generator against the implementation's predicate and asserts zero violations. Sub-second, runs in the normal suite on every push, and because it uses a fixed sampling seed it either always passes or always fails — it cannot become a new source of randomly-timed release blocks. This becomes the primary control and largely subsumes Requirement 4's one-time manual audit, converting it into a permanent regression test.
+- **Goal B — catch unknown seed-dependent flakiness.** A low-frequency full-suite sweep whose purpose is breadth: order effects, timing, genuinely rare defects in `src/`, defect classes nobody has thought of. Its low per-sweep sensitivity to *this* class is acceptable precisely because Goal A covers that class far better.
+
+Suggested shape for Goal B: weekly cron, 50 seeds sequential in a single job, ~45 min runner time per sweep, ~3 h/month.
+
+**Decision needed:** confirm the Goal A / Goal B split, and set the Goal B budget. The budget is a straight trade of Actions minutes against breadth, and reasonable answers range from "weekly, 50 seeds (~3 h/month)" to "nightly, 100 seeds (~42 h/month)" to "manual `workflow_dispatch` only (0 recurring cost)". Given that Goal A handles the known class, the manual-only option is defensible.
+
+### 3. Audit boundary — recommendation below, one decision needed
+
+The charset-based bound in Requirement 4 is a proxy, and it is the wrong variable. A generator can only violate a precondition if the acceptance predicate applies a rule the generator's filter does not mirror; the characters involved are incidental. Bounding by predicate instead is both tighter and more durable.
+
+Enumerating the acceptance predicates in `src/` and checking which apply rules to substructure rather than to the whole value:
+
+- `checkSecretName` / `isSafeSecretName` — applies denylists per `/`-delimited segment. **This is the only acceptance predicate in `src/` with a substructure rule,** and it is the source of both defects in this spec.
+- `checkKey` / `isSafeKey` — whole-value only (charset plus denylists, no split). Structurally cannot exhibit the defect, which matches the zero-violation control result.
+- `resolveGroupAndSegments` — not a safety predicate, but it does gate success on segment depth and returns `null` for inputs it rejects, so a property asserting a non-null result has the identical defect shape. Worth including in the boundary.
+- `DebugAndLog.isProduction` and siblings — environment predicates, not input validators. Out of scope.
+- `ValidationMatcher` splits routes extensively, but those are matching operations, not acceptance predicates that any property asserts as "this input is safe."
+
+I checked the four `fc.assert` sites in `prefix-resolution-property-tests.jest.mjs` against this boundary. Three assert equivalence between two calls, which has no precondition to violate. Property 10 asserts `toBeNull()` for `'/other/' + paramName` against an entry of `'/app/'`, which can never match, so it is sound. Property 8's conditional `r1.group === 'long'` is guarded by `if (r1)` and the longest-prefix sort makes `'long'` the only reachable value. No new defects, but these files are where the Requirement 9 `Math.random` findings came from.
+
+**Recommendation.** Replace the charset bound with: *every property that asserts acceptance or success of a predicate which applies rules to substructure.* That currently resolves to the `checkSecretName` family plus `resolveGroupAndSegments` — a small, enumerable set. Keep the charset grep as a discovery heuristic for finding candidates, not as the boundary itself. Then implement the audit as the Goal A permanent test rather than a one-time pass, so the boundary is re-checked automatically as the suite changes.
+
+**Decision needed:** confirm the predicate-based boundary. The trade is confidence against effort. The predicate boundary is defensible because it follows from the mechanism of the defect rather than from a surface feature, and I verified it is small. If you want a wider net, the next increment is auditing every property that asserts success of *any* `src/` predicate regardless of substructure — more call sites, little expected yield given that whole-value predicates cannot exhibit this shape.
