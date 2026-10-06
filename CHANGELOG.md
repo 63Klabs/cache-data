@@ -8,6 +8,32 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
+## v1.4.0 (unreleased)
+
+### Added
+
+- **Generator precondition audit** — `test/security/property/generator-precondition-audit-tests.jest.mjs` samples every fast-check arbitrary registered in the new `test/helpers/parameter-key-arbitraries.mjs` and asserts zero precondition violations, at a per-entry draw budget sized to each arbitrary's measured violation rate (200,000 baseline; 2,600,000 for the ARN entry). Deterministic by default, so it either always passes or always fails rather than becoming a randomly-timed release block. Includes a guard asserting the runtime premise the ARN generator rests on (no reserved key contains a digit). [Spec: 1-4-0-property-test-generator-preconditions](.kiro/specs/1-4-0-property-test-generator-preconditions/)
+- **Manual property seed sweep workflow** — `.github/workflows/property-seed-sweep.yml` runs the suite across a configurable range of fast-check seeds. `workflow_dispatch` only, with no `schedule`, `push`, or `pull_request` trigger, so it cannot block a merge or a release.
+
+### Fixed
+
+- **Property-test generator preconditions** — Two fast-check generators in `test/security/parameter-key-safety-tests.jest.mjs` had preconditions weaker than the acceptance rule `ParameterKeySafety` applies, so each could emit a draw the implementation is specified to reject while the property asserted acceptance. Measured pre-fix rates over 4,000,000 draws each: ~1 in 49,383 for the `setGroupedSecret` round-trip generator (whole-string-only filter) and ~1 in 666,667 for the `Property A5` ARN generator (unfiltered secret-name portion). One instance of this defect class blocked the v1.3.17 release package build. [Spec: 1-4-0-property-test-generator-preconditions](.kiro/specs/1-4-0-property-test-generator-preconditions/)
+  - Both generators now draw from shared arbitraries in `test/helpers/parameter-key-arbitraries.mjs`. The round-trip generator gates on the implementation's own `checkSecretName` — a precondition rather than a tautology, since the property asserts downstream assignment behavior. The ARN generator is safe by construction (every `/`-delimited segment carries a digit and no reserved key contains a digit), because that property asserts `isSafeSecretName` itself and filtering on it would make the property vacuous.
+  - The `setGroupedSecretMap` round-trip generator, fixed by hand in v1.3.17, converged onto the same shared arbitrary, removing the drift risk of a hand-written mirror of the implementation's segment rule.
+  - Six deterministic `setGroupedSecret` rejection cases added, covering both `dangerous-segment` and `prototype-segment` with exact reason strings — including the observed counterexamples `toString/p` and `+_8@/valueOf` — so those paths are exercised on every run rather than by rare random draw.
+- **Unseeded test input** — Seven `Math.random()` call sites that selected or constructed test input across four property-test files were replaced with fast-check arbitraries, so a fixed seed now reproduces those inputs. The 9 remaining `Math.random()` call sites across 3 test files only build unique temp-file and temp-resource names (scratch script files, throwaway DynamoDB table and S3 bucket names) and influence no assertion.
+
+### Changed
+
+- **Single `FC_SEED` seeding mechanism** — Suite-wide fast-check seeding now comes from one `FC_SEED` environment variable via `test/setup/fast-check-seed.mjs`, registered in `jest.config.mjs` under `setupFilesAfterEnv`. It reaches every `fc.assert` that omits a `seed` option. With `FC_SEED` unset, seeding behavior is unchanged; a non-integer value fails the run loudly rather than falling back to random. Replay a counterexample with `FC_SEED=<seed> npm test -- <test file>`.
+  - The 69 per-call-site `seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined` options across 12 files were removed, because an explicit `seed: undefined` overrides `fc.configureGlobal` and restores random seeding.
+- **Property-testing guardrails** — `.kiro/steering/test-execution-monitoring.md` extended with the generator precondition rule, the gate-predicate vs predicate-under-test distinction, and the `FC_SEED` / `FC_AUDIT_DRAWS` documentation.
+
+### Notes
+
+- **Test-only release** — This release changes only `test/`, `jest.config.mjs`, `.github/workflows/`, `.kiro/steering/`, and this changelog. No `src/` file changed: `ParameterKeySafety` correctly rejected every observed counterexample. Because `.npmignore` excludes `test` and `.kiro`, none of this reaches the published package, and there is no change in runtime behavior for consumers.
+- **Verification** — Full suite: 224 suites, 3,107 passing / 2 skipped, up from the 3,096 baseline (no net decrease in test count).
+
 ## v1.3.17 (2026-10-02)
 
 ### Added

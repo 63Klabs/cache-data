@@ -35,10 +35,7 @@ describe("Property 2: Environment Variable Parsing Correctness", () => {
 						expect(result).toBe(false);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -65,10 +62,7 @@ describe("Property 2: Environment Variable Parsing Correctness", () => {
 						expect(result).toBe(false);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -92,10 +86,7 @@ describe("Property 2: Environment Variable Parsing Correctness", () => {
 						expect(result).toBe(null);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -119,10 +110,7 @@ describe("Property 2: Environment Variable Parsing Correctness", () => {
 						expect(result).toBe(true);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -140,10 +128,7 @@ describe("Property 2: Environment Variable Parsing Correctness", () => {
 						expect(result).toBe(true);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -167,10 +152,7 @@ describe("Property 2: Environment Variable Parsing Correctness", () => {
 						expect(() => parseEnvFlag(value)).not.toThrow();
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});

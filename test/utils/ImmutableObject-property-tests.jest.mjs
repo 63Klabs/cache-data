@@ -58,10 +58,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(JSON.stringify(stateAfterModification)).toBe(JSON.stringify(originalState));
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -96,10 +93,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(JSON.stringify(stateAfterModification)).toBe(JSON.stringify(originalState));
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -136,10 +130,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(JSON.stringify(stateAfterModification)).toBe(JSON.stringify(originalState));
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -181,10 +172,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(JSON.stringify(structuredCloneOutput)).toBe(JSON.stringify(jsonPatternOutput));
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -217,10 +205,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(JSON.stringify(structuredCloneOutput)).toBe(JSON.stringify(jsonPatternOutput));
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -248,10 +233,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(JSON.stringify(structuredCloneOutput)).toBe(JSON.stringify(jsonPatternOutput));
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -306,10 +288,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(stateAfterModification).toBe(originalState);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -347,10 +326,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(stateAfterModification).toBe(originalState);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -388,10 +364,7 @@ describe('ImmutableObject - Property-Based Tests', () => {
 						expect(stateAfterModification).toBe(originalState);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});

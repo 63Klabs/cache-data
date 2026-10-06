@@ -45,10 +45,7 @@ describe("Property 7: Log Level Mapping Correctness", () => {
 						expect(result).toBe(EXPECTED_MAPPING[tag]);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -86,10 +83,7 @@ describe("Property 7: Log Level Mapping Correctness", () => {
 						expect(result).toBe("info");
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -109,10 +103,7 @@ describe("Property 7: Log Level Mapping Correctness", () => {
 						expect(result).toBe("info");
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -130,10 +121,7 @@ describe("Property 7: Log Level Mapping Correctness", () => {
 						expect(() => LoggerBridge.mapLevel(tag)).not.toThrow();
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -151,10 +139,7 @@ describe("Property 7: Log Level Mapping Correctness", () => {
 						expect(validLevels).toContain(result);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});

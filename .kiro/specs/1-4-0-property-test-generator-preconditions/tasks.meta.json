@@ -1,0 +1,489 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add `safeSecretName` using a gate-predicate filter": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238053881
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238070377
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238187075
+      }
+    ],
+    "1.2 Add `safeSecretNameArn`, safe by construction": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238054267
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238189937
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238300877
+      }
+    ],
+    "1.3 Add the `AUDITED_ARBITRARIES` registry": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238054561
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238307313
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238520499
+      }
+    ],
+    "2.1 Implement the audit over the registry": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238054817
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238524547
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239220357
+      }
+    ],
+    "2.2 Add the digit-lemma premise guard": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238055107
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239223653
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239390380
+      }
+    ],
+    "2.3 Verify the audit detects the pre-fix generators": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238055386
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239404387
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791241264744
+      }
+    ],
+    "3.1 Fix `Property: any safe group + secret name round-trips the value` (line ~388)": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238055687
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296331157
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296550207
+      }
+    ],
+    "3.2 Fix `Property A5: generated Secrets Manager ARNs are accepted` (line ~300)": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238055997
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296334445
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296553776
+      }
+    ],
+    "3.3 Converge the already-fixed `setGroupedSecretMap` property (line ~536) onto the shared arbitrary": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238056237
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296338057
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296557666
+      }
+    ],
+    "3.4 Run the file and the audit, and confirm both pass": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238056457
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296561256
+      }
+    ],
+    "4. Add deterministic coverage of the `setGroupedSecret` rejection paths": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238056727
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296565726
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297037858
+      }
+    ],
+    "5.1 Create `test/setup/fast-check-seed.mjs`": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238056913
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238073247
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239217531
+      }
+    ],
+    "5.2 Register the hook in `jest.config.mjs`": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238057145
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239226510
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239393687
+      }
+    ],
+    "5.3 Verify the hook's three behaviors": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238057316
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297045756
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297364080
+      }
+    ],
+    "6. Remove the call-site `seed` options": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238057675
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791241274787
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296177897
+      }
+    ],
+    "7.1 Seed-drive the two permutation sites": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238057937
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296181156
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296318178
+      }
+    ],
+    "7.2 Seed-drive metacharacter selection and insertion position": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238058247
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239407377
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791241268267
+      }
+    ],
+    "7.3 Seed-drive JSDoc type-wrapper selection": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238058537
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791239410428
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791241271715
+      }
+    ],
+    "7.4 Confirm the remaining `Math.random` uses are benign and verify reproducibility": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238058850
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296569206
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297041746
+      }
+    ],
+    "8. Add the manual seed sweep workflow": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238059147
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297368518
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297722800
+      }
+    ],
+    "9. Extend the property-testing guardrails in steering": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238059397
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297727430
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297937479
+      }
+    ],
+    "10. Update `CHANGELOG.md`": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238059608
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297940949
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791298041653
+      }
+    ],
+    "11.1 Run the full suite and compare against baseline": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238059817
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791298045570
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791298592724
+      }
+    ],
+    "11.2 Sample each fixed arbitrary at 500,000 draws": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238059985
+      },
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791298598811
+      },
+      {
+        "executionId": "4e3cb697-75f8-4448-a399-79077f7a91e2",
+        "chatSessionId": "sess_c34a0525-31b7-4c62-a3f8-46a1987f9c21",
+        "timestamp": 1791299263882
+      },
+      {
+        "executionId": "4e3cb697-75f8-4448-a399-79077f7a91e2",
+        "chatSessionId": "sess_c34a0525-31b7-4c62-a3f8-46a1987f9c21",
+        "timestamp": 1791299434691
+      }
+    ],
+    "11.3 Run the suite across 40 distinct `FC_SEED` values": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238060247
+      },
+      {
+        "executionId": "ba7d9a8c-97cb-4897-b98a-f205e025f53b",
+        "chatSessionId": "sess_513251a9-0e14-4f5e-b459-ec6b85216d90",
+        "timestamp": 1791299567811
+      },
+      {
+        "executionId": "ba7d9a8c-97cb-4897-b98a-f205e025f53b",
+        "chatSessionId": "sess_513251a9-0e14-4f5e-b459-ec6b85216d90",
+        "timestamp": 1791304608751
+      }
+    ],
+    "11.4 Confirm cleanup and documentation hygiene": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238060460
+      },
+      {
+        "executionId": "d54ed078-8ad5-4936-bffe-3a6c5ddf9d3a",
+        "chatSessionId": "sess_5dfb2907-4570-43f4-bf8f-0e7ad6e3286f",
+        "timestamp": 1791306206010
+      },
+      {
+        "executionId": "d54ed078-8ad5-4936-bffe-3a6c5ddf9d3a",
+        "chatSessionId": "sess_5dfb2907-4570-43f4-bf8f-0e7ad6e3286f",
+        "timestamp": 1791309626387
+      }
+    ],
+    "1. Create the shared arbitraries module with the fixed generators": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791238520872
+      }
+    ],
+    "2. Add the precondition audit test and prove it detects the defect": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791241264978
+      }
+    ],
+    "3. Rewire the parameter-key-safety properties onto the shared arbitraries": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791296561475
+      }
+    ],
+    "7. Bring remaining test input under fast-check's control": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297042097
+      }
+    ],
+    "5. Add the global fast-check seed hook": [
+      {
+        "executionId": "31868165-c1ab-4c7a-b3b2-c4f8a0b9b490",
+        "chatSessionId": "sess_c434e953-4197-4f2c-9c24-59e3cfe6573b",
+        "timestamp": 1791297364492
+      }
+    ],
+    "11. Final verification": [
+      {
+        "executionId": "d54ed078-8ad5-4936-bffe-3a6c5ddf9d3a",
+        "chatSessionId": "sess_5dfb2907-4570-43f4-bf8f-0e7ad6e3286f",
+        "timestamp": 1791309626835
+      }
+    ]
+  }
+}

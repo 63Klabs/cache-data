@@ -122,7 +122,13 @@ describe('Properties 9-15: Additional Validation Properties', () => {
 						actualRoute = `/${routePrefix}/value1`;
 					} else if (specType === 'multi-path') {
 						routePattern = `${routePrefix}/{${pathParam1}}/{${pathParam2}}`;
-						expectedParams = [pathParam1, pathParam2];
+						// >! `#extractParamNames` dedupes while preserving order (`[...new Set(params)]`),
+						// >! so two independently-drawn names that collide must collapse to one entry.
+						// >! Same exposure as the `multi-query` branch, where seed 907 drew
+						// >! queryParam1 === queryParam2 === "X". Dedupe the expectation rather than
+						// >! narrowing the generator, so collision draws stay in the input space and
+						// >! the test asserts the implementation's documented dedupe contract.
+						expectedParams = [...new Set([pathParam1, pathParam2])];
 						actualRoute = `/${routePrefix}/value1/value2`;
 					} else if (specType === 'single-query') {
 						routePattern = `${routePrefix}?${queryParam1}`;
@@ -130,11 +136,18 @@ describe('Properties 9-15: Additional Validation Properties', () => {
 						actualRoute = `/${routePrefix}`;
 					} else if (specType === 'multi-query') {
 						routePattern = `${routePrefix}?${queryParam1},${queryParam2}`;
-						expectedParams = [queryParam1, queryParam2];
+						// >! `#extractParamNames` dedupes while preserving order, so two
+						// >! independently-drawn names that collide must collapse to one entry.
+						// >! Counterexample: seed 907 drew queryParam1 === queryParam2 === "X",
+						// >! yielding a one-element `rule.params` against a two-element expectation.
+						expectedParams = [...new Set([queryParam1, queryParam2])];
 						actualRoute = `/${routePrefix}`;
 					} else { // mixed
 						routePattern = `${routePrefix}/{${pathParam1}}?${queryParam1}`;
-						expectedParams = [pathParam1, queryParam1];
+						// >! Same dedupe exposure: the path and query alphabets overlap
+						// >! (/^[a-z]{2,6}$/ is a subset of /^[a-zA-Z][a-zA-Z0-9]{0,10}$/), so a path
+						// >! param and a query param can collide and collapse to one entry.
+						expectedParams = [...new Set([pathParam1, queryParam1])];
 						actualRoute = `/${routePrefix}/value1`;
 					}
 					

@@ -302,6 +302,9 @@ When creating or modifying tests:
 6. **ALWAYS exclude from default test suite** if test executes other tests
 7. **ALWAYS verify locally** before committing
 8. **ALWAYS monitor process count** during test execution
+9. **ALWAYS match a generator's precondition to the implementation's acceptance rule**, including per-segment and per-component rules
+10. **NEVER filter a generator by the predicate the property asserts** - that is a vacuous property; narrow it safe by construction instead
+11. **NEVER add a `seed` option to `fc.assert`** - the global `FC_SEED` hook covers every call site, and an explicit `seed: undefined` defeats it
 
 ## Additional Guardrails
 
@@ -565,32 +568,146 @@ Ensure CI cleans up test artifacts:
 
 ### Property-Based Testing Specific Guardrails
 
-#### Seed Preservation for Reproducibility
+#### Generator Preconditions Must Match the Acceptance Rule
 
-**Problem:** Failed property tests with random seeds are hard to reproduce.
+**Problem:** A generator whose precondition is weaker than the rule the implementation applies can emit a draw the implementation is specified to reject, while the property asserts acceptance. Because fast-check draws a fresh seed on every run, the failure is invisible on most runs and surfaces at random.
 
-**Solution:** Log and preserve seeds:
+This is not hypothetical. One instance of this shape blocked the **v1.3.17** release package build after passing on every prior commit run. Two more were found and fixed under `.kiro/specs/1-4-0-property-test-generator-preconditions/`. Measured pre-fix violation rates, each over 4,000,000 draws (200,000 draws across 20 sampling seeds):
+
+| Generator | Defect shape | Violation rate |
+|-----------|--------------|---------------:|
+| `safeSecretName` | whole-string-only `.filter()` | ~1 in 49,383 |
+| `safeSecretNameArn` | secret-name portion unfiltered | ~1 in 666,667 |
+
+**Solution:** A generator's precondition must mirror the acceptance rule of the implementation under test, **including every per-segment and per-component rule**. If the implementation applies its denylists to each `/`-delimited segment as well as to the whole value, a filter that tests only the whole value is not a precondition — it is a near miss.
 
 ```javascript
-fc.assert(
-    fc.property(
-        fc.integer(),
-        (value) => {
-            // Test implementation
-        }
-    ),
-    { 
-        numRuns: 100,
-        seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : Date.now(),
-        verbose: true // Show seed on failure
-    }
-);
+// ❌ WRONG - whole-string-only filter. "toString/p" passes this and is rejected
+//            by the implementation, which checks each segment separately.
+fc.stringMatching(/^[a-zA-Z0-9_.+=@:/-]{1,20}$/)
+    .filter((value) => !RESERVED_KEYS.includes(value));
+
+// ✅ CORRECT - call the implementation, so the filter cannot drift when the rule
+//             grows a case a hand-written mirror does not know about.
+fc.stringMatching(/^[a-zA-Z0-9_.+=@:/-]{1,20}$/)
+    .filter((value) => ParameterKeySafety.checkSecretName(value).safe);
 ```
 
-**Reproduce failures:**
-```bash
-FC_SEED=1234567890 npm test -- test/property/my-test.jest.mjs
+Apply the rule uniformly; do not special-case a leading separator. A reserved key can be the *first* segment with no leading separator at all — `toString/p` was an observed counterexample, and the original issue report missed that shape.
+
+#### Gate Predicate vs the Predicate Under Test
+
+**Problem:** Filtering a generator by the same predicate the property asserts produces a **vacuous property**. Every draw satisfies the assertion by construction, so the test can never fail and verifies nothing — including after a real regression.
+
+**Solution:** Decide which kind of property you are writing before choosing how to establish the precondition.
+
+| The property asserts | Establish the precondition by | Why |
+|----------------------|-------------------------------|-----|
+| A **downstream** behavior (assignment, round-trip, caching) | Filtering on the implementation's gate predicate | The predicate is not the subject under test, so the filter is a precondition, not a tautology |
+| The **predicate itself** (for example `isSafeSecretName(x) === true`) | Narrowing the alphabet or shape so a violating draw is unreachable | Filtering on the asserted predicate makes the property vacuous |
+
+```javascript
+// ✅ CORRECT for a downstream property: setGroupedSecret's round-trip is the
+//    subject, so gating on checkSecretName is a precondition.
+export const safeSecretName = fc
+    .stringMatching(/^[a-zA-Z0-9_.+=@:/-]{1,20}$/)
+    .filter((value) => ParameterKeySafety.checkSecretName(value).safe);
+
+// ✅ CORRECT for a property asserting the predicate: safe by construction. Every
+//    segment carries at least one digit, and no reserved key contains a digit,
+//    so no segment can collide with a denylist entry.
+//    Do NOT "simplify" this into a .filter() on isSafeSecretName.
+const secretNameSegment = fc
+    .tuple(
+        fc.stringMatching(/^[a-zA-Z0-9_.+=@-]{0,8}$/),
+        fc.stringMatching(/^[0-9]$/),
+        fc.stringMatching(/^[a-zA-Z0-9_.+=@-]{0,8}$/)
+    )
+    .map(([before, digit, after]) => before + digit + after);
+
+// ❌ WRONG - vacuous. The property asserts isSafeSecretName(arn) === true, so
+//            filtering on it means the assertion cannot fail.
+fc.stringMatching(/^arn:aws:secretsmanager:.*$/)
+    .filter((arn) => ParameterKeySafety.isSafeSecretName(arn));
 ```
+
+> **Note**: A safe-by-construction generator usually rests on a premise about the runtime — here, that no reserved key contains a digit. Assert that premise in a test so a runtime change fails loudly instead of silently weakening the generator. See the digit-lemma guard in `test/security/property/generator-precondition-audit-tests.jest.mjs`.
+
+#### Seed Reproducibility via the Global `FC_SEED` Hook
+
+**Problem:** A counterexample from a randomly-seeded run is unreproducible, which is exactly when a seed is most valuable.
+
+**Solution:** One global hook driven by one environment variable. `test/setup/fast-check-seed.mjs` calls `fc.configureGlobal({ seed })` and is registered in `jest.config.mjs` under `setupFilesAfterEnv`, so the seed reaches every `fc.assert` that omits a `seed` option — 638 call sites across 113 files at the time of writing — with no per-call-site edits.
+
+Replay a reported counterexample:
+
+```bash
+FC_SEED=1171791119 npm test -- test/security/parameter-key-safety-tests.jest.mjs
+```
+
+**Do not pass `seed` at an `fc.assert` call site.** An explicit `seed: undefined` **overrides** `fc.configureGlobal` and restores random seeding, measured against the installed fast-check. 69 such options across 12 files were removed for that reason. Omitting the option makes the global hook the single mechanism, so a seed supplied by any route reaches every call site.
+
+```javascript
+// ❌ WRONG - an explicit seed overrides the global hook, and `undefined`
+//            restores random seeding, defeating a seed sweep.
+fc.assert(fc.property(fc.integer(), (value) => { /* Test implementation */ }), {
+    numRuns: 100,
+    seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
+});
+
+// ✅ CORRECT - omit `seed` entirely and let the global hook supply it.
+fc.assert(fc.property(fc.integer(), (value) => { /* Test implementation */ }), {
+    numRuns: 100
+});
+```
+
+Rules:
+
+- `FC_SEED` unset or empty is the normal CI path. The hook does not call `fc.configureGlobal`, so per-run randomized seeding is untouched.
+- `FC_SEED` set to a non-integer throws and the whole run fails. A run that reports a seed it did not use is worse than no seeding.
+- A call site may keep an explicit **integer** seed where a fixed seed is genuinely required, with an inline comment giving the reason.
+- Any `Math.random()` that influences an assertion must be replaced by a fast-check arbitrary, or `FC_SEED` will not reproduce the input. `Math.random()` that only builds unique temp-file or temp-resource names influences no assertion and is deliberately retained at 9 call sites across 3 test files.
+
+> **Known limitation**: `FC_SEED` reaches `fc.assert` through Jest's `setupFilesAfterEnv` hook, so a test that runs `fc.assert` inside a bare child process (for example `node --input-type=module -e`) is **not** seeded by it — the hook does not load in such a child. `test/cache/in-memory-only/property/in-memory-only-property-tests.jest.mjs` is an existing instance. This is established by inspection rather than measurement, and is a limitation to know about before relying on a replay, not a defect being tracked.
+
+#### Audit Draw Budgets and `FC_AUDIT_DRAWS`
+
+**Problem:** Low-rate precondition defects are far cheaper to find by sampling one generator directly than by re-running the whole suite under many seeds.
+
+**Solution:** `test/security/property/generator-precondition-audit-tests.jest.mjs` samples every arbitrary registered in `AUDITED_ARBITRARIES` (`test/helpers/parameter-key-arbitraries.mjs`) and asserts that no draw fails the consuming property's acceptance predicate. It runs on every push and is deterministic by default, so it either always passes or always fails and cannot become a randomly-timed release block.
+
+Budgets are **per entry**, because sensitivity is per generator: the budget giving ~98% detection for `safeSecretName` gave only ~26% for the roughly 13x rarer ARN entry. The baseline is 200,000 draws, and the ARN entry carries `drawCount: 2600000`.
+
+`FC_AUDIT_DRAWS` **scales** those budgets rather than replacing them:
+
+```bash
+# Sample every registered arbitrary twice as widely (BUDGET_SCALE = 2)
+FC_AUDIT_DRAWS=400000 npm test -- test/security/property/generator-precondition-audit-tests.jest.mjs
+```
+
+`BUDGET_SCALE = FC_AUDIT_DRAWS / 200000` is applied to each entry's own `drawCount`. A value below 200,000 shrinks every entry, which is why the seed-sweep workflow refuses such values.
+
+Registering an arbitrary in `AUDITED_ARBITRARIES` is what brings it under audit. The audit test is a generic loop with no per-arbitrary knowledge, so **extend the audit by adding a registry entry, never by editing the audit test.**
+
+#### Finding New Audit Candidates
+
+The audit boundary is the **predicate**, not the character set. A generator can only violate a precondition when the acceptance predicate applies a rule the generator fails to mirror; the characters involved are incidental. Scope the audit to every property asserting acceptance or success of a predicate that applies rules to substructure rather than to the whole value.
+
+As a *discovery heuristic* only, grep for `fc.stringMatching` arbitraries whose character class contains a separator:
+
+```bash
+# Candidates to inspect - NOT a definition of the audit boundary
+grep -rn "fc.stringMatching" test/ | grep -E "\[[^]]*[/:][^]]*\]"
+```
+
+The two fixed instances were located among this grep's hits in `test/security/parameter-key-safety-tests.jest.mjs` while they were still inline there. Its output shifts as the suite changes, and it now returns four live call sites across three files — two path generators (`test/cache/cache-shared-id-property-tests.jest.mjs`, `test/endpoint/property/connection-pagination-retry-bug-condition-property-tests.jest.mjs`), the `normalizePath` differential oracle, and the `detectShadowCollisions` permutation property — none of which assert a substructure predicate, so all four are benign.
+
+Two reasons not to mistake this grep for the boundary, both demonstrable on the current suite:
+
+- **It misses the fixed generators it was used to find.** `safeSecretName` is now written as `fc` then `.stringMatching(...)` on the next line, so a single-line grep for `fc.stringMatching` does not see it. The arbitraries this spec exists to protect are invisible to the heuristic; `AUDITED_ARBITRARIES` is what keeps them under audit.
+- **A hit can be benign.** A differential oracle comparing two implementations of the same function has no safety precondition to violate, no matter what separators its alphabet contains.
+
+So treat each hit as a candidate and decide by reading the predicate.
 
 #### Shrinking Timeout
 
@@ -802,7 +919,7 @@ it.skip('flaky test that needs fixing', () => {
 6. **Always restore mocks and global state** in afterEach
 7. **Always clean up file system artifacts** after tests
 8. **Always use memory limits** to prevent resource exhaustion
-9. **Always preserve property test seeds** for reproducibility
+9. **Always let the global `FC_SEED` hook seed property tests** - never pass `seed` at an `fc.assert` call site, and never filter a generator by the predicate the property asserts
 10. **Kill runaway processes immediately** - don't wait for them to finish
 
 **Emergency Command:**

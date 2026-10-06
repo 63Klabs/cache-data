@@ -47,10 +47,7 @@ describe("Generic Response Module - Property-Based Tests", () => {
 						}
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -65,10 +62,7 @@ describe("Generic Response Module - Property-Based Tests", () => {
 						expect(mod.headers["Content-Type"]).toBe(contentType);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -88,10 +82,7 @@ describe("Generic Response Module - Property-Based Tests", () => {
 						}
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -106,10 +97,7 @@ describe("Generic Response Module - Property-Based Tests", () => {
 						expect(typeof mod.response).toBe("function");
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -157,10 +145,7 @@ describe("Generic Response Module - Property-Based Tests", () => {
 						}
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});

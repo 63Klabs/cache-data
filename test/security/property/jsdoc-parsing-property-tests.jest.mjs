@@ -34,10 +34,17 @@ describe('Property-Based Tests: JSDoc Parsing Security', () => {
      */
     it('Property 2: JSDoc Bracket Matching Correctness - correctly parses nested brackets', () => {
         // Generate nested bracket patterns
+        // >! Feature: 1-4-0-property-test-generator-preconditions, Requirement 9.4
+        // >! Wrapper selection is drawn as an array of INDICES rather than prebuilt strings:
+        // >! each wrapper embeds the type built by the previous iteration, so the wrapper
+        // >! strings cannot be precomputed by an arbitrary. Drawing indices keeps the choice
+        // >! under fast-check's control, so a fixed FC_SEED reproduces the exact type built.
         const nestedBracketArbitrary = fc.tuple(
             fc.constantFrom('string', 'number', 'boolean', 'Object', 'Array', 'Promise'),
-            fc.integer({ min: 0, max: 3 }) // Nesting depth
-        ).map(([baseType, depth]) => {
+            fc.integer({ min: 0, max: 3 }), // Nesting depth
+            // One index per possible nesting level; max matches the 4-entry wrapper list below
+            fc.array(fc.integer({ min: 0, max: 3 }), { minLength: 3, maxLength: 3 })
+        ).map(([baseType, depth, wrapperChoices]) => {
             let type = baseType;
             
             // Build nested type
@@ -48,7 +55,7 @@ describe('Property-Based Tests: JSDoc Parsing Security', () => {
                     `{data: ${type}}`,
                     `{id: string, value: ${type}}`
                 ];
-                type = wrappers[Math.floor(Math.random() * wrappers.length)];
+                type = wrappers[wrapperChoices[i]];
             }
             
             return type;
@@ -167,10 +174,15 @@ describe('Property-Based Tests: JSDoc Parsing Security', () => {
      * Verifies that @returns tag parsing handles nested brackets correctly.
      */
     it('Property 2b: JSDoc Bracket Matching - @returns tag handles nested brackets', () => {
+        // >! Feature: 1-4-0-property-test-generator-preconditions, Requirement 9.4
+        // >! Wrapper indices are drawn rather than prebuilt wrapper strings, because each
+        // >! wrapper embeds the type built by the previous iteration and cannot be precomputed.
         const nestedBracketArbitrary = fc.tuple(
             fc.constantFrom('string', 'number', 'boolean', 'Object', 'Array', 'Promise'),
-            fc.integer({ min: 0, max: 3 })
-        ).map(([baseType, depth]) => {
+            fc.integer({ min: 0, max: 3 }),
+            // One index per possible nesting level; max matches the 4-entry wrapper list below
+            fc.array(fc.integer({ min: 0, max: 3 }), { minLength: 3, maxLength: 3 })
+        ).map(([baseType, depth, wrapperChoices]) => {
             let type = baseType;
             for (let i = 0; i < depth; i++) {
                 const wrappers = [
@@ -179,7 +191,7 @@ describe('Property-Based Tests: JSDoc Parsing Security', () => {
                     `{data: ${type}}`,
                     `{success: boolean, data: ${type}}`
                 ];
-                type = wrappers[Math.floor(Math.random() * wrappers.length)];
+                type = wrappers[wrapperChoices[i]];
             }
             return type;
         });
@@ -215,17 +227,22 @@ describe('Property-Based Tests: JSDoc Parsing Security', () => {
      * Verifies that @throws tag parsing handles nested brackets correctly.
      */
     it('Property 2c: JSDoc Bracket Matching - @throws tag handles nested brackets', () => {
+        // >! Feature: 1-4-0-property-test-generator-preconditions, Requirement 9.4
+        // >! Wrapper indices are drawn rather than prebuilt wrapper strings, because each
+        // >! wrapper embeds the type built by the previous iteration and cannot be precomputed.
         const nestedBracketArbitrary = fc.tuple(
             fc.constantFrom('Error', 'TypeError', 'ValidationError', 'CustomError'),
-            fc.integer({ min: 0, max: 2 })
-        ).map(([baseType, depth]) => {
+            fc.integer({ min: 0, max: 2 }),
+            // One index per possible nesting level; max matches the 2-entry wrapper list below
+            fc.array(fc.integer({ min: 0, max: 1 }), { minLength: 2, maxLength: 2 })
+        ).map(([baseType, depth, wrapperChoices]) => {
             let type = baseType;
             for (let i = 0; i < depth; i++) {
                 const wrappers = [
                     `${type}<{message: string}>`,
                     `${type}<{code: number, message: string}>`
                 ];
-                type = wrappers[Math.floor(Math.random() * wrappers.length)];
+                type = wrappers[wrapperChoices[i]];
             }
             return type;
         });

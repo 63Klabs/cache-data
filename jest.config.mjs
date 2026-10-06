@@ -18,6 +18,16 @@ export default {
 	// Disable transforms - we're using native ESM
 	transform: {},
 
+	// Suite-wide fast-check seeding from the FC_SEED environment variable.
+	// Must be setupFilesAfterEnv, NOT setupFiles: setupFiles runs in a module
+	// registry the test files do not share, so fc.configureGlobal() there mutates
+	// a different fast-check instance than the one a test file imports and never
+	// reaches fc.assert. setupFilesAfterEnv loads into the test file's own
+	// registry, where the global configuration does apply.
+	// See test/setup/fast-check-seed.mjs and
+	// .kiro/specs/1-4-0-property-test-generator-preconditions/design.md § F
+	setupFilesAfterEnv: ['<rootDir>/test/setup/fast-check-seed.mjs'],
+
 	// Module name mapper for ESM imports
 	// Allows imports without .js extension to resolve correctly
 	moduleNameMapper: {

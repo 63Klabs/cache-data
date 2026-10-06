@@ -11,6 +11,13 @@
 import { describe, it, expect } from '@jest/globals';
 import fc from 'fast-check';
 
+// The safety-critical arbitraries are imported, never redefined here. The
+// precondition audit in test/security/property/generator-precondition-audit-tests.jest.mjs
+// samples these exact objects, so a local copy would let the audit pass against
+// the copy while the generator the properties actually use drifted — the defect
+// class spec 1-4-0-property-test-generator-preconditions exists to close.
+import { safeSecretName, safeSecretNameArn } from '../helpers/parameter-key-arbitraries.mjs';
+
 const ParameterKeySafety = (await import('../../src/lib/utils/ParameterKeySafety.class.js')).default;
 
 // ---------------------------------------------------------------------------
@@ -297,18 +304,19 @@ describe('ParameterKeySafety: checkSecretName / isSafeSecretName', () => {
 		expect(result).toEqual({ safe: true, reason: null });
 	});
 
+	// Feature: 1-4-0-property-test-generator-preconditions, Property 2: Constructed ARNs are always accepted
+	//
+	// >! The ARN's secret-name portion used to be an unfiltered
+	// >! fc.stringMatching(/^[a-zA-Z0-9/_+=.@-]{1,100}$/), which could draw a
+	// >! reserved "/"-delimited segment (observed: ".../secret:/prototype/--16L5H3")
+	// >! and so assert acceptance of a name checkSecretName is specified to
+	// >! reject. `safeSecretNameArn` is safe BY CONSTRUCTION, not by filtering:
+	// >! this property asserts isSafeSecretName itself, so gating the generator
+	// >! on that predicate would make it vacuous. See the shared module for the
+	// >! digit lemma. Do NOT replace this with a locally filtered generator.
 	it('Property A5: generated Secrets Manager ARNs are accepted', () => {
-		const arnGenerator = fc.tuple(
-			fc.stringMatching(/^[a-z0-9-]{2,20}$/), // region
-			fc.stringMatching(/^[0-9]{12}$/), // account id
-			fc.stringMatching(/^[a-zA-Z0-9/_+=.@-]{1,100}$/), // secret name portion
-			fc.stringMatching(/^[a-zA-Z0-9]{6}$/) // AWS-appended suffix
-		).map(([region, accountId, secretName, suffix]) =>
-			`arn:aws:secretsmanager:${region}:${accountId}:secret:${secretName}-${suffix}`
-		);
-
 		fc.assert(
-			fc.property(arnGenerator, (arn) => {
+			fc.property(safeSecretNameArn, (arn) => {
 				expect(ParameterKeySafety.isSafeSecretName(arn)).toBe(true);
 			}),
 			{ numRuns: 100 }
@@ -385,6 +393,49 @@ describe('ParameterKeySafety: setGroupedSecret', () => {
 		expect(after.filter(k => !before.includes(k))).toHaveLength(0);
 	});
 
+	// Feature: 1-4-0-property-test-generator-preconditions, Property 5: Reserved segments are rejected with an exact reason
+	//
+	// A name that is safe as a whole but carries a reserved "/"-delimited
+	// segment must be rejected here too, not just by checkSecretName(). A
+	// leading "/" produces an empty first segment, which is itself harmless.
+	//
+	// These cases are deterministic on purpose. Fixing the round-trip
+	// generator below (so it can no longer draw a name carrying a reserved
+	// segment) removed the only path by which this entry point reached the
+	// dangerous-segment and prototype-segment branches — and it reached them
+	// only on a rare random draw anyway. Covering them here keeps net coverage
+	// from decreasing and moves it onto every run.
+	//
+	// "toString/p" and "+_8@/valueOf" are the actual counterexamples the
+	// generator emitted during verification, so the values that could have
+	// blocked a release stay permanently covered. "toString/p" is also the
+	// shape the original issue report missed: the reserved key is the FIRST
+	// segment with no leading separator, so a fix that special-cased a leading
+	// "/" would not have caught it.
+	it.each([
+		['toString/p', 'prototype-segment'],
+		['+_8@/valueOf', 'prototype-segment'],
+		['/__proto__', 'dangerous-segment'],
+		['myapp/__proto__/db', 'dangerous-segment'],
+		['myapp/constructor', 'dangerous-segment'],
+		['/hasOwnProperty', 'prototype-segment']
+	])('rejects secret name %s with reason %s and writes nothing', (secretName, reason) => {
+		const store = {};
+		const result = ParameterKeySafety.setGroupedSecret(store, 'app', secretName, 'v');
+		expect(result).toEqual({ assigned: false, reason });
+		expect(Object.keys(store)).toHaveLength(0);
+	});
+
+	// Feature: 1-4-0-property-test-generator-preconditions, Property 1: Gate-filtered secret names are always accepted
+	//
+	// >! The secret-name generator used to filter on the whole string only, so it
+	// >! could draw a name carrying a reserved "/"-delimited segment (observed:
+	// >! "+_8@/valueOf", "toString/p") and then assert setGroupedSecret accepted
+	// >! it. The imported `safeSecretName` gates every draw on the
+	// >! implementation's own checkSecretName, which applies the denylists to
+	// >! every segment. That is a precondition and not a tautology: this property
+	// >! asserts setGroupedSecret's assignment and round-trip behavior, which is
+	// >! downstream of the gate, so it can still fail.
 	it('Property: any safe group + secret name round-trips the value', () => {
 		const DANGEROUS = new Set(['__proto__', 'constructor', 'prototype']);
 		const PROTO_KEYS = new Set(Object.getOwnPropertyNames(Object.prototype));
@@ -392,9 +443,7 @@ describe('ParameterKeySafety: setGroupedSecret', () => {
 		fc.assert(
 			fc.property(
 				fc.stringMatching(/^[a-zA-Z0-9_.-]{1,20}$/).filter(isSafeGroup),
-				fc.stringMatching(/^[a-zA-Z0-9_.+=@:/-]{1,20}$/).filter(
-					s => !DANGEROUS.has(s) && !PROTO_KEYS.has(s)
-				),
+				safeSecretName,
 				fc.string({ maxLength: 50 }),
 				(group, secretName, value) => {
 					const store = {};
@@ -540,18 +589,25 @@ describe('ParameterKeySafety: setGroupedSecretMap', () => {
 		// >! checkSecretName() rejects not only a name that is itself a reserved
 		// >! key, but also a name that is safe as a whole while carrying a
 		// >! dangerous or prototype-reachable "/"-delimited segment — e.g.
-		// >! "/__proto__" or "app/toString". The secret-name charset below is the
-		// >! only one of the three that includes "/", so the generator must apply
-		// >! that same segment rule. Filtering on the whole string alone lets the
+		// >! "/__proto__" or "app/toString". The secret-name charset is the only
+		// >! one of the three here that includes "/", so its generator must apply
+		// >! that same segment rule; filtering on the whole string alone lets the
 		// >! generator emit names this property's own precondition excludes,
 		// >! which surfaces as a rare seed-dependent failure rather than a real
-		// >! defect. Empty segments are skipped to match the implementation.
-		const isSafeSecretName = s =>
-			isSafeSsmKey(s) && s.split('/').every(seg => seg.length === 0 || isSafeSsmKey(seg));
+		// >! defect.
+		// >!
+		// >! The v1.3.17 fix expressed that rule as a hand-written mirror here
+		// >! (whole-string check plus a per-segment pass skipping empty segments).
+		// >! It is replaced by the imported `safeSecretName`, which calls
+		// >! checkSecretName directly, for two reasons: a hand-mirror is correct
+		// >! only until the implementation grows a rule the mirror does not know
+		// >! about, and one shared definition now serves both round-trip
+		// >! properties instead of two that can diverge. Same charset and {1,20}
+		// >! length bound, so coverage is unchanged.
 		fc.assert(
 			fc.property(
 				fc.stringMatching(/^[a-zA-Z0-9_.-]{1,20}$/).filter(isSafeSsmKey),
-				fc.stringMatching(/^[a-zA-Z0-9_.+=@:/-]{1,20}$/).filter(isSafeSecretName),
+				safeSecretName,
 				fc.dictionary(
 					fc.stringMatching(/^[a-zA-Z0-9_.-]{1,15}$/).filter(isSafeSsmKey),
 					fc.string({ maxLength: 30 }),
@@ -567,11 +623,7 @@ describe('ParameterKeySafety: setGroupedSecretMap', () => {
 					}
 				}
 			),
-			{
-				numRuns: 100,
-				// Set FC_SEED to reproduce a reported counterexample locally.
-				seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-			}
+			{ numRuns: 100 }
 		);
 	});
 
@@ -883,9 +935,19 @@ describe('ParameterKeySafety: detectShadowCollisions (Property 11)', () => {
 				fc.array(
 					fc.stringMatching(/^\/[a-zA-Z0-9_/]{1,30}$/),
 					{ minLength: 0, maxLength: 20 }
+				).chain((names) =>
+					fc.tuple(
+						fc.constant(names),
+						// Full permutation: min = max = length. The permutation is drawn by
+						// fast-check, so it is seed-determined and replayable via FC_SEED.
+						// This replaces `names.slice().sort(() => Math.random() - 0.5)`, which
+						// was both unseeded and an inconsistent comparator: the resulting order
+						// was implementation-defined and biased rather than a uniform shuffle,
+						// so it explored the permutation space far less evenly than it appeared to.
+						fc.shuffledSubarray(names, { minLength: names.length, maxLength: names.length })
+					)
 				),
-				(names) => {
-					const shuffled = names.slice().sort(() => Math.random() - 0.5);
+				([names, shuffled]) => {
 					const r1 = ParameterKeySafety.detectShadowCollisions(names);
 					const r2 = ParameterKeySafety.detectShadowCollisions(shuffled);
 					// Same set of {name, shadowedBy} pairs regardless of order

@@ -13,10 +13,7 @@ import ApiRequest from "../../src/lib/tools/ApiRequest.class.js";
 
 const EXPECTED_KEYS = ["success", "statusCode", "message", "headers", "body"];
 
-const FC_OPTIONS = {
-	numRuns: 100,
-	seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-};
+const FC_OPTIONS = { numRuns: 100 };
 
 describe("ApiRequest Response Format - Property-Based Tests", () => {
 

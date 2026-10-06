@@ -100,10 +100,7 @@ describe("Property 8: Log Level Filtering Preservation", () => {
 						expect(withBridge).toBe(withoutBridge);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -118,10 +115,7 @@ describe("Property 8: Log Level Filtering Preservation", () => {
 						expect(result).toBe(true);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -156,10 +150,7 @@ describe("Property 8: Log Level Filtering Preservation", () => {
 						expect(result).toBe(false);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -192,10 +183,7 @@ describe("Property 8: Log Level Filtering Preservation", () => {
 						expect(result).toBe(true);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -216,10 +204,7 @@ describe("Property 8: Log Level Filtering Preservation", () => {
 						}
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});

@@ -36,10 +36,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(hash1).toBe(hash2);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -58,10 +55,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(hash1).toBe(hash2);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -90,10 +84,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(hash1).not.toBe(hash2);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -112,10 +103,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(hash1).not.toBe(hash2);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -138,10 +126,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(originalData).toEqual(dataCopy);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -164,10 +149,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(originalOptions).toEqual(optionsCopy);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -186,10 +168,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(originalData).toEqual(dataCopy);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -212,10 +191,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(originalData).toEqual(dataCopy);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -242,10 +218,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(hashWithStructuredClone).toBe(hashAgain);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -268,10 +241,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(hash1).toBe(hash2);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -294,10 +264,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(hash1).toBe(hash2);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -321,10 +288,7 @@ describe("Utils Property-Based Tests", () => {
 						expect(hash1).toBe(hash2);
 					}
 				),
-				{ 
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});

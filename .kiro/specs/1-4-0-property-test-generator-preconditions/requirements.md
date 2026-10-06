@@ -14,12 +14,14 @@ This spec targets **v1.4.0**, matching the current `package.json` version.
 
 The issue report was validated empirically before writing this document rather than taken at face value. A throwaway harness sampled each suspect generator 100,000 times and checked every draw against the implementation's own predicate. Findings that differ from or add to the issue report are called out.
 
+The rates below were subsequently **remeasured** during task 2.3, at 200,000 draws × 20 sampling seeds (4,000,000 draws) per generator, because sizing the precondition audit's draw budget depends on them. The table carries the remeasured figures; the original single-seed figures and what changed are recorded in the note that follows.
+
 ### Both reported instances are real
 
-| # | Location | Property | Violations / 100,000 draws | `numRuns` |
-|---|----------|----------|---------------------------:|----------:|
-| 1 | line ~395 (`describe` at 325) | `Property: any safe group + secret name round-trips the value` | 2 | 200 |
-| 2 | line ~304 (`describe` at 225) | `Property A5: generated Secrets Manager ARNs are accepted` | 2 | 100 |
+| # | Location | Property | Measured violation rate | `numRuns` |
+|---|----------|----------|------------------------:|----------:|
+| 1 | line ~395 (`describe` at 325) | `Property: any safe group + secret name round-trips the value` | ~1 in 49,383 (81 / 4,000,000 draws) | 200 |
+| 2 | line ~304 (`describe` at 225) | `Property A5: generated Secrets Manager ARNs are accepted` | ~1 in 666,667 (6 / 4,000,000 draws) | 100 |
 
 Observed counterexamples, with the implementation's rejection reason:
 
@@ -28,11 +30,15 @@ Observed counterexamples, with the implementation's rejection reason:
 
 Two controls returned zero violations in 100,000 draws each, confirming the measurement discriminates: the already-fixed segment-aware generator at line ~554, and the `isSafeKey` generators whose charset contains no `/`.
 
-> **Note**: Measured rates (~1 in 50,000 for both) differ from the issue's reported figures (1 in 20,000 and 1 in 100,000). At 2 violations per 100,000 draws the sampling error is large, and this measurement used a single fixed sampling seed. The rates are the same order of magnitude; the issue's claim that instance 1 is "roughly 2.5x more likely" than instance 2 is **not** reproduced and should not be relied on. Both are low-rate, both are real, and the remediation is the same either way, so no further rate measurement is required.
+> **Note**: The first measurement reported 2 violations per 100,000 draws for **both** instances (~1 in 50,000 each) from a single fixed sampling seed. At 2 violations the sampling error is large, and for instance 2 that observation turned out to be a low-probability one: remeasured over 40x the data, instance 2 sits at ~1 in 666,667, roughly **13x rarer** than instance 1 and ~13x rarer than first recorded. Instance 1's remeasured rate (~1 in 49,383) matches its original figure closely. Both remain low-rate, both are real, and the remediation is unchanged — but the rates are *not* interchangeable for budget sizing, which is why the audit uses a per-entry draw budget rather than one shared number.
+>
+> The issue's reported figures (1 in 20,000 and 1 in 100,000) are still not reproduced, but its **directional** claim is: it said instance 1 is "roughly 2.5x more likely" than instance 2, and instance 1 is in fact more likely — by roughly 13x. The direction is reproducible and should be relied on; the 2.5x magnitude should not.
 
 ### The release risk is understated, not overstated
 
-Combining both instances at their configured `numRuns` gives roughly a 0.6% chance per suite run that at least one emits a violating draw. The CI matrix runs four Node legs, but the `'26'` leg is `continue-on-error` and cannot fail the workflow, so **three** legs can block — about a **1.8% chance per CI run (~1 in 56)** that this defect class blocks a build. The issue's per-leg framing is correct; its 4x multiplier is not.
+Combining both instances at their configured `numRuns` gives roughly a **0.42%** chance per suite run that at least one emits a violating draw (instance 1: 200 draws at ~1 in 49,383 ≈ 0.40%; instance 2: 100 draws at ~1 in 666,667 ≈ 0.015%). The CI matrix runs four Node legs, but the `'26'` leg is `continue-on-error` and cannot fail the workflow, so **three** legs can block — about a **1.25% chance per CI run (~1 in 80)** that this defect class blocks a build. The issue's per-leg framing is correct; its 4x multiplier is not.
+
+> **Note**: These figures replace an earlier **0.6% per suite run / 1.8% per CI run (~1 in 56)**, which assumed both instances shared a ~1-in-50,000 rate. Correcting instance 2 to ~1 in 666,667 lowers the combined estimate by about a third and makes instance 1 responsible for ~96% of the remaining risk. The conclusion does not change: the per-CI-run risk is still well above the issue's framing, and both instances still need fixing.
 
 ### Instance 1's violations are not limited to a leading slash
 
@@ -132,16 +138,22 @@ Both fixes remove violating draws from the generators. Without Requirement 3 tha
 
 ### Requirement 4: Close the audit on the defect class
 
-**User Story:** As a maintainer, I want a bounded, repeatable check for this defect shape across the suite, so that closing this issue means the class is actually closed and not just its two known instances.
+**User Story:** As a maintainer, I want a bounded, mechanical, permanently-running check for this defect shape, so that closing this issue means the class stays closed rather than being verified once and left to drift.
+
+Scope is bounded by *predicate*, not by character set. A generator can only violate a precondition if the acceptance predicate applies a rule the generator's filter does not mirror; the characters involved are incidental. Enumerating `src/` acceptance predicates, only the `checkSecretName` / `isSafeSecretName` family applies rules to substructure, and `resolveGroupAndSegments` gates success on segment depth in the same shape. `checkKey` / `isSafeKey` are whole-value only and structurally cannot exhibit the defect.
 
 #### Acceptance Criteria
 
-1. THE audit SHALL enumerate every `fc.assert` call site in `test/` whose generator character class contains a separator character (`/`, `:`, or `.`) and whose property asserts acceptance or successful assignment
-2. FOR each enumerated call site, THE audit SHALL record one of: no precondition to violate, precondition already segment-aware, or defect requiring a fix
-3. THE audit SHALL verify each enumerated call site empirically by sampling its generator and checking each draw against the relevant acceptance predicate, rather than by inspection alone
-4. WHERE the audit finds a defect beyond the two in Requirements 1 and 2, THE defect SHALL be fixed under the same rules: gate-predicate filtering permitted only where the property asserts a downstream behavior, safe-by-construction narrowing required where the property asserts the predicate itself
-5. THE audit method SHALL be recorded in the design document in enough detail to be re-run by a future maintainer against a changed suite
-6. THE audit SHALL NOT be treated as requiring manual review of all 113 files calling `fc.assert`; the mechanical enumeration in criterion 1 defines its scope
+1. THE audit SHALL cover every property that asserts acceptance or success of a predicate which applies rules to substructure rather than to the whole value
+2. THE audited set SHALL include the `checkSecretName` / `isSafeSecretName` family and `resolveGroupAndSegments`, and SHALL NOT be bounded by the generator's character set
+3. THE audit SHALL be implemented as a permanent test that samples each audited generator and asserts zero precondition violations, NOT as a one-time manual review
+4. THE audit SHALL sample the same arbitrary object the property under test uses, so that it cannot pass against a copy while the real generator drifts
+5. THE audit SHALL be deterministic by default, so that it either always passes or always fails and cannot become a new source of randomly-timed release blocks
+6. THE audit SHALL report, on failure, the generator name, the counterexample, the predicate's rejection reason, and which property relied on the precondition
+7. WHERE the audit relies on a premise about the runtime (such as the character content of `Object.prototype` own-property names), THE premise SHALL itself be asserted so that a runtime change cannot silently weaken a generator
+8. WHERE the audit finds a defect beyond the two in Requirements 1 and 2, THE defect SHALL be fixed under the same rules: gate-predicate filtering permitted only where the property asserts a downstream behavior, safe-by-construction narrowing required where the property asserts the predicate itself
+9. THE audit SHALL NOT be treated as requiring manual review of all 113 files calling `fc.assert`; criterion 1 defines its scope
+10. THE charset grep used during verification MAY be retained as a discovery heuristic for finding new candidates, but SHALL NOT define the audit boundary
 
 ### Requirement 5: Suite-wide reproducible seeding via global configuration
 
@@ -153,25 +165,28 @@ Both fixes remove violating draws from the generators. Without Requirement 3 tha
 2. THE mechanism SHALL be a Jest setup module registered via `setupFilesAfterEnv` that calls `fc.configureGlobal({ seed })`, so that no per-call-site edits are required
 3. WHEN `FC_SEED` is not set, THE setup module SHALL NOT call `fc.configureGlobal` with a seed, and every property test SHALL retain its current randomized per-run seeding
 4. WHEN `FC_SEED` is set to an integer, THE same command SHALL produce identical generated inputs across repeated runs for every property test that does not pass its own `seed` and does not draw test input from a source outside fast-check's control (see Requirement 9)
-5. THE 12 existing call-site `seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined` options SHALL be removed, because an explicit `seed: undefined` overrides the global configuration and would exempt those call sites from a seed sweep
+5. THE 69 existing call-site `seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined` options, spread across 12 files, SHALL be removed, because an explicit `seed: undefined` overrides the global configuration and would exempt those call sites from a seed sweep
 6. THE `seed:` option SHALL NOT be added to any additional `fc.assert` call site as part of this spec
 7. WHERE a property test legitimately requires a fixed seed independent of `FC_SEED`, THE call site MAY retain an explicit integer `seed`, and the reason SHALL be documented in an inline comment
 8. WHEN `FC_SEED` is set to a non-integer or otherwise unparseable value, THE setup module SHALL fail loudly rather than silently falling back to random seeding, so a typo in a sweep configuration cannot produce a run that appears reproducible but is not
 9. THE `FC_SEED` usage SHALL be documented for maintainers, including the exact command to replay a reported counterexample
 
-### Requirement 6: Scheduled multi-seed sweep
+### Requirement 6: Manual multi-seed sweep
 
-**User Story:** As a maintainer, I want low-rate precondition violations to surface on a schedule, so that the next one costs a triage ticket instead of a release cycle.
+**User Story:** As a maintainer, I want to be able to sweep many seeds on demand, so that I can widen sampling when I suspect seed-dependent behavior without paying for it continuously.
+
+The sweep is a breadth net, not the primary control for this defect class. Requirement 4's audit covers the known class at far higher sensitivity and far lower cost, so the sweep exists to catch what nobody has enumerated: order effects, timing, genuinely rare defects in `src/`. It is manually triggered only, and therefore has no recurring cost.
 
 #### Acceptance Criteria
 
-1. THE repository SHALL include a scheduled GitHub Actions workflow that runs the test suite repeatedly, varying `FC_SEED` on each iteration
-2. THE sweep SHALL run on a cron schedule and SHALL also be manually triggerable via `workflow_dispatch`
+1. THE repository SHALL include a GitHub Actions workflow that runs the test suite repeatedly, varying `FC_SEED` on each iteration
+2. THE sweep SHALL be triggerable only via `workflow_dispatch`; it SHALL NOT be configured with a `schedule` trigger
 3. THE sweep SHALL NOT run on `push` or `pull_request`, so that it cannot block a merge or a release
-4. THE sweep SHALL report the failing `FC_SEED` value in its output in a form directly replayable via Requirement 5's documented command
-5. THE sweep SHALL have a job-level `timeout-minutes` and SHALL bound its iteration count, so a hanging or slow iteration cannot consume the runner indefinitely
-6. THE sweep's iteration count and schedule SHALL be chosen such that a defect at the rate measured for the instances in this spec (~1 in 50,000 draws) has a meaningful chance of being caught within a release cycle; the design document SHALL state the assumed rate and the resulting detection probability
-7. THE sweep workflow SHALL be documented so that a maintainer encountering a sweep failure knows it indicates a test-precondition defect rather than a regression in `src/`
+4. THE sweep SHALL accept the number of seeds, the starting seed, and the audit draw budget as workflow inputs, with documented defaults
+5. THE sweep SHALL stop at the first failing seed and report that seed in a form directly replayable via Requirement 5's documented command
+6. THE sweep SHALL have a job-level `timeout-minutes` and SHALL bound its iteration count, so a hanging or slow iteration cannot consume the runner indefinitely
+7. THE design document SHALL state the sweep's expected detection probability at its default seed count against the defect rate measured in this spec, so its low sensitivity relative to Requirement 4 is explicit rather than implied
+8. THE sweep workflow SHALL be documented so that a maintainer encountering a sweep failure knows it most likely indicates a test-precondition defect rather than a regression in `src/`
 
 ### Requirement 7: Prevent recurrence
 
@@ -229,45 +244,14 @@ Both fixes remove violating draws from the generators. Without Requirement 3 tha
 
 `package.json` has been bumped to `1.4.0`; this spec targets v1.4.0 and the directory prefix `1-4-0` is correct. Recorded in the Introduction.
 
-### 2. Sweep budget — recommendation below, one decision needed
+### 2. Controls and sweep budget — RESOLVED
 
-Measured on this machine: the full suite is 223 files / 3,096 tests in **25s** at full parallelism and **48s** capped at two workers, which is the better model for a GitHub standard runner. Direct sampling of one generator is **0.71s for 500,000 draws**.
+The Goal A / Goal B split is accepted. A deterministic precondition-audit test is the primary control and runs on every push (Requirement 4). The full-suite seed sweep is demoted to a breadth net and is **`workflow_dispatch` only, with no cron trigger** and therefore no recurring Actions cost (Requirement 6).
 
-Those two figures make the seed sweep a poor primary control. Against a defect at the rate measured in this spec (~1 in 50,000 draws, on an assert configured at `numRuns: 200`):
+Rationale, measured during requirements verification and carried into the design: the full suite is 25s parallel / 48s at two workers, while direct sampling of one generator is 0.71s for 500,000 draws. Against instance 1 (~1 in 49,383), a 40-seed sweep costs ~33 minutes of runner time for ~15% detection, while 200,000 draws of direct sampling costs 0.3s for ~98%. Against instance 2 (~1 in 666,667) the same sweep gives under 1%, and 200,000 draws give only ~26% — which is why the audit budgets draws per generator rather than suite-wide. Either way the sweep is the wrong tool for this defect class, and the audit test makes a recurring schedule unnecessary.
 
-| Control | Cost | Detection probability |
-|---------|------|----------------------:|
-| Full-suite sweep, 40 seeds | ~33 min runner time | 14.8% |
-| Full-suite sweep, 100 seeds | ~83 min | 33.0% |
-| Full-suite sweep, 500 seeds | ~7 h | 86.5% |
-| Direct generator sampling, 100,000 draws | 0.17s | 86.5% |
-| Direct generator sampling, 500,000 draws | 0.71s | 99.995% |
+### 3. Audit boundary — RESOLVED
 
-A seed sweep re-runs 3,096 tests to buy 200 extra draws of the one generator that matters. Direct sampling spends the entire budget on the thing under test, which is why it reaches better sensitivity roughly 2,800x cheaper.
+The predicate-based boundary is accepted. Requirement 4 is scoped to properties asserting success of a predicate that applies rules to substructure: the `checkSecretName` / `isSafeSecretName` family plus `resolveGroupAndSegments`. The charset grep is retained as a discovery heuristic only.
 
-**Recommendation.** Split the two goals that Requirement 6 currently conflates:
-
-- **Goal A — catch this defect class.** A deterministic precondition-audit test that samples each safety-critical generator against the implementation's predicate and asserts zero violations. Sub-second, runs in the normal suite on every push, and because it uses a fixed sampling seed it either always passes or always fails — it cannot become a new source of randomly-timed release blocks. This becomes the primary control and largely subsumes Requirement 4's one-time manual audit, converting it into a permanent regression test.
-- **Goal B — catch unknown seed-dependent flakiness.** A low-frequency full-suite sweep whose purpose is breadth: order effects, timing, genuinely rare defects in `src/`, defect classes nobody has thought of. Its low per-sweep sensitivity to *this* class is acceptable precisely because Goal A covers that class far better.
-
-Suggested shape for Goal B: weekly cron, 50 seeds sequential in a single job, ~45 min runner time per sweep, ~3 h/month.
-
-**Decision needed:** confirm the Goal A / Goal B split, and set the Goal B budget. The budget is a straight trade of Actions minutes against breadth, and reasonable answers range from "weekly, 50 seeds (~3 h/month)" to "nightly, 100 seeds (~42 h/month)" to "manual `workflow_dispatch` only (0 recurring cost)". Given that Goal A handles the known class, the manual-only option is defensible.
-
-### 3. Audit boundary — recommendation below, one decision needed
-
-The charset-based bound in Requirement 4 is a proxy, and it is the wrong variable. A generator can only violate a precondition if the acceptance predicate applies a rule the generator's filter does not mirror; the characters involved are incidental. Bounding by predicate instead is both tighter and more durable.
-
-Enumerating the acceptance predicates in `src/` and checking which apply rules to substructure rather than to the whole value:
-
-- `checkSecretName` / `isSafeSecretName` — applies denylists per `/`-delimited segment. **This is the only acceptance predicate in `src/` with a substructure rule,** and it is the source of both defects in this spec.
-- `checkKey` / `isSafeKey` — whole-value only (charset plus denylists, no split). Structurally cannot exhibit the defect, which matches the zero-violation control result.
-- `resolveGroupAndSegments` — not a safety predicate, but it does gate success on segment depth and returns `null` for inputs it rejects, so a property asserting a non-null result has the identical defect shape. Worth including in the boundary.
-- `DebugAndLog.isProduction` and siblings — environment predicates, not input validators. Out of scope.
-- `ValidationMatcher` splits routes extensively, but those are matching operations, not acceptance predicates that any property asserts as "this input is safe."
-
-I checked the four `fc.assert` sites in `prefix-resolution-property-tests.jest.mjs` against this boundary. Three assert equivalence between two calls, which has no precondition to violate. Property 10 asserts `toBeNull()` for `'/other/' + paramName` against an entry of `'/app/'`, which can never match, so it is sound. Property 8's conditional `r1.group === 'long'` is guarded by `if (r1)` and the longest-prefix sort makes `'long'` the only reachable value. No new defects, but these files are where the Requirement 9 `Math.random` findings came from.
-
-**Recommendation.** Replace the charset bound with: *every property that asserts acceptance or success of a predicate which applies rules to substructure.* That currently resolves to the `checkSecretName` family plus `resolveGroupAndSegments` — a small, enumerable set. Keep the charset grep as a discovery heuristic for finding candidates, not as the boundary itself. Then implement the audit as the Goal A permanent test rather than a one-time pass, so the boundary is re-checked automatically as the suite changes.
-
-**Decision needed:** confirm the predicate-based boundary. The trade is confidence against effort. The predicate boundary is defensible because it follows from the mechanism of the defect rather than from a surface feature, and I verified it is small. If you want a wider net, the next increment is auditing every property that asserts success of *any* `src/` predicate regardless of substructure — more call sites, little expected yield given that whole-value predicates cannot exhibit this shape.
+Rationale: the characters a generator can emit are incidental; what matters is whether the predicate has a rule the filter fails to mirror. `checkSecretName` is the only acceptance predicate in `src/` with a substructure rule, and the whole-value predicates cannot exhibit this defect shape — which the zero-violation control measurement confirms. The boundary is small and was verified rather than assumed.

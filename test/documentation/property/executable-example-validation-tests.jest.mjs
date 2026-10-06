@@ -76,7 +76,13 @@ function extractCodeExamples(content, filePath) {
  * Validate JavaScript code syntax
  */
 async function validateCodeSyntax(code) {
-	// Use a unique temp file name to avoid conflicts
+	// Use a unique temp file name to avoid conflicts.
+	//
+	// Feature: 1-4-0-property-test-generator-preconditions
+	// This Math.random() is deliberately retained per Requirement 9.6: it only makes
+	// the scratch file name unique so concurrent validations cannot collide. The
+	// returned verdict comes from `node --check` on the example's own source, so the
+	// file name influences no assertion and need not be seed-determined.
 	const tempFile = path.join(__dirname, `../../../.temp-validation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.mjs`);
 	
 	try {

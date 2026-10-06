@@ -194,6 +194,13 @@ describe("Property 1: Relaxed Initialization in Memory-Only Mode", () => {
 					(includeSecureDataKey, includeDynamoDbTable, includeS3Bucket) => {
 						const initParams = { inMemoryOnly: true };
 						if (includeSecureDataKey) initParams.secureDataKey = randomBytes(32).toString("hex");
+						// Feature: 1-4-0-property-test-generator-preconditions
+						// The Math.random() calls below are retained per Requirement 9.6: they
+						// only make the temp table/bucket names and the scratch script file name
+						// unique. What the property asserts is whether Cache.init() throws, and
+						// that is decided by the three drawn booleans; the generated names are
+						// always valid base-36 identifiers, so no draw of them can change the
+						// verdict.
 						if (includeDynamoDbTable) initParams.dynamoDbTable = "test-table-" + Math.random().toString(36).slice(2);
 						if (includeS3Bucket) initParams.s3Bucket = "test-bucket-" + Math.random().toString(36).slice(2);
 
@@ -272,6 +279,8 @@ describe("Property 4: Backwards Compatibility — secureDataKey Required Without
 
 						// Never include secureDataKey — that's the point of this test
 
+						// Unique temp resource and scratch-file names only; retained per
+						// Requirement 9.6 for the same reason as Property 1 above.
 						if (includeDynamoDbTable) initParams.dynamoDbTable = "test-table-" + Math.random().toString(36).slice(2);
 						if (includeS3Bucket) initParams.s3Bucket = "test-bucket-" + Math.random().toString(36).slice(2);
 						if (includeOtherParams) {

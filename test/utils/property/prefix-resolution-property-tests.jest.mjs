@@ -126,9 +126,19 @@ describe('Property 11: shadow collisions are symmetric under permutation', () =>
 						s => /^\/[a-zA-Z0-9_/]{1,29}$/.test(s)
 					),
 					{ minLength: 0, maxLength: 15 }
+				).chain((names) =>
+					fc.tuple(
+						fc.constant(names),
+						// Full permutation: min = max = length. The permutation is drawn by
+						// fast-check, so it is seed-determined and replayable via FC_SEED.
+						// This replaces `names.slice().sort(() => Math.random() - 0.5)`, which
+						// was both unseeded and an inconsistent comparator: the resulting order
+						// was implementation-defined and biased rather than a uniform shuffle,
+						// so it explored the permutation space far less evenly than it appeared to.
+						fc.shuffledSubarray(names, { minLength: names.length, maxLength: names.length })
+					)
 				),
-				(names) => {
-					const shuffled = names.slice().sort(() => Math.random() - 0.5);
+				([names, shuffled]) => {
 					const r1 = ParameterKeySafety.detectShadowCollisions(names);
 					const r2 = ParameterKeySafety.detectShadowCollisions(shuffled);
 					const sort = arr => arr.map(c => `${c.name}|${c.shadowedBy}`).sort().join(',');

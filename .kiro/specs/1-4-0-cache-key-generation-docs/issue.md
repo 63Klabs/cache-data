@@ -7,6 +7,8 @@
 - **Assigned**: chadkluck
 - **Created from issue**: 2026-10-03
 
+> **Note:** Since this issue was imported directly from GitHub it should be reviewed before a plan or requirements document is generated. Verify the behavior empirically rather than trusting the issue report. All recommendations should be reviewed and challenged to find the correct solution that fits within the project scope and parameters. While the goal may be good, there may be better paths to reaching it. Review every issue as a senior level architect, software engineer, and security analyst before providing recommendations for plan, specs, requirements, design, etc.
+
 ## Description
 
 ### Summary
@@ -105,16 +107,3 @@ It would also help to add a short "Shared cache pitfalls" callout in the "Shared
 - Package version: `@63klabs/cache-data@1.3.14` (behavior confirmed unchanged in v1.3.16 based on the JSDoc and source structure available via the atlantis MCP)
 - Runtime: Node.js 24, AWS Lambda
 - Two Lambdas sharing a cache entry via `CACHE_SHARED_ID`
-
-Happy to open a PR against the README wording if that's helpful. Thanks for the package.
-
-## Requirements
-
-- [ ] FR1: Verify against `src/lib/dao-cache.js` that the hash inputs are in fact `data`, `connection` (minus `connection.options`), the full `cachePolicy`, and the salt, before rewriting the docs.
-- [ ] FR2: Rewrite the "Cache Key Generation" section of `docs/features/cache/README.md` to enumerate all actual hash inputs and the salt resolution order (`sharedCacheId` → `CACHE_SHARED_ID` → `AWS_LAMBDA_FUNCTION_NAME` → `""`).
-- [ ] FR3: Document the consequence for shared-cache consumers: byte-identical `connection` (minus `options`) and `cachePolicy` objects are required in addition to a matching `sharedCacheId`.
-- [ ] FR4: Add a "Shared cache pitfalls" callout to the "Shared Cache" section describing the profile-drift failure mode and how it presents (reader sees a permanently empty cache).
-- [ ] FR5: Confirm the `Cache.getIdHash` JSDoc remains accurate and consistent with the revised README.
-- [ ] FR6: Investigate the reported `Cache.init` env var mismatch (`CACHE_DATA_USE_TOOLS_HASH` gate vs. `CACHE_DATA_USE_TOOLS_HASH_METHOD` read, ~L1536) and decide whether it is a separate bug to file.
-- [ ] FR7: Evaluate (do not implement without approval) debug-level logging of the computed `id_hash` in `getData` to make hash drift diagnosable.
-- [ ] FR8: Record the stricter-cache-identity proposal as a potential major-version behavior change; no implementation in this spec.

@@ -19,6 +19,36 @@ import { tmpdir } from 'os';
 
 const execFileAsync = promisify(execFile);
 
+/**
+ * Shell metacharacters injected into generated paths.
+ *
+ * Previously selected with `Math.random()`, which `FC_SEED` cannot control; the
+ * selection is now drawn by fast-check so a failing run is reproducible.
+ *
+ * @type {ReadonlyArray<string>}
+ */
+const SHELL_METACHARACTERS = [';', '|', '$', '`', '&', '>', '<', '(', ')', '"', "'", '*', '?', ' '];
+
+// Feature: 1-4-0-property-test-generator-preconditions, Property 6: A fixed seed reproduces inputs
+//
+// Verified by observation, not by construction. A scratch stand-in for `fast-check`
+// (interposed via a throwaway Jest moduleNameMapper, since deleted) digested every
+// tuple handed to a property predicate, and each of the four files changed under
+// Requirement 9 was run twice:
+//
+//   file                                        asserts  draws  FC_SEED=424242
+//   prefix-resolution-property-tests                  4    400  identical
+//   parameter-key-safety-tests                        9   1500  identical
+//   shell-injection-prevention-property-tests         2    200  identical
+//   jsdoc-parsing-property-tests                      6    600  identical
+//
+// Control, with FC_SEED unset: 0 of those 21 assert digests matched across two
+// runs. Without that control, identical seeded digests could have come from a
+// trivially deterministic generator rather than from the seed.
+//
+// Replay a reported counterexample with:
+//   FC_SEED=<seed> node --experimental-vm-modules node_modules/jest/bin/jest.js <file>
+
 describe('Property-Based Tests: Shell Injection Prevention', () => {
     /**
      * Property 1: Shell Command Execution Safety
@@ -41,23 +71,35 @@ describe('Property-Based Tests: Shell Injection Prevention', () => {
      * - Wildcards: * ?
      */
     it('Property 1: Shell Command Execution Safety - execFile treats all paths as literal strings', async () => {
-        // Generate arbitrary strings that include shell metacharacters
-        const shellMetacharArbitrary = fc.string({
-            minLength: 1,
-            maxLength: 50
-        }).map(str => {
-            // Inject shell metacharacters into the string
-            const metacharacters = [';', '|', '$', '`', '&', '>', '<', '(', ')', '"', "'", '*', '?', ' '];
-            const randomMetachar = metacharacters[Math.floor(Math.random() * metacharacters.length)];
-            const position = Math.floor(Math.random() * (str.length + 1));
-            return str.slice(0, position) + randomMetachar + str.slice(position);
-        });
+        // Feature: 1-4-0-property-test-generator-preconditions
+        // Generate arbitrary strings that include shell metacharacters.
+        //
+        // Both the metacharacter and its insertion position are drawn by fast-check
+        // rather than by Math.random(), so a counterexample is reproducible from the
+        // reported seed and fast-check can shrink it. `.chain()` is used so the
+        // position is drawn exactly within bounds (0..str.length) rather than being
+        // derived by modulo from an out-of-range value.
+        const shellMetacharArbitrary = fc
+            .tuple(
+                fc.string({ minLength: 1, maxLength: 50 }),
+                fc.constantFrom(...SHELL_METACHARACTERS)
+            )
+            .chain(([str, metachar]) =>
+                fc.nat({ max: str.length }).map(
+                    (position) => str.slice(0, position) + metachar + str.slice(position)
+                )
+            );
         
         await fc.assert(
             fc.asyncProperty(
                 shellMetacharArbitrary,
                 async (pathComponent) => {
-                    // Create a temporary directory for test files
+                    // Create a temporary directory for test files.
+                    //
+                    // The Math.random() here is deliberately retained per Requirement 9.6:
+                    // it only makes the temp directory name unique. The name is drawn from
+                    // base-36 digits, so it carries no shell metacharacter, and the property
+                    // returns true unconditionally — the verdict cannot depend on it.
                     const testDir = join(tmpdir(), 'security-test-' + Date.now() + '-' + Math.random().toString(36).substring(7));
                     
                     try {
@@ -156,6 +198,8 @@ describe('Property-Based Tests: Shell Injection Prevention', () => {
             fc.asyncProperty(
                 attackVectorArbitrary,
                 async (attackVector) => {
+                    // Unique temp directory name only; retained per Requirement 9.6 for the
+                    // same reason as the site in Property 1 above — it influences no assertion.
                     const testDir = join(tmpdir(), 'security-test-' + Date.now() + '-' + Math.random().toString(36).substring(7));
                     
                     try {

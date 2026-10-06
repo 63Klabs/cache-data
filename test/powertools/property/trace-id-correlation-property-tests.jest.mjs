@@ -59,10 +59,7 @@ describe("Property 15: Trace ID Correlation", () => {
 						infoSpy.mockRestore();
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -104,10 +101,7 @@ describe("Property 15: Trace ID Correlation", () => {
 						infoSpy.mockRestore();
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -144,10 +138,7 @@ describe("Property 15: Trace ID Correlation", () => {
 						infoSpy.mockRestore();
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});

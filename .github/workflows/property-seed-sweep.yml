@@ -1,0 +1,315 @@
+# Manual multi-seed property-test sweep.
+#
+# Spec: .kiro/specs/1-4-0-property-test-generator-preconditions/ (v1.4.0),
+# design § G, Requirement 6.
+#
+# Runs the full Jest suite once per FC_SEED value, sequentially, stopping at the
+# first failing seed and printing the command to replay it.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS SWEEP IS FOR, AND WHAT IT IS NOT FOR
+# ---------------------------------------------------------------------------
+#
+# This sweep is a breadth net. It is NOT the primary control for the generator
+# precondition defect class that motivated v1.4.0, and its sensitivity to that
+# class is low by design:
+#
+#   Expected detection at the default 50 seeds, against the rates measured over
+#   4,000,000 draws per generator during this spec:
+#
+#     instance 1 (safeSecretName, ~1 in 49,383, numRuns: 200 => 10,000 draws)
+#       ~18%
+#     instance 2 (safeSecretNameArn, ~1 in 666,667, numRuns: 100 => 5,000 draws)
+#       under 1%
+#
+# That is deliberate. The known class is already covered by the precondition
+# audit test (test/security/property/generator-precondition-audit-tests.jest.mjs),
+# which runs on every push as part of the normal suite and samples each
+# registered arbitrary directly at a budget sized to that arbitrary's OWN
+# measured rate -- 200,000 draws for `safeSecretName` and 2,600,000 for the ARN
+# entry -- giving ~98% detection per entry per push for seconds of runtime.
+# Re-running the whole suite 50 times to buy `numRuns` extra draws of the two
+# generators that matter spends almost the entire budget elsewhere.
+#
+# So the sweep exists for what nobody has enumerated: suite-order effects,
+# timing, and genuinely rare behavior anywhere in the 3,107-test suite.
+#
+# ---------------------------------------------------------------------------
+# IF THIS SWEEP FAILS, READ THIS FIRST
+# ---------------------------------------------------------------------------
+#
+# A sweep failure most likely indicates a TEST-PRECONDITION DEFECT, not a
+# regression in `src/`. That is the empirical record: every counterexample found
+# during v1.4.0 was a generator emitting a value its own property excluded, and
+# `ParameterKeySafety` correctly rejected every one of them. Before changing any
+# implementation code, check whether the failing property's generator can
+# produce inputs the implementation under test never promised to accept.
+#
+# See the "Property-Based Testing Specific Guardrails" section of
+# .kiro/steering/test-execution-monitoring.md for the rule that was violated,
+# and the v1.3.17 release block for the motivating incident.
+
+name: Property Seed Sweep
+
+# Manual trigger ONLY. No `schedule`, no `push`, no `pull_request`: this sweep
+# must not be able to block a merge or a release, and it costs nothing when it
+# is not invoked (Requirement 6, criteria 2 and 3).
+on:
+  workflow_dispatch:
+    inputs:
+      seed_count:
+        description: >-
+          How many seeds to run (1-200). Clamped to 200. At the default
+          audit_draws a seed costs ~30s, so 50 seeds is ~25 minutes of runner
+          time and 200 seeds is ~100 minutes.
+        required: false
+        default: '50'
+        type: string
+      start_seed:
+        description: >-
+          First FC_SEED value. Seeds run consecutively from here, so
+          start_seed=1 with seed_count=50 covers seeds 1-50. Use a fresh range
+          to explore new ground rather than re-running seeds already swept.
+        required: false
+        default: '1'
+        type: string
+      audit_draws:
+        description: >-
+          FC_AUDIT_DRAWS. This SCALES the audit's per-entry budgets, it does NOT
+          replace them: BUDGET_SCALE = audit_draws / 200000, applied to each
+          registry entry's own drawCount. So 200000 (the default) leaves every
+          entry at its designed budget and 400000 doubles every entry. It is NOT
+          an absolute per-entry count -- under override semantics any value below
+          2600000 would silently REDUCE the ARN entry's budget, which is exactly
+          why scaling was chosen. Values below 200000 are refused, since they
+          would shrink every entry. Note the cost: per-seed runtime scales with
+          this, so doubling it roughly doubles the sweep.
+        required: false
+        default: '200000'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    # Hard ceiling on the whole sweep. GitHub-hosted jobs are killed at 6h
+    # regardless, so this sits just under that. It is a backstop only: the
+    # "Validate inputs" step below refuses any seed_count/audit_draws
+    # combination whose ESTIMATED cost exceeds the budget, which is the check
+    # that actually keeps a sweep from being killed mid-run. Both are needed
+    # because audit_draws multiplies per-seed cost, so seed_count alone does not
+    # bound wall time (Requirement 6, criterion 6).
+    timeout-minutes: 330
+
+    env:
+      # Property-based tests get the 2048MB limit from
+      # .kiro/steering/test-execution-monitoring.md; the audit test's batched
+      # sampling peaks near 104MB per batch, well inside this.
+      NODE_OPTIONS: '--max-old-space-size=2048'
+      CI: 'true'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Inputs are read through the env block rather than interpolated into the
+      # script body. A `${{ inputs.x }}` inside `run:` is substituted before bash
+      # ever sees it, so a crafted value would be injected as shell source.
+      # >! Pass workflow inputs via env, never by `${{ }}` interpolation into a shell command
+      - name: Validate inputs and compute the sweep budget
+        id: budget
+        env:
+          IN_SEED_COUNT: ${{ inputs.seed_count }}
+          IN_START_SEED: ${{ inputs.start_seed }}
+          IN_AUDIT_DRAWS: ${{ inputs.audit_draws }}
+        run: |
+          set -uo pipefail
+
+          # Documented maximum. seed_count is clamped rather than rejected so a
+          # fat-fingered 5000 still produces a useful sweep instead of an error.
+          MAX_SEED_COUNT=200
+          BASELINE_DRAWS=200000
+
+          # >! Allowlist-validate every numeric input before arithmetic uses it
+          for pair in "seed_count=${IN_SEED_COUNT}" "start_seed=${IN_START_SEED}" "audit_draws=${IN_AUDIT_DRAWS}"; do
+            name="${pair%%=*}"
+            value="${pair#*=}"
+            if [[ ! "${value}" =~ ^[0-9]+$ ]]; then
+              echo "::error::${name} must be a non-negative integer; received '${value}'"
+              exit 1
+            fi
+          done
+
+          seed_count="${IN_SEED_COUNT}"
+          start_seed="${IN_START_SEED}"
+          audit_draws="${IN_AUDIT_DRAWS}"
+
+          if [[ "${seed_count}" -lt 1 ]]; then
+            echo "::error::seed_count must be at least 1"
+            exit 1
+          fi
+
+          if [[ "${seed_count}" -gt "${MAX_SEED_COUNT}" ]]; then
+            echo "::warning::seed_count ${seed_count} exceeds the documented maximum ${MAX_SEED_COUNT}; clamping"
+            seed_count="${MAX_SEED_COUNT}"
+          fi
+
+          # FC_AUDIT_DRAWS scales the audit's per-entry budgets rather than
+          # replacing them, so anything below the baseline shrinks EVERY entry.
+          # A sweep that quietly weakened the primary control would be worse
+          # than no sweep, so refuse it outright.
+          if [[ "${audit_draws}" -lt "${BASELINE_DRAWS}" ]]; then
+            echo "::error::audit_draws ${audit_draws} is below the ${BASELINE_DRAWS} baseline. FC_AUDIT_DRAWS scales the audit's per-entry budgets (BUDGET_SCALE = audit_draws / ${BASELINE_DRAWS}), so a smaller value shrinks every entry's draw count and weakens the audit."
+            exit 1
+          fi
+
+          # Integer arithmetic throughout; the scale is carried in thousandths
+          # so bash needs no floating point. 200000 -> 1000, 2600000 -> 13000.
+          scale_milli=$(( audit_draws * 1000 / BASELINE_DRAWS ))
+
+          # Measured on this suite: ~30s wall per seed at scale 1, of which ~25s
+          # is the audit test's ARN entry at its 2,600,000-draw budget and ~5s is
+          # the other 223 suites. Only the audit portion scales with audit_draws.
+          per_seed_seconds=$(( 5 + (25 * scale_milli) / 1000 ))
+
+          # ~4x headroom per seed, floored at 120s, so a slow runner does not
+          # trip the per-seed timeout but a genuinely hung suite still does.
+          per_seed_timeout=$(( 20 + (100 * scale_milli) / 1000 ))
+          if [[ "${per_seed_timeout}" -lt 120 ]]; then
+            per_seed_timeout=120
+          fi
+
+          est_minutes=$(( (seed_count * per_seed_seconds + 59) / 60 ))
+
+          # Leave room inside the 330-minute job timeout for checkout + install.
+          BUDGET_MINUTES=300
+          if [[ "${est_minutes}" -gt "${BUDGET_MINUTES}" ]]; then
+            echo "::error::seed_count=${seed_count} at audit_draws=${audit_draws} is an estimated ${est_minutes} minutes, over the ${BUDGET_MINUTES}-minute budget. Raising audit_draws multiplies per-seed cost (~${per_seed_seconds}s/seed here vs ~30s at the default), so reduce seed_count, audit_draws, or both."
+            exit 1
+          fi
+
+          {
+            echo "seed_count=${seed_count}"
+            echo "start_seed=${start_seed}"
+            echo "audit_draws=${audit_draws}"
+            echo "per_seed_timeout=${per_seed_timeout}"
+          } >> "$GITHUB_OUTPUT"
+
+          end_seed=$(( start_seed + seed_count - 1 ))
+          {
+            echo "### Sweep plan"
+            echo ""
+            echo "| Setting | Value |"
+            echo "|---|---|"
+            echo "| Seeds | \`${start_seed}\`-\`${end_seed}\` (${seed_count}) |"
+            echo "| \`FC_AUDIT_DRAWS\` | ${audit_draws} (budget scale ${scale_milli}/1000) |"
+            echo "| Estimated runtime | ~${est_minutes} min |"
+            echo "| Per-seed timeout | ${per_seed_timeout}s |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Per .kiro/steering/test-execution-monitoring.md: confirm no stray jest
+      # processes are present before a timed run.
+      - name: Check for stray test processes
+        run: |
+          set -uo pipefail
+          pkill -9 -f "jest" || true
+          if ps aux | grep -E "jest" | grep -v grep; then
+            echo "::warning::jest processes still present after cleanup"
+          else
+            echo "No jest processes running."
+          fi
+          df -h | grep -E "/$" || true
+
+      - name: Sweep seeds
+        env:
+          SEED_COUNT: ${{ steps.budget.outputs.seed_count }}
+          START_SEED: ${{ steps.budget.outputs.start_seed }}
+          FC_AUDIT_DRAWS: ${{ steps.budget.outputs.audit_draws }}
+          PER_SEED_TIMEOUT: ${{ steps.budget.outputs.per_seed_timeout }}
+        run: |
+          # No `set -e`: a failing seed must be caught and reported, not abort
+          # the step before the replay command is printed.
+          set -uo pipefail
+
+          end_seed=$(( START_SEED + SEED_COUNT - 1 ))
+          echo "Sweeping seeds ${START_SEED}-${end_seed} at FC_AUDIT_DRAWS=${FC_AUDIT_DRAWS}"
+
+          # Bounded by SEED_COUNT, which the previous step clamped. A `while true`
+          # here would be the fork-bomb-adjacent shape the steering warns about.
+          for (( offset = 0; offset < SEED_COUNT; offset++ )); do
+            seed=$(( START_SEED + offset ))
+            echo "::group::seed ${seed} ($(( offset + 1 ))/${SEED_COUNT})"
+            started=$SECONDS
+
+            FC_SEED="${seed}" timeout --kill-after=30s "${PER_SEED_TIMEOUT}s" \
+              npm test -- --silent --no-verbose
+            status=$?
+
+            elapsed=$(( SECONDS - started ))
+            echo "::endgroup::"
+
+            if [[ "${status}" -ne 0 ]]; then
+              if [[ "${status}" -eq 124 || "${status}" -eq 137 ]]; then
+                reason="hit the ${PER_SEED_TIMEOUT}s per-seed timeout"
+              else
+                reason="failed with exit code ${status}"
+              fi
+
+              echo "::error::Seed ${seed} ${reason} after ${elapsed}s. Stopping the sweep."
+
+              # Replay commands. These are the forms documented in
+              # test/setup/fast-check-seed.mjs; keep the two in sync.
+              {
+                echo "### Sweep failed on seed \`${seed}\`"
+                echo ""
+                echo "Seed ${seed} ${reason} after ${elapsed}s, on iteration $(( offset + 1 )) of ${SEED_COUNT}."
+                echo ""
+                echo "Replay the whole suite:"
+                echo ""
+                echo '```bash'
+                echo "FC_SEED=${seed} FC_AUDIT_DRAWS=${FC_AUDIT_DRAWS} npm test"
+                echo '```'
+                echo ""
+                echo "Replay just the failing file (faster; take the path from the log above):"
+                echo ""
+                echo '```bash'
+                echo "FC_SEED=${seed} npm test -- test/path/to/failing-tests.jest.mjs"
+                echo '```'
+                echo ""
+                echo "**Triage first:** a sweep failure most likely means a generator"
+                echo "emitted a value its own property excludes -- a test-precondition"
+                echo "defect -- rather than a regression in \`src/\`. Check the failing"
+                echo "property's generator against the acceptance rule of the"
+                echo "implementation it asserts about before editing \`src/\`. See"
+                echo "\`.kiro/steering/test-execution-monitoring.md\`."
+              } >> "$GITHUB_STEP_SUMMARY"
+
+              exit 1
+            fi
+
+            echo "seed ${seed} passed in ${elapsed}s"
+          done
+
+          echo "All ${SEED_COUNT} seeds passed (${START_SEED}-${end_seed})."
+          {
+            echo "### Sweep passed"
+            echo ""
+            echo "All ${SEED_COUNT} seeds passed (\`${START_SEED}\`-\`${end_seed}\`) at \`FC_AUDIT_DRAWS=${FC_AUDIT_DRAWS}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up
+        if: always()
+        run: |
+          set -uo pipefail
+          pkill -9 -f "jest" || true
+          rm -rf /tmp/jest_* || true
+          rm -rf coverage-jest/ || true
+          df -h | grep -E "/$" || true

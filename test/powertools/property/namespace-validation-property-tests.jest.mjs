@@ -40,10 +40,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(namespace)).toBe(true);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -68,10 +65,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(namespace)).toBe(true);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -101,10 +95,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(namespace)).toBe(false);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -124,10 +115,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(namespace)).toBe(false);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -146,10 +134,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(namespace)).toBe(false);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -173,10 +158,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(input)).toBe(false);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -199,10 +181,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(input)).toBe(metricsIsValidNamespace(input));
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
@@ -221,10 +200,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(char)).toBe(true);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -245,10 +221,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(namespace)).toBe(true);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 
@@ -269,10 +242,7 @@ describe("Property 14: Namespace Validation", () => {
 						expect(isValidNamespace(namespace)).toBe(false);
 					}
 				),
-				{
-					numRuns: 100,
-					seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined
-				}
+				{ numRuns: 100 }
 			);
 		});
 	});
