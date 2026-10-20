@@ -91,6 +91,7 @@ const EXPECTED_TOOLS_EXPORTS = [
 	'obfuscate',
 	'printMsg',
 	'rssGenericResponse',
+	'safeClone',
 	'sanitize',
 	'textGenericResponse',
 	'xmlGenericResponse'

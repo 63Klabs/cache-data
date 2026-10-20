@@ -51,7 +51,6 @@ Resources:
           CACHE_DATA_ERROR_EXP_IN_SECONDS: 300 # How long should errors be cached? This prevents retrying a service that is currently in error too often
           CACHE_DATA_TIME_ZONE_FOR_INTERVAL: "Etc/UTC" # Cache-Data may expire using an interval such as every four, six, twelve, ... hours on the hour starting at midnight. What timezone holds the midnight to calculate from?
           CACHE_DATA_AWS_X_RAY_ON: true # (default is false) Enable X-Ray tracing for Cache-Data 
-          CACHE_DATA_USE_TOOLS_HASH_METHOD: true # (default is false) Use the tools.hash method for generating the URI ID to identify cached requests
 
   # -- LambdaFunction Execution Role --
 

@@ -97,12 +97,12 @@ describe("Hash Data", () => {
 
 		it("should hash an object", () => {
 			const hash = hashThisData("SHA256", { statement: "Hello, World", id: "58768G", amount: 58.09 });
-			expect(hash).toBe("00eaa3263b59036da553c0808c5baad8c2ab2ea9fa9992da8eb4b5c5ba60af09");
+			expect(hash).toBe("948666608ffb703e44e026e567fa1073228ab5936e933ffdc15eae7d0ef6a404");
 		});
 
 		it("should hash an array", () => {
 			const hash = hashThisData("SHA256", [1, 2, 3, 4]);
-			expect(hash).toBe("056da7b24110d30c74b5c91e3c5007abd0bc6ce726fdc3f1e4447af946255910");
+			expect(hash).toBe("04fbb8728bc135cc44b6600272b5c8c4438bb4a6da9b20adbd3e2c3e46fbd36b");
 		});
 	});
 
@@ -185,8 +185,28 @@ describe("Hash Data", () => {
 		const hash2a = hashThisData("SHA256", data2a);
 		const hash2b = hashThisData("SHA256", data2b);
 
-		it("should produce equal hashes for equal arrays", () => {
-			expect(hash1a).toBe(hash1b);
+		it("should produce different hashes for arrays with same elements in different order", () => {
+			expect(hash1a).not.toBe(hash1b);
+		});
+
+		it("should produce equal hashes for arrays with same elements in same order", () => {
+			const sameOrderA = [
+				"Hello",
+				"World",
+				"Apples",
+				"Bananas",
+				"Oranges"
+			];
+			const sameOrderB = [
+				"Hello",
+				"World",
+				"Apples",
+				"Bananas",
+				"Oranges"
+			];
+			const hashSameOrderA = hashThisData("SHA256", sameOrderA);
+			const hashSameOrderB = hashThisData("SHA256", sameOrderB);
+			expect(hashSameOrderA).toBe(hashSameOrderB);
 		});
 
 		it("should produce different hashes for different arrays round 1", () => {
@@ -357,12 +377,12 @@ describe("Hash Data", () => {
 				expect(hash1).toBe(hash2);
 			});
 
-			it("should produce consistent hashes for arrays with same content but different order", () => {
+			it("should produce different hashes for arrays with same content but different order", () => {
 				const data1 = [1, 2, 3];
 				const data2 = [3, 2, 1];
 				const hash1 = hashThisData("SHA256", data1);
 				const hash2 = hashThisData("SHA256", data2);
-				expect(hash1).toBe(hash2);
+				expect(hash1).not.toBe(hash2);
 			});
 
 			it("should handle deeply nested objects", () => {

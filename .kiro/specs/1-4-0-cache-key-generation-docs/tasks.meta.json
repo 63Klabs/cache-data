@@ -1,0 +1,362 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Read existing salt-resolution and shared-id tests before writing anything new, to avoid": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521810737
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521818938
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521874505
+      }
+    ],
+    "1.2 Run the full suite once to confirm a green baseline before changes: `npm test`. Record any": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521810886
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521877505
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521953378
+      }
+    ],
+    "2.1 In `src/lib/dao-cache.js`, `CacheableDataAccess.getData`, introduce an internal deep copy": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811000
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521959788
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522154303
+      }
+    ],
+    "2.2 Confirm the conditional-request markers are still excluded from the hash input (they are": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811098
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522156963
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522202989
+      }
+    ],
+    "3.1 In `src/lib/dao-cache.js`, `Cache.info()`, add an additive `saltSource` field resolving to": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811188
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522207262
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522290472
+      }
+    ],
+    "3.2 Update the `Cache.info()` JSDoc `@returns` block to document the new `saltSource` field.": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811291
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522293270
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522344913
+      }
+    ],
+    "4.1 Add X2 unit tests (drive the refresh branch with the getter-mock pattern for": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811388
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522352088
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522463214
+      }
+    ],
+    "4.2 Add the X2 property test over generated `connection` shapes asserting Property 1 (no": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811485
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522466130
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522589553
+      }
+    ],
+    "4.3 Add the X3 test asserting `Cache.info().saltSource` returns the correct label for each": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811601
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522592492
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522676158
+      }
+    ],
+    "5.1 Extend `test/documentation/` with a check that computes the hash for two inputs differing": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811695
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522679550
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522756575
+      }
+    ],
+    "6.1 Create `docs/technical/cache-key-hashing.md` documenting the `DataHasher` mechanism: the": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811785
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522760073
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522891867
+      }
+    ],
+    "7.1 D1/D2: replace the \"Cache Key Generation\" section (L576-581) with the design's exact prose": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811878
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522895991
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522953634
+      }
+    ],
+    "7.2 D3: in the \"Shared Cache\" section, add the \"Shared cache pitfalls\" callout and revise the": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521811966
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792522956469
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523080791
+      }
+    ],
+    "7.3 D4: add the drift troubleshooting walkthrough (symptom, confirm via the `CACHE`-tagged": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521812060
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523084272
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523178908
+      }
+    ],
+    "7.4 D6: remove the duplicate `idHashAlgorithm` row from the `Cache.init()` options table,": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521812157
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523181910
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523236267
+      }
+    ],
+    "8.1 Update `docs/00-example-implementation/README.md` so the": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521812249
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523239959
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523292496
+      }
+    ],
+    "8.2 Update `docs/00-example-implementation/example-template-lambda-function.yml` to remove or": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521812348
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523296344
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523339996
+      }
+    ],
+    "9.1 In `src/lib/dao-cache.js`, fix the `Cache.generateIdHash` JSDoc example from": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521812441
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523343660
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523449904
+      }
+    ],
+    "9.2 In `src/lib/tools/Connections.classes.js`, correct the `Connection` / `Connections` JSDoc": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521812533
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523454388
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523520302
+      }
+    ],
+    "10.1 Add the `1.4.0` `CHANGELOG.md` entry per the design: documentation corrections; the X2": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521812624
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523523613
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523604774
+      }
+    ],
+    "11.1 Run `npm test` and confirm the entire suite passes, including the new X2/X3,": [
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792521812719
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523609133
+      },
+      {
+        "executionId": "8f634467-7069-4711-b714-55dc818b4331",
+        "chatSessionId": "sess_b53985cb-82a9-43f0-b55b-6997b3e36632",
+        "timestamp": 1792523847255
+      }
+    ]
+  }
+}

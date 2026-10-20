@@ -224,7 +224,7 @@ See [example-template-lambda-function.yml](./example-template-lambda-function.ym
 - `CACHE_DATA_ERROR_EXP_IN_SECONDS`: Error cache duration (default: 300)
 - `CACHE_DATA_TIME_ZONE_FOR_INTERVAL`: Timezone for interval calculations (default: "Etc/UTC")
 - `CACHE_DATA_AWS_X_RAY_ON`: Enable X-Ray tracing (default: false)
-- `CACHE_DATA_USE_TOOLS_HASH_METHOD`: Use tools.hash method (default: false)
+- `CACHE_DATA_USE_TOOLS_HASH_METHOD`: **Deprecated (no longer used as of 1.4.0).** This env var is silently ignored. Cache-key hashing always uses the built-in hasher (`DataHasher`).
 
 ## Related Documentation
 

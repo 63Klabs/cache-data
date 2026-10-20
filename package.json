@@ -17,8 +17,7 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "moment-timezone": "^0.6.0",
-    "object-hash": "^3.0.0"
+    "moment-timezone": "^0.6.0"
   },
   "peerDependencies": {
     "@aws-lambda-powertools/tracer": "^2.0.0",

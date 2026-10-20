@@ -1,8 +1,15 @@
 /**
  * Jest integration tests for CacheableDataAccess header assignment with AWS mocks
  * Tests the full integration between DynamoDbCache, Cache, and CacheableDataAccess
- * to verify that undefined headers are not assigned to connection objects
- * 
+ * to verify that undefined headers are not assigned to the connection passed to
+ * the origin call.
+ *
+ * As of spec 1-4-0-cache-key-generation-docs (Requirement 7), getData prepares the
+ * conditional-request markers on an internal deep copy and no longer mutates the
+ * caller's connection object. These tests therefore assert against the connection
+ * that apiCallFunction receives (the copy) and additionally confirm the caller's
+ * own object is left untouched.
+ *
  * Validates: Requirements 5.4, 5.5
  */
 
@@ -71,12 +78,12 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 			// Use the imported cache module
 			const { Cache, CacheableDataAccess } = cache;
 			
-			// Create a mock API function that returns 304 Not Modified
-			const mockApiFunction = jest.fn().mockResolvedValue({
-				success: true,
-				statusCode: 304,
-				body: '',
-				headers: {}
+			// Create a mock API function that returns 304 Not Modified and
+			// captures the connection it receives (the internal copy)
+			let receivedConnection = null;
+			const mockApiFunction = jest.fn().mockImplementation(async (conn) => {
+				receivedConnection = conn;
+				return { success: true, statusCode: 304, body: '', headers: {} };
 			});
 
 			// Create connection object with unique path to avoid cache collision
@@ -109,12 +116,17 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			// Verify the mock was called
 			expect(mockGet).toHaveBeenCalled();
-			
+			expect(receivedConnection).not.toBeNull();
+
 			// Verify that if-modified-since was NOT assigned (should be undefined)
-			expect(connection.headers['if-modified-since']).toBeUndefined();
-			
+			expect(receivedConnection.headers['if-modified-since']).toBeUndefined();
+
 			// Verify that if-none-match WAS assigned (valid etag)
-			expect(connection.headers['if-none-match']).toBe('"valid-etag"');
+			expect(receivedConnection.headers['if-none-match']).toBe('"valid-etag"');
+
+			// Verify the caller's own connection was not mutated
+			expect(connection.headers['if-modified-since']).toBeUndefined();
+			expect(connection.headers['if-none-match']).toBeUndefined();
 		});
 
 		it('should not assign if-none-match when DynamoDbCache returns undefined etag', async () => {
@@ -151,11 +163,10 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			const { Cache, CacheableDataAccess } = cache;
 			
-			const mockApiFunction = jest.fn().mockResolvedValue({
-				success: true,
-				statusCode: 304,
-				body: '',
-				headers: {}
+			let receivedConnection = null;
+			const mockApiFunction = jest.fn().mockImplementation(async (conn) => {
+				receivedConnection = conn;
+				return { success: true, statusCode: 304, body: '', headers: {} };
 			});
 
 			const connection = {
@@ -185,12 +196,17 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			// Verify the mock was called
 			expect(mockGet).toHaveBeenCalled();
-			
+			expect(receivedConnection).not.toBeNull();
+
 			// Verify that if-none-match was NOT assigned (should be undefined)
-			expect(connection.headers['if-none-match']).toBeUndefined();
-			
+			expect(receivedConnection.headers['if-none-match']).toBeUndefined();
+
 			// Verify that if-modified-since WAS assigned (valid last-modified)
-			expect(connection.headers['if-modified-since']).toBe('Wed, 21 Oct 2015 07:28:00 GMT');
+			expect(receivedConnection.headers['if-modified-since']).toBe('Wed, 21 Oct 2015 07:28:00 GMT');
+
+			// Verify the caller's own connection was not mutated
+			expect(connection.headers['if-none-match']).toBeUndefined();
+			expect(connection.headers['if-modified-since']).toBeUndefined();
 		});
 
 		it('should not assign either header when both are undefined', async () => {
@@ -227,11 +243,10 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			const { Cache, CacheableDataAccess } = cache;
 			
-			const mockApiFunction = jest.fn().mockResolvedValue({
-				success: true,
-				statusCode: 304,
-				body: '',
-				headers: {}
+			let receivedConnection = null;
+			const mockApiFunction = jest.fn().mockImplementation(async (conn) => {
+				receivedConnection = conn;
+				return { success: true, statusCode: 304, body: '', headers: {} };
 			});
 
 			const connection = {
@@ -261,8 +276,13 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			// Verify the mock was called
 			expect(mockGet).toHaveBeenCalled();
-			
-			// Verify that neither header was assigned
+			expect(receivedConnection).not.toBeNull();
+
+			// Verify that neither header was assigned on the copy
+			expect(receivedConnection.headers['if-modified-since']).toBeUndefined();
+			expect(receivedConnection.headers['if-none-match']).toBeUndefined();
+
+			// Verify the caller's own connection was not mutated
 			expect(connection.headers['if-modified-since']).toBeUndefined();
 			expect(connection.headers['if-none-match']).toBeUndefined();
 		});
@@ -301,11 +321,10 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			const { Cache, CacheableDataAccess } = cache;
 			
-			const mockApiFunction = jest.fn().mockResolvedValue({
-				success: true,
-				statusCode: 304,
-				body: '',
-				headers: {}
+			let receivedConnection = null;
+			const mockApiFunction = jest.fn().mockImplementation(async (conn) => {
+				receivedConnection = conn;
+				return { success: true, statusCode: 304, body: '', headers: {} };
 			});
 
 			const connection = {
@@ -335,10 +354,15 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			// Verify the mock was called
 			expect(mockGet).toHaveBeenCalled();
-			
-			// Verify that both headers were assigned correctly
-			expect(connection.headers['if-modified-since']).toBe('Wed, 21 Oct 2015 07:28:00 GMT');
-			expect(connection.headers['if-none-match']).toBe('"valid-etag"');
+			expect(receivedConnection).not.toBeNull();
+
+			// Verify that both headers were assigned correctly on the copy
+			expect(receivedConnection.headers['if-modified-since']).toBe('Wed, 21 Oct 2015 07:28:00 GMT');
+			expect(receivedConnection.headers['if-none-match']).toBe('"valid-etag"');
+
+			// Verify the caller's own connection was not mutated
+			expect(connection.headers['if-modified-since']).toBeUndefined();
+			expect(connection.headers['if-none-match']).toBeUndefined();
 		});
 
 		it('should not assign headers when values are null', async () => {
@@ -375,11 +399,10 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			const { Cache, CacheableDataAccess } = cache;
 			
-			const mockApiFunction = jest.fn().mockResolvedValue({
-				success: true,
-				statusCode: 304,
-				body: '',
-				headers: {}
+			let receivedConnection = null;
+			const mockApiFunction = jest.fn().mockImplementation(async (conn) => {
+				receivedConnection = conn;
+				return { success: true, statusCode: 304, body: '', headers: {} };
 			});
 
 			const connection = {
@@ -409,8 +432,13 @@ describe('CacheableDataAccess - Header Assignment with AWS Mocks', () => {
 
 			// Verify the mock was called
 			expect(mockGet).toHaveBeenCalled();
-			
-			// Verify that neither header was assigned
+			expect(receivedConnection).not.toBeNull();
+
+			// Verify that neither header was assigned on the copy
+			expect(receivedConnection.headers['if-modified-since']).toBeUndefined();
+			expect(receivedConnection.headers['if-none-match']).toBeUndefined();
+
+			// Verify the caller's own connection was not mutated
 			expect(connection.headers['if-modified-since']).toBeUndefined();
 			expect(connection.headers['if-none-match']).toBeUndefined();
 		});

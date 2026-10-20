@@ -344,7 +344,7 @@ const initOptions: cacheData.tools.AppConfigInitOptions = {
 		jsonResponses: {},
 		htmlResponses: {}
 	},
-	ssmParameters: {},
+	ssmParameters: [],
 	debug: true
 };
 

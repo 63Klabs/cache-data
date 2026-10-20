@@ -1,5 +1,5 @@
 
-const crypto = require("crypto"); // included by aws so don't need to add to package.json
+const DataHasher = require("../utils/DataHasher.class.js");
 
 /* *****************************************************************************
 	-----------------------------------------------------------------------------
@@ -240,96 +240,41 @@ const sanitize = function (obj) {
 };
 
 /**
- * Hash JSON objects and arrays to determine matches (contain 
- * the same keys, values, and nesting.
- * 
- * Works best with JSON data objects that survive JSON.stringify(). 
- * If the data object passed to it contains classes or specialized 
- * objects (like Date), JSON.stringify() will attempt to use a
- * .toJSON() method to convert the object. DataTypes of Symbols and
- * Functions will not survive this process.
-
- * @param {string} algorithm
- * @param {Object|Array|BigInt|Number|String|Boolean} data to hash
- * @param {{salt: string, iterations: number}} options
- * @returns {string} Reproducible hash in hex
+ * Hash JSON objects and arrays to determine matches (contain the same keys,
+ * values, and nesting). Returns a reproducible hex-encoded hash string.
+ *
+ * This is a thin wrapper that delegates to the internal DataHasher class; the
+ * hashing implementation lives in `DataHasher.hash` (src/lib/utils/DataHasher.class.js).
+ *
+ * Array element order IS significant (`['apple','orange']` hashes differently from
+ * `['orange','apple']`), while object key order is NOT significant (keys are sorted
+ * before hashing, so `{a,b}` and `{b,a}` hash identically). This applies at every
+ * nesting depth.
+ *
+ * Works best with JSON data objects that survive JSON.stringify(). If the data object
+ * passed to it contains classes or specialized objects (like Date), JSON.stringify()
+ * will attempt to use a .toJSON() method to convert the object. DataTypes of Symbols
+ * and Functions will not survive this process. Input that is not JSON-serializable (for
+ * example, an object with circular references) will throw during normalization; this is
+ * a documented constraint, not a feature.
+ *
+ * @param {string} algorithm - Hash algorithm name passed to crypto.createHash (e.g. "sha256", "RSA-SHA256")
+ * @param {Object|Array|BigInt|Number|String|Boolean|null} data - The data to hash. Object/array input must be JSON-serializable.
+ * @param {Object} [options={}] - Hashing options
+ * @param {string} [options.salt=""] - Salt folded into every hashing iteration; a differing salt changes the result
+ * @param {number} [options.iterations=1] - Number of hashing iterations, clamped to a minimum of 1
+ * @returns {string} Reproducible hash in lowercase hex
+ * @throws {TypeError} When data is not JSON-serializable (e.g. contains circular references); the error from JSON.stringify propagates unchanged
+ * @throws {Error} When algorithm is not a valid Node crypto hash name; the error from crypto.createHash propagates unchanged
+ * @example
+ * const hash = tools.hashThisData("sha256", { host: "example.com", path: "/api" });
+ *
+ * @example
+ * // Salt and iterations change the result deterministically.
+ * const salted = tools.hashThisData("sha256", { a: 1 }, { salt: "pepper", iterations: 2 });
  */
 const hashThisData = function(algorithm, data, options = {}) {
-
-	// Clone options to avoid modifying the original
-	options = safeClone(options);
-	
-	// set default values for options
-	if ( !( "salt" in options) ) { options.salt = ""; }
-	if ( !( "iterations" in options) || options.iterations < 1 ) { options.iterations = 1; }
-	if ( !( "skipParse" in options) ) { options.skipParse = false; } // used so we don't parse during recursion
-
-	// if it is an object or array, then parse it to remove non-data elements (functions, etc)
-	if ( !options.skipParse && (typeof data === "object" || Array.isArray(data))) {
-		// Normalize the data structure first using JSON.stringify with custom replacer
-		const normalized = JSON.parse(JSON.stringify(data, (key, value) => {
-			switch (typeof value) {
-				case 'bigint':
-					return value.toString();
-				case 'undefined':
-					return 'undefined';
-				default:
-					return value;
-			}
-		}));
-		// Then clone for safety
-		data = safeClone(normalized);
-		options.skipParse = true; // set to true so we don't parse during recursion
-	}
-
-	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof
-	const dataType = (data !== null && !Array.isArray(data)) ? typeof data : (Array.isArray(data)) ? "array" : "null";
-	
-	if (data === null) { data = "null" }
-	if (data === undefined) { data = "undefined" }
-
-	let valueStr = "";
-
-	if (dataType === "array" || dataType === "object") {
-
-		/*
-		We will iterate through the keys and values and generate a reproducible data string.
-		(sorted by object key or array value)
-		*/
-
-		let arrayOfStuff = [];
-
-		// copy the named keys and alphabetize (or generate index for array) .
-		let keys = (dataType === "array") 
-			? Array.from({ length: data.length }, (value, index) => index)
-			: Object.keys(data).sort();
-	
-		// iterate through the keys alphabetically and add the key and value to the arrayOfStuff
-		keys.forEach((key) => {
-			// clone options
-			const opts = safeClone(options);
-			opts.iterations = 1; // don't iterate during recursion, only at end
-
-			const value = hashThisData(algorithm, data[key], opts);
-			arrayOfStuff.push( `${(dataType !== "array" ? key : "$array")}:::${dataType}:::${value}` );
-		})
-		
-		valueStr = arrayOfStuff.sort().join("|||");
-
-	} else {
-		valueStr = `-:::${dataType}:::${data.toString()}`;
-	}
-
-	let hashOfData = "";
-
-	// hash for the number of iterations
-	for (let i = 0; i < options.iterations; i++) {
-		const hash = crypto.createHash(algorithm);
-		hash.update(valueStr + hashOfData + options.salt);
-		hashOfData = hash.digest('hex');
-	}
-
-	return hashOfData;
+	return DataHasher.hash(algorithm, data, options);
 };
 
 module.exports = {

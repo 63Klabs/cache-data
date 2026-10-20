@@ -52,7 +52,10 @@ export interface CacheInitParameters {
 	purgeExpiredCacheEntriesAfterXHours?: number;
 	/** TZ database timezone for interval calculations. Env: CACHE_DATA_TIME_ZONE_FOR_INTERVAL. Default: 'Etc/UTC' */
 	timeZoneForInterval?: string;
-	/** Whether to use the built-in tools hash method instead of object-hash */
+	/**
+	 * @deprecated Since 1.4.0. No longer used; silently ignored. Cache-key hashing
+	 * always uses the built-in hasher. This property will be removed in a future major version.
+	 */
 	useToolsHash?: boolean;
 	/** Enable in-memory (L0) caching. Env: CACHE_USE_IN_MEMORY */
 	useInMemoryCache?: boolean;
@@ -201,11 +204,20 @@ export class Cache {
 	static bool(value: any): boolean;
 
 	/**
-	 * Generate a unique hash identifier for a cache entry. Uses object-hash to
-	 * create a deterministic hash from an object, array, or string.
+	 * Generate a unique hash identifier for a cache entry. Produces a
+	 * deterministic hex hash from an object, array, or string using the
+	 * built-in recursive deep hasher.
 	 *
-	 * Object-hash normalizes object structures so that objects with the same
-	 * key/value pairs produce the same hash regardless of property order.
+	 * Hashing semantics:
+	 * - Object key order is insignificant: objects with the same key/value
+	 *   pairs hash identically regardless of property order, at every depth.
+	 * - Array element order is significant: reordering array elements produces
+	 *   a different hash.
+	 * - A salt (derived internally from the shared cache id or the Lambda
+	 *   function name) is folded into the hash so that otherwise-identical
+	 *   input produces distinct hashes across differently-salted callers.
+	 *
+	 * Input must be JSON-serializable; circular references will throw.
 	 *
 	 * @param idObject - Object, Array, or string to hash
 	 * @returns A hex hash string representing the object

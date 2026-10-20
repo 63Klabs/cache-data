@@ -244,7 +244,7 @@ The Cache system accepts the following configuration options via `Cache.init()`:
 | `s3Bucket` | string | `CACHE_DATA_S3_BUCKET` env var | Yes | S3 bucket name for cache storage. Used for large cached objects (>= 10 KB by default). |
 | `secureDataKey` | string\|Buffer\|CachedParameterSecret | None | Yes | Encryption key for private/sensitive cached data. Must be appropriate length for the chosen algorithm (e.g., 32 bytes for aes-256-cbc). |
 | `secureDataAlgorithm` | string | `'aes-256-cbc'` | No | Encryption algorithm for private data. Can also be set via `CACHE_DATA_SECURE_DATA_ALGORITHM` env var. |
-| `idHashAlgorithm` | string | `'RSA-SHA256'` | No | Hash algorithm for generating cache key identifiers. Can also be set via `CACHE_DATA_ID_HASH_ALGORITHM` env var. |
+| `idHashAlgorithm` | string | `'RSA-SHA256'` | No | Hash algorithm for generating cache key identifiers from connection and cacheProfile objects. Can also be set via `CACHE_DATA_ID_HASH_ALGORITHM` env var. |
 | `DynamoDbMaxCacheSize_kb` | number | `10` | No | Maximum size in KB for storing cache entries in DynamoDB. Entries larger than this are stored in S3. Can also be set via `CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB` env var. |
 | `purgeExpiredCacheEntriesAfterXHours` | number | `24` | No | Number of hours after expiration to keep entries before purging. Can also be set via `CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS` env var. |
 | `timeZoneForInterval` | string | `'Etc/UTC'` | No | TZ database timezone name for interval-based cache expiration calculations. Aligns cache intervals with local time rather than UTC. Can also be set via `CACHE_DATA_TIME_ZONE_FOR_INTERVAL` env var. |
@@ -252,8 +252,7 @@ The Cache system accepts the following configuration options via `Cache.init()`:
 | `inMemoryCacheMaxEntries` | number | Auto-calculated | No | Override automatic capacity calculation for in-memory cache. When set, ignores `entriesPerGB` heuristic. |
 | `inMemoryCacheEntriesPerGB` | number | `5000` | No | Heuristic for calculating max entries from Lambda memory allocation. Formula: `(lambdaMemoryMB / 1024) * entriesPerGB`. |
 | `inMemoryCacheDefaultMaxEntries` | number | `1000` | No | Fallback capacity when Lambda memory allocation cannot be determined (when `AWS_LAMBDA_FUNCTION_MEMORY_SIZE` env var is unavailable). |
-| `useToolsHash` | boolean | `false` | No | Use tools.hash() method instead of object-hash for cache key generation. Can also be set via `CACHE_DATA_USE_TOOLS_HASH` env var. |
-| `idHashAlgorithm` | string | `'RSA-SHA256'` | No | Hash algorithm for generating cache key identifiers from connection and cacheProfile objects. Can also be set via `CACHE_DATA_ID_HASH_ALGORITHM` env var. |
+| `useToolsHash` | boolean | `false` | No | **Deprecated (no longer used as of 1.4.0).** This option and the `CACHE_DATA_USE_TOOLS_HASH` env var are silently ignored. Cache-key hashing always uses the built-in hasher (`DataHasher`). |
 | `inMemoryOnly` | boolean | `false` | No | Enable in-memory-only mode (no DynamoDB/S3/encryption). When active, the cache operates entirely in-memory without requiring any AWS infrastructure. Can also be set via `CACHE_IN_MEMORY_ONLY` env var. |
 | `sharedCacheId` | string | `CACHE_SHARED_ID` env var or `AWS_LAMBDA_FUNCTION_NAME` | No | Shared cache identifier that overrides the default Lambda function name salt used in cache key generation. When set, multiple Lambda functions using the same value will produce identical cache hashes for the same request, enabling cross-function cache sharing. |
 
@@ -304,7 +303,7 @@ Cache.init({
   timeZoneForInterval: 'Etc/UTC', // CACHE_DATA_TIME_ZONE_FOR_INTERVAL
 
   // hashing method
-  useToolsHash: false, // CACHE_DATA_USE_TOOLS_HASH_METHOD - default will switch to true in future
+  useToolsHash: false, // no longer used as of 1.4.0 - silently ignored; hashing always uses the built-in hasher
   
   // In-memory cache
   useInMemoryCache: true, // CACHE_USE_IN_MEMORY
@@ -335,7 +334,7 @@ CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS=24
 CACHE_DATA_TIME_ZONE_FOR_INTERVAL=Etc/UTC
 CACHE_USE_IN_MEMORY=false
 CACHE_IN_MEMORY_ONLY=false
-CACHE_DATA_USE_TOOLS_HASH=false
+# CACHE_DATA_USE_TOOLS_HASH is no longer used as of 1.4.0 (silently ignored; hashing always uses the built-in hasher)
 CACHE_SHARED_ID=my-shared-cache-group
 ```
 
@@ -348,6 +347,12 @@ By default, In-Memory Caching is disabled. To enable it, or to learn more about 
 By default, each Lambda function produces unique cache keys because `Cache.generateIdHash()` uses the Lambda function name (`AWS_LAMBDA_FUNCTION_NAME`) as a salt. This means two different Lambda functions fetching the same data from the same endpoint will store separate cache entries.
 
 The `sharedCacheId` option allows multiple Lambda functions to share cache entries by using the same salt value for cache key generation. When two functions are configured with the same `sharedCacheId`, identical requests will produce identical cache hashes, allowing them to read and write to the same cache entry in DynamoDB/S3.
+
+> **Shared cache pitfalls.** Both functions must agree on every hash input, not just `sharedCacheId`:
+>
+> - Identical `connection` (minus `options`) and identical `cachePolicy`, including behavioral fields. A field added to one function's profile and not the other's splits the cache silently.
+> - Matching value types and no stray `undefined`-valued keys (see [Cache Key Generation](#cache-key-generation)).
+> - Obtain the connection per request. Do not capture a single connection object and reuse the same reference across invocations.
 
 ##### Priority Resolution Order
 
@@ -373,48 +378,152 @@ Cache.init({
 
 ##### Example: Two Lambda Functions Sharing Cache
 
-Consider two Lambda functions that both fetch weather data from the same API. Without `sharedCacheId`, each function stores its own copy of the cached response. With `sharedCacheId`, they share a single cache entry:
+Consider two Lambda functions that both fetch weather data from the same API. Without `sharedCacheId`, each function stores its own copy of the cached response. With `sharedCacheId`, they can share a single cache entry.
 
-**Function A** (`GetWeatherForDashboard`):
+Each function is a separate deployment with its own code, so each defines its own `Connections` collection and its own cache profile. That independence is exactly where drift creeps in: the two definitions below must stay byte-for-byte identical (aside from `connection.options`, which is excluded from the key) or the functions will hash to different `id_hash` values and silently stop sharing. Both functions obtain the connection per request with `connection.toObject()`, which returns a fresh object on every call, so no mutation can leak from one invocation into the next.
+
+**Function A** (`GetWeatherForDashboard`) — its own `connections.js`:
 
 ```javascript
-const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+// GetWeatherForDashboard/connections.js
+const {tools: {Connections}} = require("@63klabs/cache-data");
 
-// Both functions use the same sharedCacheId
+// Built once at module load. getData receives a fresh object each request
+// via weatherConnections.get("weather").toObject() — never a reused reference.
+const weatherConnections = new Connections();
+
+weatherConnections.add({
+	name: "weather",
+	host: "api.weather.example.com",
+	path: "/current",
+	method: "GET",
+	cache: [
+		{
+			profile: "current",
+			defaultExpirationInSeconds: 300,
+			defaultExpirationExtensionOnErrorInSeconds: 3600,
+			expirationIsOnInterval: true,
+			encrypt: true,
+			hostId: "weather",
+			pathId: "current"
+		}
+	]
+});
+
+module.exports = { weatherConnections };
+```
+
+```javascript
+// GetWeatherForDashboard/index.js
+const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+const {weatherConnections} = require("./connections");
+
+// Both functions use the same sharedCacheId so their keys share a salt.
 Cache.init({
 	secureDataKey: new CachedSsmParameter("/param/store/path/CacheData_SecureDataKey"),
+	dynamoDbTable: "shared-cache-table",
+	s3Bucket: "shared-cache-bucket",
 	sharedCacheId: "weather-service-group"
 });
 
-const conn = { uri: "https://api.weather.example.com/current" };
-const cacheProfile = { defaultExpirationInSeconds: 300 };
+exports.handler = async (event) => {
+	// Obtain the connection per request. toObject() returns a fresh deep copy,
+	// so getData never mutates a reference held across invocations.
+	const weatherConn = weatherConnections.get("weather");
+	const connection = weatherConn.toObject();
+	const cacheProfile = weatherConn.getCacheProfile("current");
 
-const cacheObj = await CacheableDataAccess.getData(cacheProfile, endpoint.send, conn, null);
-const weather = cacheObj.getBody(true);
+	const cacheObj = await CacheableDataAccess.getData(cacheProfile, endpoint.send, connection, null);
+	const weather = cacheObj.getBody(true);
+
+	return { statusCode: 200, body: JSON.stringify(weather) };
+};
 ```
 
-**Function B** (`GetWeatherForNotifications`):
+**Function B** (`GetWeatherForNotifications`) — its own `connections.js`:
 
 ```javascript
-const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+// GetWeatherForNotifications/connections.js
+const {tools: {Connections}} = require("@63klabs/cache-data");
 
-// Same sharedCacheId as Function A
+// This definition must match Function A's exactly, field for field and type
+// for type, to share the cache. Any divergence here splits the cache silently.
+const weatherConnections = new Connections();
+
+weatherConnections.add({
+	name: "weather",
+	host: "api.weather.example.com",
+	path: "/current",
+	method: "GET",
+	cache: [
+		{
+			profile: "current",
+			defaultExpirationInSeconds: 300,
+			defaultExpirationExtensionOnErrorInSeconds: 3600,
+			expirationIsOnInterval: true,
+			encrypt: true,
+			hostId: "weather",
+			pathId: "current"
+		}
+	]
+});
+
+module.exports = { weatherConnections };
+```
+
+```javascript
+// GetWeatherForNotifications/index.js
+const {cache: {Cache, CacheableDataAccess}, endpoint} = require("@63klabs/cache-data");
+const {weatherConnections} = require("./connections");
+
+// Same sharedCacheId as Function A.
 Cache.init({
 	secureDataKey: new CachedSsmParameter("/param/store/path/CacheData_SecureDataKey"),
+	dynamoDbTable: "shared-cache-table",
+	s3Bucket: "shared-cache-bucket",
 	sharedCacheId: "weather-service-group"
 });
 
-const conn = { uri: "https://api.weather.example.com/current" };
-const cacheProfile = { defaultExpirationInSeconds: 300 };
+exports.handler = async (event) => {
+	// Fresh connection per request, same as Function A.
+	const weatherConn = weatherConnections.get("weather");
+	const connection = weatherConn.toObject();
+	const cacheProfile = weatherConn.getCacheProfile("current");
 
-// This will read from the same cache entry as Function A
-const cacheObj = await CacheableDataAccess.getData(cacheProfile, endpoint.send, conn, null);
-const weather = cacheObj.getBody(true);
+	// Reads from the same cache entry as Function A when every hash input matches.
+	const cacheObj = await CacheableDataAccess.getData(cacheProfile, endpoint.send, connection, null);
+	const weather = cacheObj.getBody(true);
+
+	return { statusCode: 200, body: JSON.stringify(weather) };
+};
 ```
 
-Because both functions use `sharedCacheId: "weather-service-group"` and make the same request, they share the same cache entry. If Function A fetches and caches the data first, Function B will get a cache hit instead of making a redundant API call.
+Because both functions use `sharedCacheId: "weather-service-group"` and produce an identical `connection` and `cacheProfile` for the same request, they share the same cache entry. If Function A fetches and caches the data first, Function B will get a cache hit instead of making a redundant API call. If either function's `connections.js` or cache profile drifts — a renamed field, a changed expiration, a number arriving as a string — the two `id_hash` values diverge and the sharing silently stops.
 
 > **Warning**: Sharing cache means sharing expiration. If Function A writes a cache entry that expires in 10 minutes, Function B will see that same expiration. Ensure all functions sharing a cache agree on appropriate expiration settings in their cache profiles, or be aware that the first function to populate the cache determines the expiration for all consumers until that entry expires.
+
+##### Troubleshooting shared-cache drift
+
+When two functions that should share a cache entry stop sharing it, the cause is almost always a difference in one of the hash inputs described under [Cache Key Generation](#cache-key-generation). Use this walkthrough to locate the drift from logs instead of reading source.
+
+**Symptom.** A reader function behaves as though the shared cache is permanently empty and keeps falling through to its fetch or error path, even though the writer function reports success.
+
+**Confirm.** On every `getData` completion the library emits one log line, tagged `CACHE`, at the normal (always-on) log level — it is written regardless of the configured log level. The line carries the computed `id_hash` as its first field:
+
+```text
+[CACHE] <id_hash> | <path> | <status> | <elapsed_ms>
+```
+
+Compare the `id_hash` for the same logical entry across both functions' logs. If the two `id_hash` values differ, the functions are not sharing the entry, and the difference is drift in a hash input.
+
+**Diagnose.** Diff these inputs between the two functions until you find the one that differs:
+
+1. **The resolved salt.** Call `Cache.info()` in each function and compare `saltSource` (reports whether the salt came from `sharedCacheId`, `AWS_LAMBDA_FUNCTION_NAME`, or none) and `sharedCacheId`. If the two functions resolved their salt from different sources, every `id_hash` differs.
+2. **The `connection` object** (ignoring `connection.options`, which is excluded from the key). Compare it field by field.
+3. **The full `cachePolicy`, field by field** — including behavioral fields such as `defaultExpirationExtensionOnErrorInSeconds`, and including value types. A number that arrives as a string from SSM, JSON, or a CloudFormation parameter will not match a hard-coded number (see [Cache Key Generation](#cache-key-generation)).
+4. **Whether either function reuses a single `connection` object reference** across invocations. A reused reference can drift; obtain the connection per request (for example via `connection.toObject()`) so no state leaks between invocations.
+
+For the full list of what must stay identical, see the [Shared cache pitfalls](#shared-cache) callout and the [Cache Key Generation](#cache-key-generation) section above.
 
 ### In-Memory Only Mode
 
@@ -575,9 +684,17 @@ You can see examples in the [example buildspec.yml](../../00-example-implementat
 
 ### Cache Key Generation
 
-Cache keys are generated by hashing the connection object (`host`, `path`, `parameters`, `headers`) along with the Lambda Application Identifer. This hash ensures that identical requests produce the same cache key and are only returned to the application that made the original request.
+The `id_hash` that identifies a cache entry is derived from three inputs together with a salt:
 
-Because the Application ID is included, and applications use their own encryption key, you can safely store multiple caches in a single DynamoDB/S3 cache store.
+1. The `data` parameter passed to `CacheableDataAccess.getData()`.
+2. The `connection` object — every field **except** `connection.options`. `options` is excluded on purpose so runtime toggles such as `forceRefresh` and `timeout` do not change the key.
+3. The full `cachePolicy` object, **including** its behavioral fields: `defaultExpirationInSeconds`, `defaultExpirationExtensionOnErrorInSeconds`, `expirationIsOnInterval`, `overrideOriginHeaderExpiration`, `encrypt`, `hostId`, `pathId`, `headersToRetain`, and `profile`.
+
+The salt scopes keys to a deployment. It resolves to `sharedCacheId` when that is configured, otherwise to `AWS_LAMBDA_FUNCTION_NAME` (empty string if unset). `sharedCacheId` itself defaults from the `CACHE_SHARED_ID` environment variable during `Cache.init()`.
+
+**Consequence for shared caches.** Two functions that intend to share an entry must use identical `connection` (minus `options`) and identical `cachePolicy` objects, in addition to the same salt. Drift in any single `cachePolicy` field — even a purely operational one such as `defaultExpirationExtensionOnErrorInSeconds` — produces a different `id_hash`, and the functions will silently read and write different rows.
+
+**Exact match includes value types and empty keys.** The hash is value-type sensitive: a field whose value is the number `300` does not match the string `"300"` (a number arriving as a string from SSM, JSON, or a CloudFormation parameter is a common cause). A key present with the value `undefined` also does not match the same object with that key absent. See [Cache key hashing details](../../technical/cache-key-hashing.md) for the mechanism.
 
 ### Expiration Handling
 

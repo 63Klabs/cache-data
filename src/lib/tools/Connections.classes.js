@@ -22,7 +22,7 @@ const { safeClone } = require('./utils');
  * 
  * // Get a specific connection
  * const apiConnection = connections.get('api');
- * const connectionObj = apiConnection.get();
+ * const connectionObj = apiConnection.toObject();
  * 
  * @example
  * // Add connections dynamically
@@ -130,7 +130,7 @@ class Connections {
 
 /**
  * The Connection object provides the base for requests but does not carry
- * the request. myConnection.get() will return an object (associative array) 
+ * the request. myConnection.toObject() will return an object (associative array) 
  * that can then be used to generate and submit a request to a DAO class or 
  * ApiRequest object.
  * You can store and manage multiple connections using the Connections object.
@@ -144,7 +144,7 @@ class Connections {
  * });
  * 
  * // Get connection object for use with endpoint
- * const connObj = apiConnection.get();
+ * const connObj = apiConnection.toObject();
  * const users = await endpoint.send(connObj);
  * 
  * @example
@@ -576,7 +576,7 @@ class ConnectionAuthentication {
  *   path: '/users'
  * });
  * 
- * const request = new ConnectionRequest(baseConnection.get());
+ * const request = new ConnectionRequest(baseConnection.toObject());
  * 
  * // Add dynamic headers
  * request.addHeader('Authorization', `Bearer ${token}`);

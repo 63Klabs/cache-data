@@ -42,7 +42,6 @@ function _getPowertoolsInit() {
 
 /* for hashing and encrypting */
 const crypto = require("crypto"); // included by aws so don't need to add to package.json
-const objHash = require('object-hash');
 const moment = require('moment-timezone');
 
 /**
@@ -1514,7 +1513,6 @@ class Cache {
 	static STATUS_FORCED = "original:cache-update-forced";
 
 	static #idHashAlgorithm = null;
-	static #useToolsHash = null; // gets set in Cache.init()
 	static #sharedCacheId = null;
 	static #useInMemoryCache = false;
 	static #inMemoryCache = null;
@@ -1629,8 +1627,8 @@ class Cache {
 
 		// if parameters are set, use them, otherwise check for environment variables
 		this.#idHashAlgorithm = parameters.idHashAlgorithm || process.env.CACHE_DATA_ID_HASH_ALGORITHM || "RSA-SHA256";
-		this.#useToolsHash = ( "useToolsHash" in parameters ) ? Cache.bool(parameters.useToolsHash) : 
-			("CACHE_DATA_USE_TOOLS_HASH" in process.env ? Cache.bool(process.env.CACHE_DATA_USE_TOOLS_HASH_METHOD) : false);
+		// Note: the former useToolsHash / CACHE_DATA_USE_TOOLS_HASH switch has been removed (Task 6).
+		// These are now silently ignored (no read, no throw); hashing always uses the single path.
 		
 		// Initialize in-memory cache feature flag
 		this.#useInMemoryCache = Cache.bool(parameters.useInMemoryCache) || 
@@ -1690,6 +1688,12 @@ class Cache {
 	 * This method combines Cache-specific settings with CacheData configuration
 	 * to provide a complete view of the cache system configuration.
 	 * 
+	 * The `saltSource` field reports how the id-hash salt was resolved, mirroring the
+	 * two-tier salt logic in `generateIdHash`: `"sharedCacheId"` when a shared cache id
+	 * is set, `"AWS_LAMBDA_FUNCTION_NAME"` when it falls back to the Lambda function name,
+	 * or `"none"` when neither is available. It is a provenance label for diagnosing
+	 * shared-cache key behavior, not the salt value itself.
+	 * 
 	 * @returns {{
 	 * 		idHashAlgorithm: string,
 	 * 		dynamoDbTable: string, 
@@ -1700,6 +1704,7 @@ class Cache {
 	 * 		purgeExpiredCacheEntriesAfterXHours: number,
 	 * 		timeZoneForInterval: string,
 	 * 		offsetInMinutes: number,
+	 * 		saltSource: string,
 	 * 		useInMemoryCache: boolean,
 	 * 		inMemoryOnly: boolean,
 	 * 		inMemoryCache?: Object
@@ -1716,6 +1721,10 @@ class Cache {
 		
 		// Add shared cache id info
 		info.sharedCacheId = this.#sharedCacheId;
+
+		// Add salt provenance label mirroring the two-tier salt resolution in generateIdHash.
+		// This is a provenance label only, never the salt bytes beyond what sharedCacheId already surfaces.
+		info.saltSource = this.#sharedCacheId !== null ? "sharedCacheId" : (process.env?.AWS_LAMBDA_FUNCTION_NAME ? "AWS_LAMBDA_FUNCTION_NAME" : "none");
 
 		// Add in-memory cache info
 		info.inMemoryOnly = this.#inMemoryOnly;
@@ -1925,45 +1934,46 @@ class Cache {
 	};
 
 	/**
-	 * Uses object-hash to create a hash of an object passed to it
-	 * Object-hash respects object structures and arrays and performs a sort to
-	 * normalize objects so that objects with the same key/value structure are
-	 * identified as such. For example:
-	 * {host: "example.com", path: "/api"} === {path: "/api", host: "example.com"}
-	 * 
+	 * Creates a reproducible hash of an object, array, or string for use as a
+	 * cache-key identifier. Hashing is performed by the internal `DataHasher`
+	 * (via `tools.hashThisData`), which recursively deep-hashes the input.
+	 *
+	 * Hashing semantics:
+	 * - Object property order is insignificant: keys are sorted before hashing,
+	 *   so `{host: "example.com", path: "/api"}` hashes the same as
+	 *   `{path: "/api", host: "example.com"}`, at every nesting depth.
+	 * - Array element order IS significant: `["apple","orange"]` hashes
+	 *   differently from `["orange","apple"]`, at every nesting depth. If the
+	 *   order of an array's elements should not matter, join or sort the array
+	 *   before passing it in.
+	 * - The hash is deterministic for a given algorithm (set in the Cache
+	 *   constructor via `idHashAlgorithm`) and salt.
+	 *
+	 * A two-tier salt is applied so that cache keys are scoped to this
+	 * deployment. The salt resolves to `sharedCacheId` when configured,
+	 * otherwise to `AWS_LAMBDA_FUNCTION_NAME` (empty string if unset), and is
+	 * passed to the hasher via `options.salt`. `sharedCacheId` itself defaults
+	 * from the `CACHE_SHARED_ID` environment variable during `Cache.init()`.
+	 *
 	 * You can also pass in a string such as "MYID-03-88493" if your id is not
-	 * query based.
-	 * 
-	 * Note: Arrays are sorted alphabetically. So [1,2,3] will be same as 
-	 * [3,1,2] and ["A","B","C"] will be same as ["B","C","A"] so if the order
-	 * of the array matters it is recommended to perform a .join prior. This is 
-	 * so that:
-	 * 	{query: {types: "db,contact,guides"} } === {query: {types: "contact,guides,db"} }
-	 * 	example.com/?types=db,contact,guides === example.com/?types=contact,guides,db
-	 * 
-	 * You can pass in an object containing request header and query param 
-	 * represented as objects.
-	 * 
-	 * As an example, CacheableDataAccess() combines 3 of the parameter objects
-	 * passed to it.
-	 * query, connection, and cachePolicy are pased as an object by 
-	 * CacheableDataAccess() for Cache() to create a hashed id: 
-	 * { query: query, connection: connection, cachePolicy: cachePolicy };
-	 * 
-	 * Passing an array of objects such as:
-	 * [ query, connection, cachePolicy ]
-	 * also works. object-hash is REALLY cool and magical
-	 * 
-	 * Uses object-hash: https://www.npmjs.com/package/object-hash
-	 * Git: https://github.com/puleos/object-hash
-	 * 
-	 * Make sure it is installed in app/node_modules with an entry in app/package.json
-	 *   "dependencies": {
-	 * 		"object-hash": "^2.2.0"
-	 *   }
-	 * 
+	 * request based.
+	 *
+	 * You can pass in an object containing the parts of a request represented as
+	 * objects. As an example, `CacheableDataAccess.getData()` combines the three
+	 * inputs passed to it — `data`, `connection`, and `cachePolicy` — into a
+	 * single object for `Cache()` to hash:
+	 * `{ data: data, connection: connection, cachePolicy: cachePolicy }`. Every
+	 * `connection` field except `connection.options` participates, and the full
+	 * `cachePolicy` (including its behavioral fields) participates, so drift in
+	 * any single field produces a different id. Passing an array of objects such
+	 * as `[ data, connection, cachePolicy ]` also works.
+	 *
+	 * The input must be JSON-serializable. Values that do not survive
+	 * `JSON.stringify` (functions, symbols) are dropped; `bigint` and
+	 * `undefined` are normalized to string forms. Circular references throw.
+	 *
 	 * @param {Object|Array|string} idObject Object, Array, or string to hash. Object may contain a single value with a text string, or complex http request broken down into parts
-	 * @returns {string} A hash representing the object (Algorithm used is set in Cache object constructor)
+	 * @returns {string} A hex-encoded hash representing the object (Algorithm used is set in Cache object constructor)
 	 * @example
 	 * // Hash a simple object
 	 * const connection = { host: 'api.example.com', path: '/users' };
@@ -1971,11 +1981,12 @@ class Cache {
 	 * console.log(hash); // "a1b2c3d4e5f6..."
 	 * 
 	 * @example
-	 * // Hash a complex request object
+	 * // Hash a complex request object. CacheableDataAccess.getData() builds this
+	 * // shape internally: { data, connection, cachePolicy }.
 	 * const requestObj = {
-	 *   query: { type: 'user', id: '123' },
+	 *   data: { type: 'user', id: '123' },
 	 *   connection: { host: 'api.example.com', path: '/data' },
-	 *   cachePolicy: { ttl: 300 }
+	 *   cachePolicy: { profile: 'default', defaultExpirationInSeconds: 300 }
 	 * };
 	 * const hash = Cache.generateIdHash(requestObj);
 	 * 
@@ -2013,23 +2024,9 @@ class Cache {
 		// remove connection.options from clonedIdObject
 		if ( clonedIdObject.connection?.options ) { delete clonedIdObject.connection.options; }
 
-		// use the built-in hashing from CacheData tools
-		if ( this.#useToolsHash ) { return tools.hashThisData(this.#idHashAlgorithm, clonedIdObject, {salt}); }
-
-		// use the external package object-hash settings
-		const objHashSettings = {
-			algorithm: this.#idHashAlgorithm,
-			encoding: "hex", // default, but we'll list it here anyway as it is important for this use case
-			respectType: true, // default, but we'll list it here anyway as it is important for this use case
-			unorderedSets: true, // default, but we'll list it here anyway as it is important for this use case
-			unorderedObjects: true, // default, but we'll list it here anyway as it is important for this use case
-			unorderedArrays: true // default is false but we want true - would be a problem if array sequence mattered, but not in this use case
-		};
-
-		// there is no salt in object-hash, so we add it to a property that would be least likely to conflict
-		clonedIdObject.THIS_IS_SALT_FOR_CK_CACHE_DATA_ID_HASH = salt;
-
-		return objHash(clonedIdObject, objHashSettings);
+		// Hash via the single built-in path (DataHasher, through tools.hashThisData).
+		// Salt is passed as an option rather than injected as a property.
+		return tools.hashThisData(this.#idHashAlgorithm, clonedIdObject, { salt });
 
 	};
 
@@ -2805,8 +2802,11 @@ class Cache {
 	};
 
 	/**
-	 * Get the unique identifier hash for this cache entry. This hash is generated
-	 * from the connection, data, and cache policy parameters and uniquely identifies
+	 * Get the unique identifier hash for this cache entry. The hash is produced by
+	 * `Cache.generateIdHash` from the three inputs `CacheableDataAccess.getData()`
+	 * combines — `data`, `connection` (every field except `connection.options`),
+	 * and the full `cachePolicy` — together with the two-tier salt (`sharedCacheId`
+	 * when configured, otherwise `AWS_LAMBDA_FUNCTION_NAME`). It uniquely identifies
 	 * this specific cache entry.
 	 * 
 	 * @returns {string} The unique cache identifier hash
@@ -3296,29 +3296,36 @@ class CacheableDataAccess {
 
 					tools.DebugAndLog.debug("Cache needs refresh.");
 
-					// add etag and last modified to connection
-					if ( !("headers" in connection)) { connection.headers = {}; }
+					// >! Work on an internal deep copy so the caller's connection object is never mutated.
+					// >! Mutating the caller's object caused id_hash drift when the reference was reused
+					// >! across warm invocations (see spec 1-4-0-cache-key-generation-docs, Requirement 7).
+					// The hash was already computed above from the caller's original connection, so
+					// fresh-per-call callers continue to receive a byte-identical id_hash.
+					const requestConnection = tools.safeClone(connection);
+
+					// add etag and last modified to the copy
+					if ( !("headers" in requestConnection) ) { requestConnection.headers = {}; }
 					
 					// Sanitize existing headers to remove invalid values (including string "undefined")
-					for (const key in connection.headers) {
-						if (!Cache._isValidHeaderValue(connection.headers[key])) {
-							delete connection.headers[key];
-							tools.DebugAndLog.debug(`Removed invalid header value for "${key}": ${connection.headers[key]}`);
+					for (const key in requestConnection.headers) {
+						if (!Cache._isValidHeaderValue(requestConnection.headers[key])) {
+							delete requestConnection.headers[key];
+							tools.DebugAndLog.debug(`Removed invalid header value for "${key}": ${requestConnection.headers[key]}`);
 						}
 					}
 					
 					const etag = cache.getETag();
-					if ( !("if-none-match" in connection.headers) && Cache._isValidHeaderValue(etag)) { 
-						connection.headers['if-none-match'] = etag;
+					if ( !("if-none-match" in requestConnection.headers) && Cache._isValidHeaderValue(etag)) { 
+						requestConnection.headers['if-none-match'] = etag;
 					}
 					
 					const lastModified = cache.getLastModified();
-					if (!("if-modified-since" in connection.headers) && Cache._isValidHeaderValue(lastModified)) { 
-						connection.headers['if-modified-since'] = lastModified; 
+					if (!("if-modified-since" in requestConnection.headers) && Cache._isValidHeaderValue(lastModified)) { 
+						requestConnection.headers['if-modified-since'] = lastModified; 
 					}
 
 					// request data from original source
-					let originalSource = await apiCallFunction(connection, data);
+					let originalSource = await apiCallFunction(requestConnection, data);
 					
 					if ( originalSource.success ) {
 

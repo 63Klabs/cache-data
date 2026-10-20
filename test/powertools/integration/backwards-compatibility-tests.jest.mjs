@@ -451,13 +451,18 @@ describe("Backwards Compatibility Integration Tests", () => {
 			packageJson = JSON.parse(content);
 		});
 
-		it("should only have moment-timezone and object-hash as required dependencies", () => {
+		it("should only have moment-timezone as a required dependency", () => {
 			const deps = Object.keys(packageJson.dependencies || {});
-			// These are the only allowed required dependencies (same as v1.3.14)
-			const allowedDeps = ["moment-timezone", "object-hash"];
+			// object-hash was removed in v1.4.0 (hashing now uses the built-in DataHasher)
+			const allowedDeps = ["moment-timezone"];
 			for (const dep of deps) {
 				expect(allowedDeps).toContain(dep);
 			}
+		});
+
+		it("should not have object-hash in required dependencies (removed in v1.4.0)", () => {
+			const deps = Object.keys(packageJson.dependencies || {});
+			expect(deps).not.toContain("object-hash");
 		});
 
 		it("should not have Powertools packages in required dependencies", () => {

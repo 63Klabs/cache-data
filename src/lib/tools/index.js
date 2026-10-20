@@ -33,7 +33,7 @@ const htmlGenericResponse = require('./generic.response.html');
 const xmlGenericResponse = require('./generic.response.xml');
 const rssGenericResponse = require('./generic.response.rss');
 const textGenericResponse = require('./generic.response.text');
-const { printMsg, sanitize, obfuscate, hashThisData} = require('./utils');
+const { printMsg, sanitize, obfuscate, hashThisData, safeClone} = require('./utils');
 const { CachedParameterSecrets, CachedParameterSecret, CachedSsmParameter, CachedSecret } = require('./CachedParametersSecrets.classes')
 const { Connections, Connection, ConnectionRequest, ConnectionAuthentication } = require('./Connections.classes')
 const { flushMetrics } = require('./PowertoolsInit')
@@ -636,5 +636,6 @@ module.exports = {
 	sanitize,
 	obfuscate,
 	hashThisData,
+	safeClone,
 	flushMetrics
 };

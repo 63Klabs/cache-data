@@ -6,11 +6,29 @@
  * Validates: Bug fix for "Invalid value 'undefined' for header" error
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll } from '@jest/globals';
+import { randomBytes } from 'crypto';
 import pkg from '../../src/lib/dao-cache.js';
-const { CacheableDataAccess } = pkg;
+const { Cache, CacheableDataAccess } = pkg;
 
 describe('CacheableDataAccess - Header Sanitization Tests', () => {
+
+	// CacheableDataAccess.getData() constructs a Cache, which calls
+	// Cache.generateIdHash() and therefore needs #idHashAlgorithm set. This file
+	// does not otherwise call Cache.init(), so when Jest schedules it first in a
+	// worker the algorithm would be null and crypto.createHash(null) would throw.
+	// Initialize Cache here (only if not already initialized) so the suite does
+	// not depend on another test in the same worker having run init first.
+	beforeAll(() => {
+		if (!Cache.info().idHashAlgorithm) {
+			const dataKey = Buffer.from(randomBytes(32).toString('hex'), 'hex');
+			Cache.init({
+				dynamoDbTable: 'test-table-header-sanitization',
+				s3Bucket: 'test-bucket-header-sanitization',
+				secureDataKey: dataKey
+			});
+		}
+	});
 
 	describe('Header sanitization before API call', () => {
 

@@ -14,6 +14,7 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 - **Generator precondition audit** — `test/security/property/generator-precondition-audit-tests.jest.mjs` samples every fast-check arbitrary registered in the new `test/helpers/parameter-key-arbitraries.mjs` and asserts zero precondition violations, at a per-entry draw budget sized to each arbitrary's measured violation rate (200,000 baseline; 2,600,000 for the ARN entry). Deterministic by default, so it either always passes or always fails rather than becoming a randomly-timed release block. Includes a guard asserting the runtime premise the ARN generator rests on (no reserved key contains a digit). [Spec: 1-4-0-property-test-generator-preconditions](.kiro/specs/1-4-0-property-test-generator-preconditions/)
 - **Manual property seed sweep workflow** — `.github/workflows/property-seed-sweep.yml` runs the suite across a configurable range of fast-check seeds. `workflow_dispatch` only, with no `schedule`, `push`, or `pull_request` trigger, so it cannot block a merge or a release.
+- **`Cache.info()` reports `saltSource`** — `Cache.info()` now returns a `saltSource` field (`"sharedCacheId"`, `"AWS_LAMBDA_FUNCTION_NAME"`, or `"none"`) identifying which tier supplied the cache-key salt, for diagnosing shared-cache drift. The field is additive; no existing field is removed or renamed. [Spec: 1-4-0-cache-key-generation-docs](.kiro/specs/1-4-0-cache-key-generation-docs/) addresses [#235](https://github.com/63Klabs/cache-data/issues/235)
 
 ### Fixed
 
@@ -22,17 +23,32 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
   - The `setGroupedSecretMap` round-trip generator, fixed by hand in v1.3.17, converged onto the same shared arbitrary, removing the drift risk of a hand-written mirror of the implementation's segment rule.
   - Six deterministic `setGroupedSecret` rejection cases added, covering both `dangerous-segment` and `prototype-segment` with exact reason strings — including the observed counterexamples `toString/p` and `+_8@/valueOf` — so those paths are exercised on every run rather than by rare random draw.
 - **Unseeded test input** — Seven `Math.random()` call sites that selected or constructed test input across four property-test files were replaced with fast-check arbitraries, so a fixed seed now reproduces those inputs. The 9 remaining `Math.random()` call sites across 3 test files only build unique temp-file and temp-resource names (scratch script files, throwaway DynamoDB table and S3 bucket names) and influence no assertion.
+- **`CacheableDataAccess.getData` no longer mutates the caller's `connection`** — Conditional-request headers (`if-none-match` / `if-modified-since`) are now prepared on an internal deep copy rather than on the object the caller passed in. This ends `id_hash` drift for callers that reuse a single `connection` reference across invocations, and removes an undocumented side effect in which the injected revalidation markers appeared on the caller's object. Callers that pass a fresh `connection` per request — including the documented `Connection.toObject()` path, which returns a new object on each call — see no change to their cache keys. This is hardening for the documented fresh-object path and a latent-bug fix for reused-reference callers. [Spec: 1-4-0-cache-key-generation-docs](.kiro/specs/1-4-0-cache-key-generation-docs/) addresses [#235](https://github.com/63Klabs/cache-data/issues/235)
 
 ### Changed
 
 - **Single `FC_SEED` seeding mechanism** — Suite-wide fast-check seeding now comes from one `FC_SEED` environment variable via `test/setup/fast-check-seed.mjs`, registered in `jest.config.mjs` under `setupFilesAfterEnv`. It reaches every `fc.assert` that omits a `seed` option. With `FC_SEED` unset, seeding behavior is unchanged; a non-integer value fails the run loudly rather than falling back to random. Replay a counterexample with `FC_SEED=<seed> npm test -- <test file>`.
   - The 69 per-call-site `seed: process.env.FC_SEED ? parseInt(process.env.FC_SEED) : undefined` options across 12 files were removed, because an explicit `seed: undefined` overrides `fc.configureGlobal` and restores random seeding.
 - **Property-testing guardrails** — `.kiro/steering/test-execution-monitoring.md` extended with the generator precondition rule, the gate-predicate vs predicate-under-test distinction, and the `FC_SEED` / `FC_AUDIT_DRAWS` documentation.
+- **Cache-key hashing always uses the built-in hasher** — `Cache.generateIdHash()` now always computes hashes through the internal `DataHasher` class (via `tools.hashThisData`); the external `object-hash` library is no longer used on any code path. The hashing logic moved into a dedicated internal `DataHasher` class (`src/lib/utils/DataHasher.class.js`) with `tools.hashThisData` reduced to a thin wrapper, so the public `tools.hashThisData` signature and export are unchanged. [Spec: 1-4-0-fully-implement-hashThisData](.kiro/specs/1-4-0-fully-implement-hashThisData/)
+- **Array element order is now significant in hashing (behavior change)** — Hashing now distinguishes array element order: `['apple', 'orange']` and `['orange', 'apple']` produce different hashes. Object property order remains insignificant at every nesting depth (`{a: 1, b: 2}` and `{b: 2, a: 1}` still hash identically). Both previous hashing paths ignored array order; this change corrects that deliberately. [Spec: 1-4-0-fully-implement-hashThisData](.kiro/specs/1-4-0-fully-implement-hashThisData/)
+- **Documentation: cache-key generation corrected** — The "Cache Key Generation" section of the cache feature README now lists all three hash inputs (`data`, `connection` minus its `options`, and the full `cachePolicy` including behavioral fields), the two-tier salt, and value-type and `undefined`-key sensitivity; adds a "Shared cache pitfalls" callout and a shared-cache drift troubleshooting walkthrough; reconciles stale `CACHE_DATA_USE_TOOLS_HASH_METHOD` references in the example-implementation docs; and removes a duplicate `idHashAlgorithm` options-table row. Adds `docs/technical/cache-key-hashing.md` documenting the `DataHasher` mechanism, and aligns the `Cache.generateIdHash` / `Cache.getIdHash` and `Connection` JSDoc with the corrected README. [Spec: 1-4-0-cache-key-generation-docs](.kiro/specs/1-4-0-cache-key-generation-docs/) addresses [#235](https://github.com/63Klabs/cache-data/issues/235)
 
-### Notes
+### Deprecated
 
-- **Test-only release** — This release changes only `test/`, `jest.config.mjs`, `.github/workflows/`, `.kiro/steering/`, and this changelog. No `src/` file changed: `ParameterKeySafety` correctly rejected every observed counterexample. Because `.npmignore` excludes `test` and `.kiro`, none of this reaches the published package, and there is no change in runtime behavior for consumers.
-- **Verification** — Full suite: 224 suites, 3,107 passing / 2 skipped, up from the 3,096 baseline (no net decrease in test count).
+- **`useToolsHash` parameter and `CACHE_DATA_USE_TOOLS_HASH` environment variable** — The experimental hashing switch (`Cache.init({ useToolsHash })`, the `CACHE_DATA_USE_TOOLS_HASH` environment variable, and `CACHE_DATA_USE_TOOLS_HASH_METHOD`) is no longer consulted. Passing the parameter or setting the environment variables is silently ignored (no-op, no error), because hashing now always uses the built-in hasher. The TypeScript `useToolsHash?` property is retained in the type definitions and marked `@deprecated` to avoid a compile-time break for existing callers; it is slated for removal in a future major version. [Spec: 1-4-0-fully-implement-hashThisData](.kiro/specs/1-4-0-fully-implement-hashThisData/)
+
+### Removed
+
+- **`object-hash` dependency** — The `object-hash` package has been removed from `dependencies`; it is no longer required at runtime. [Spec: 1-4-0-fully-implement-hashThisData](.kiro/specs/1-4-0-fully-implement-hashThisData/)
+
+### Dependencies
+
+- Removed `object-hash` (was `^3.0.0`) now that cache-key hashing uses the built-in `DataHasher`.
+
+### Upgrade Notes
+
+- **One-time cache invalidation on upgrade** — Because the new `DataHasher` output differs from the previous `object-hash` output (regardless of array ordering), cache-key hashes change on upgrade. Existing cache entries will miss once and then repopulate from origin. No action is required; the cache self-heals after the first request per key. [Spec: 1-4-0-fully-implement-hashThisData](.kiro/specs/1-4-0-fully-implement-hashThisData/)
 
 ## v1.3.17 (2026-10-02)
 

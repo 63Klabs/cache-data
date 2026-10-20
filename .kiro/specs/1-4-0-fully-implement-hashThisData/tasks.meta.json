@@ -1,0 +1,226 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Create the `DataHasher` internal class with the current hashing behavior": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514298351
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514305110
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514398382
+      }
+    ],
+    "2. Apply the array-order-significance fix in `DataHasher.hash`": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514298483
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514401350
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514741719
+      }
+    ],
+    "3. Add `DataHasher` unit tests": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514298610
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514747754
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514868151
+      }
+    ],
+    "4. Add `DataHasher` property tests (fast-check, repo guardrails)": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514298717
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514871168
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514989132
+      }
+    ],
+    "5. Reduce `tools.hashThisData` to a thin wrapper over `DataHasher.hash`": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514298818
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514992038
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792515383801
+      }
+    ],
+    "6. Remove the feature switch from `Cache.init()`": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514298925
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792515386482
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792515518685
+      }
+    ],
+    "7. Route `Cache.generateIdHash()` through `DataHasher` and remove object-hash usage": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514299027
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792515521488
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792515655668
+      }
+    ],
+    "8. Rewrite the shared-id test oracle to use `DataHasher` (drop object-hash)": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514299126
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792515658624
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516112984
+      }
+    ],
+    "9. Remove the `object-hash` dependency": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514299238
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516115820
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516235758
+      }
+    ],
+    "10. Update TypeScript definitions": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514299361
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516242012
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516657646
+      }
+    ],
+    "11. Update markdown documentation": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514299461
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516660475
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516795189
+      }
+    ],
+    "12. Add the CHANGELOG 1.4.0 entry": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514299563
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516799318
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516925526
+      }
+    ],
+    "13. Full verification pass": [
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792514299670
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792516928324
+      },
+      {
+        "executionId": "2d79b5a6-18a2-4ebf-81bd-6048b60531cc",
+        "chatSessionId": "sess_93ca795c-ac3e-4cab-acf2-dc363156b9cb",
+        "timestamp": 1792517140032
+      }
+    ]
+  }
+}

@@ -11,7 +11,7 @@ import fc from "fast-check";
 import { execSync } from "child_process";
 import { randomBytes } from "crypto";
 import { Cache } from "../../src/lib/dao-cache.js";
-import objHash from "object-hash";
+import DataHasher from "../../src/lib/utils/DataHasher.class.js";
 
 // Set the environment variable for AWS region
 const AWS_REGION = process.env.AWS_REGION || "us-east-1";
@@ -57,8 +57,13 @@ const connectionArb = fc.record({
 const sharedCacheIdArb = fc.stringMatching(/^[a-zA-Z0-9_-]{1,50}$/);
 
 /**
- * Compute what object-hash would produce for a given connection and salt.
- * Replicates the logic in Cache.generateIdHash() for verification purposes.
+ * Compute the hash that Cache.generateIdHash() produces for a given connection
+ * and salt, derived from DataHasher (the single built-in hashing path).
+ *
+ * Mirrors generateIdHash exactly: deep-clone the connection, delete
+ * `connection.options` if present (on the clone), then hash with the salt
+ * passed via options (no property-injection). The algorithm is "RSA-SHA256",
+ * the Cache default (#idHashAlgorithm), which these tests do not override.
  *
  * @param {Object} connection - The connection object
  * @param {string} salt - The salt value
@@ -67,18 +72,8 @@ const sharedCacheIdArb = fc.stringMatching(/^[a-zA-Z0-9_-]{1,50}$/);
 function computeExpectedHash(connection, salt) {
 	const cloned = structuredClone(connection);
 	if (cloned.connection?.options) { delete cloned.connection.options; }
-	cloned.THIS_IS_SALT_FOR_CK_CACHE_DATA_ID_HASH = salt;
 
-	const objHashSettings = {
-		algorithm: "RSA-SHA256",
-		encoding: "hex",
-		respectType: true,
-		unorderedSets: true,
-		unorderedObjects: true,
-		unorderedArrays: true
-	};
-
-	return objHash(cloned, objHashSettings);
+	return DataHasher.hash("RSA-SHA256", cloned, { salt });
 }
 
 /**
