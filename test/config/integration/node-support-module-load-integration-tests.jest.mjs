@@ -1,17 +1,21 @@
 /**
  * Subprocess-isolated module-load test for supported Node.js runtimes.
  *
- * Verifies Property 6: on a supported Node major version, requiring the package
- * entry point completes at module load with exit code 0, no hard-floor exit,
- * and no Node deprecation warning. The one exception handled here is Node major
- * 20, which is still supported (it runs, exit 0) but emits the exact Requirement
- * 3.2 deprecation warning via `DebugAndLog.warn()`.
+ * Verifies Property 6: on a supported Node major version (>= 22), requiring the
+ * package entry point completes at module load with exit code 0, no hard-floor
+ * exit, and no Node deprecation warning. After the v1.4.0 Node 20 removal the
+ * hard floor is `nodeVerMajor < 22`, so Node major 20 (and 21) now hit the hard
+ * floor and exit non-zero with the floor message BEFORE any deprecation-warning
+ * path is reachable; the Node 20 deprecation warning is no longer emitted for
+ * any running major (its registry entry is retained but inactive).
  *
- * `DebugAndLog.warn()` routes through `console.warn`, so the warning is written
- * to the child's STDERR with a `[WARN] ` tag prefix and the verbatim message
- * text (format `[WARN] <message>`). The hard floor in `src/lib/tools/vars.js`
- * writes its message with `console.error` (also STDERR) before calling
- * `process.exit(1)`. Both are asserted against the child's captured STDERR.
+ * `DebugAndLog.warn()` routes through `console.warn`, so a warning would be
+ * written to the child's STDERR with a `[WARN] ` tag prefix and the verbatim
+ * message text (format `[WARN] <message>`). The hard floor in
+ * `src/lib/tools/vars.js` writes its message with `console.error` (also STDERR)
+ * before calling `process.exit(1)`. Both are asserted against the child's
+ * captured STDERR. `DEPRECATION_MESSAGE_NODE_20` is retained here only as a
+ * NEGATIVE assertion: it must never appear for any running major.
  *
  * The child is spawned with `execFile(process.execPath, ['-e', script], ...)`
  * using ARRAY arguments and NO shell string, per the secure-coding steering
@@ -19,8 +23,8 @@
  * `maxBuffer` bound the child. This file spawns only a couple of short-lived
  * children and never invokes `npm test` or the full suite.
  *
- * Feature: 1-3-17-node-26-support, Property 6: Supported versions neither exit nor warn beyond the Node 20 case
- * Validates: Requirements 3.5, 5.5, 8.2
+ * Feature: 1-4-0-remove-node-20-support, Property 6: Supported versions (>= 22) neither exit nor warn
+ * Validates: Requirements 2.4, 6.2, 6.5, 6.6
  *
  * @module test/config/integration/node-support-module-load-integration-tests
  */
@@ -43,11 +47,14 @@ const PACKAGE_ENTRY = resolve(PROJECT_ROOT, 'src/index.js');
 // Running Node major version of the current (test) runtime.
 const RUNNING_MAJOR = parseInt(process.versions.node.split('.')[0], 10);
 
-// Exact Requirement 3.2 deprecation warning text emitted for Node major 20.
+// Exact Requirement 3.2 (v1.3.17) deprecation warning text, retained here only
+// as a negative assertion: after v1.4.0 it is never emitted for any running
+// major (the Node 20 registry entry is inactive, and a Node 20 process hits the
+// hard floor first).
 const DEPRECATION_MESSAGE_NODE_20 =
 	"Node.js 20 reached end-of-life on 2026-04-30 and is no longer tested by @63klabs/cache-data; please upgrade to Node.js 22 or later.";
 
-// Stable fragment of the vars.js hard-floor message (Requirement 5.2 text).
+// Stable fragment of the vars.js hard-floor message (Requirement 1.3 text).
 const FLOOR_MESSAGE_FRAGMENT = "or higher is required for @63klabs/cache-data";
 
 // Bounds for the spawned child (test-execution-monitoring: explicit timeout).
@@ -97,23 +104,22 @@ async function loadPackageInChild() {
 	}
 }
 
-describe('Property 6: Supported versions neither exit nor warn beyond the Node 20 case', () => {
-	// Feature: 1-3-17-node-26-support, Property 6: Supported versions neither exit nor warn beyond the Node 20 case
-	// Validates: Requirements 3.5, 5.5, 8.2
+describe('Property 6: Supported versions (>= 22) neither exit nor warn', () => {
+	// Feature: 1-4-0-remove-node-20-support, Property 6: Supported versions (>= 22) neither exit nor warn
+	// Validates: Requirements 2.4, 6.2, 6.5, 6.6
 
 	it(
-		'requires the package at module load and exits 0 on a supported runtime',
+		'requires the package at module load and exits 0 on a supported runtime (>= 22)',
 		async () => {
 			const { code, stdout, stderr } = await loadPackageInChild();
 
-			if (RUNNING_MAJOR >= 20) {
-				// Supported floor (>= 20): module load must complete cleanly.
+			if (RUNNING_MAJOR >= 22) {
+				// Supported floor (>= 22): module load must complete cleanly.
 				expect(code).toBe(0);
 				expect(stdout).toContain('MODULE_LOAD_OK');
 			} else {
-				// Below the hard floor: the process exits non-zero. The full
-				// exit-code-1 / message wiring is covered by task 3.2; here we
-				// only sanity-check that load did not succeed.
+				// Below the hard floor (includes Node 20 and 21 after v1.4.0):
+				// the process exits non-zero with the floor message on STDERR.
 				expect(code).not.toBe(0);
 				expect(stderr).toContain(FLOOR_MESSAGE_FRAGMENT);
 			}
@@ -122,34 +128,31 @@ describe('Property 6: Supported versions neither exit nor warn beyond the Node 2
 	);
 
 	it(
-		'emits neither the floor message nor a deprecation warning on Node 22/24/26, and the exact Node 20 warning on Node 20',
+		'emits neither the floor message nor a deprecation warning on Node 22/24/26, and hits the floor (no deprecation warning) below 22',
 		async () => {
 			const { code, stdout, stderr } = await loadPackageInChild();
 
-			if (RUNNING_MAJOR === 20) {
-				// Node 20 is still supported (exit 0) but must emit the exact
-				// Requirement 3.2 warning via DebugAndLog.warn() -> console.warn
-				// (STDERR), and must NOT hit the hard floor.
-				expect(code).toBe(0);
-				expect(stdout).toContain('MODULE_LOAD_OK');
-				expect(stderr).toContain(DEPRECATION_MESSAGE_NODE_20);
-				expect(stderr).not.toContain(FLOOR_MESSAGE_FRAGMENT);
-			} else if ([22, 24, 26].includes(RUNNING_MAJOR)) {
+			if ([22, 24, 26].includes(RUNNING_MAJOR)) {
 				// Supported, non-deprecated runtimes: no floor exit, no warning.
 				expect(code).toBe(0);
 				expect(stdout).toContain('MODULE_LOAD_OK');
 				expect(stderr).not.toContain(DEPRECATION_MESSAGE_NODE_20);
 				expect(stderr).not.toContain(FLOOR_MESSAGE_FRAGMENT);
-			} else if (RUNNING_MAJOR > 20) {
-				// Other majors at or above the floor (e.g. 21, 23, 25, 27+):
-				// exit 0 with no deprecation warning under the initial registry.
+			} else if (RUNNING_MAJOR >= 22) {
+				// Other majors at or above the floor (e.g. 23, 25, 27+):
+				// exit 0 with no deprecation warning under the updated registry.
 				expect(code).toBe(0);
 				expect(stderr).not.toContain(DEPRECATION_MESSAGE_NODE_20);
 				expect(stderr).not.toContain(FLOOR_MESSAGE_FRAGMENT);
 			} else {
-				// Below the floor: not a supported runtime; warn-specific
-				// assertions are skipped (covered by task 3.2).
+				// Below the floor (includes Node 20 and 21 after v1.4.0): the
+				// process hits the hard floor and exits non-zero with the floor
+				// message. The Node 20 deprecation warning is NEVER emitted
+				// (the warning path is unreachable below the floor, and the
+				// registry entry is inactive) - assert it as a negative.
 				expect(code).not.toBe(0);
+				expect(stderr).toContain(FLOOR_MESSAGE_FRAGMENT);
+				expect(stderr).not.toContain(DEPRECATION_MESSAGE_NODE_20);
 			}
 		},
 		TEST_TIMEOUT_MS

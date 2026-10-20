@@ -59,7 +59,7 @@ const _deprecationNoticed = new Set();
 const NODE_DEPRECATION_NOTICES = [
 	{
 		version: 20,
-		active: true, // flips to false in the v1.4.0 removal spec, not deleted
+		active: false, // set inactive in the v1.4.0 removal spec; retained for audit history, not deleted
 		message: "Node.js 20 reached end-of-life on 2026-04-30 and is no longer tested by @63klabs/cache-data; please upgrade to Node.js 22 or later."
 	}
 	// Future cycles append here, e.g.:

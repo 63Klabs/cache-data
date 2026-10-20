@@ -1,33 +1,26 @@
 {
-  "reviewDate": "2026-01-27T03:15:48.269Z",
+  "reviewDate": "2026-10-20T20:33:05.872Z",
   "summary": {
-    "totalFiles": 10,
-    "filesNeedingReview": 0,
+    "totalFiles": 28,
+    "filesNeedingReview": 1,
     "totalBrokenLinks": 0,
-    "totalOutdatedIssues": 0,
-    "missingDocumentation": 1
+    "totalOutdatedIssues": 1,
+    "missingDocumentation": 0
   },
-  "missingDocumentation": [
-    {
-      "path": "docs/features/endpoint/README.md",
-      "feature": "Endpoint Module",
-      "status": "stub",
-      "size": 46
-    }
-  ],
+  "missingDocumentation": [],
   "fileAnalyses": [
     {
       "filePath": "docs/00-example-implementation/README.md",
       "stats": {
-        "size": 3490,
-        "lastModified": "2026-01-06T02:42:49.397Z",
-        "lineCount": 56,
-        "wordCount": 429
+        "size": 9769,
+        "lastModified": "2026-10-20T19:10:26.895Z",
+        "lineCount": 235,
+        "wordCount": 1076
       },
       "links": {
-        "total": 11,
+        "total": 20,
         "external": 2,
-        "internal": 8,
+        "internal": 18,
         "broken": 0
       },
       "brokenLinks": [],
@@ -47,15 +40,15 @@
     {
       "filePath": "docs/00-quick-start-implementation/README.md",
       "stats": {
-        "size": 24776,
-        "lastModified": "2026-01-25T22:36:37.824Z",
-        "lineCount": 657,
-        "wordCount": 3370
+        "size": 9435,
+        "lastModified": "2026-03-12T22:38:32.948Z",
+        "lineCount": 317,
+        "wordCount": 1015
       },
       "links": {
-        "total": 6,
+        "total": 13,
         "external": 0,
-        "internal": 3,
+        "internal": 8,
         "broken": 0
       },
       "brokenLinks": [],
@@ -66,39 +59,214 @@
     {
       "filePath": "docs/01-advanced-implementation-for-web-service/README.md",
       "stats": {
-        "size": 936,
-        "lastModified": "2026-01-06T02:42:49.398Z",
-        "lineCount": 14,
-        "wordCount": 124
+        "size": 1792,
+        "lastModified": "2026-02-28T05:05:02.835Z",
+        "lineCount": 52,
+        "wordCount": 204
       },
       "links": {
-        "total": 2,
-        "external": 1,
-        "internal": 1,
+        "total": 11,
+        "external": 0,
+        "internal": 10,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/additional-information.md",
+      "stats": {
+        "size": 1405,
+        "lastModified": "2026-02-28T05:05:02.835Z",
+        "lineCount": 25,
+        "wordCount": 121
+      },
+      "links": {
+        "total": 12,
+        "external": 2,
+        "internal": 10,
         "broken": 0
       },
       "brokenLinks": [],
       "externalLinks": [
         {
-          "text": "Atlantis Tutorials repository",
+          "text": "Atlantis Tutorials",
           "url": "https://github.com/63klabs/atlantis-tutorials"
+        },
+        {
+          "text": "Atlantis Application Starter 02 - API Gateway with Lambda and Cache-Data",
+          "url": "https://github.com/63Klabs/atlantis-starter-02-apigw-lambda-cache-data-nodejs"
         }
       ],
       "outdatedIssues": [],
       "needsReview": false
     },
     {
-      "filePath": "docs/README.md",
+      "filePath": "docs/01-advanced-implementation-for-web-service/best-practices.md",
       "stats": {
-        "size": 728,
-        "lastModified": "2026-01-06T02:42:49.398Z",
-        "lineCount": 10,
-        "wordCount": 64
+        "size": 7309,
+        "lastModified": "2026-03-01T04:36:32.880Z",
+        "lineCount": 277,
+        "wordCount": 836
       },
       "links": {
-        "total": 6,
+        "total": 1,
+        "external": 0,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/complete-example.md",
+      "stats": {
+        "size": 8522,
+        "lastModified": "2026-03-12T22:38:32.948Z",
+        "lineCount": 319,
+        "wordCount": 760
+      },
+      "links": {
+        "total": 1,
+        "external": 0,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/configuration-options.md",
+      "stats": {
+        "size": 7603,
+        "lastModified": "2026-03-12T22:38:32.948Z",
+        "lineCount": 282,
+        "wordCount": 819
+      },
+      "links": {
+        "total": 2,
+        "external": 0,
+        "internal": 2,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/data-access-objects.md",
+      "stats": {
+        "size": 5303,
+        "lastModified": "2026-03-12T22:38:32.948Z",
+        "lineCount": 230,
+        "wordCount": 541
+      },
+      "links": {
+        "total": 1,
+        "external": 0,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/request-handling.md",
+      "stats": {
+        "size": 3327,
+        "lastModified": "2026-03-07T04:04:40.520Z",
+        "lineCount": 106,
+        "wordCount": 345
+      },
+      "links": {
+        "total": 1,
+        "external": 0,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/request-validation.md",
+      "stats": {
+        "size": 3222,
+        "lastModified": "2026-02-28T05:05:02.837Z",
+        "lineCount": 117,
+        "wordCount": 357
+      },
+      "links": {
+        "total": 1,
+        "external": 0,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/response-management.md",
+      "stats": {
+        "size": 8041,
+        "lastModified": "2026-04-22T01:54:25.312Z",
+        "lineCount": 305,
+        "wordCount": 915
+      },
+      "links": {
+        "total": 1,
+        "external": 0,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/01-advanced-implementation-for-web-service/routing-patterns.md",
+      "stats": {
+        "size": 9014,
+        "lastModified": "2026-05-05T01:42:47.568Z",
+        "lineCount": 297,
+        "wordCount": 938
+      },
+      "links": {
+        "total": 1,
+        "external": 0,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/README.md",
+      "stats": {
+        "size": 1810,
+        "lastModified": "2026-01-28T03:22:18.100Z",
+        "lineCount": 26,
+        "wordCount": 193
+      },
+      "links": {
+        "total": 7,
         "external": 1,
-        "internal": 5,
+        "internal": 6,
         "broken": 0
       },
       "brokenLinks": [],
@@ -114,15 +282,15 @@
     {
       "filePath": "docs/features/README.md",
       "stats": {
-        "size": 116,
-        "lastModified": "2026-01-06T02:42:49.398Z",
-        "lineCount": 6,
-        "wordCount": 10
+        "size": 3096,
+        "lastModified": "2026-03-12T22:38:32.948Z",
+        "lineCount": 68,
+        "wordCount": 388
       },
       "links": {
-        "total": 3,
+        "total": 6,
         "external": 0,
-        "internal": 3,
+        "internal": 6,
         "broken": 0
       },
       "brokenLinks": [],
@@ -131,12 +299,12 @@
       "needsReview": false
     },
     {
-      "filePath": "docs/features/cache/README.md",
+      "filePath": "docs/features/cache/In-Memory-Cache.md",
       "stats": {
-        "size": 13720,
-        "lastModified": "2026-01-26T15:21:40.669Z",
-        "lineCount": 472,
-        "wordCount": 1669
+        "size": 8462,
+        "lastModified": "2026-03-01T04:36:32.881Z",
+        "lineCount": 276,
+        "wordCount": 1122
       },
       "links": {
         "total": 3,
@@ -159,17 +327,68 @@
       "needsReview": false
     },
     {
-      "filePath": "docs/features/endpoint/README.md",
+      "filePath": "docs/features/cache/README.md",
       "stats": {
-        "size": 46,
-        "lastModified": "2026-01-06T02:42:49.398Z",
-        "lineCount": 4,
-        "wordCount": 8
+        "size": 40457,
+        "lastModified": "2026-10-20T19:10:26.895Z",
+        "lineCount": 809,
+        "wordCount": 5254
       },
       "links": {
-        "total": 0,
+        "total": 14,
+        "external": 3,
+        "internal": 6,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "API Gateway with Lambda utilizing 63klabs/cache-data Written in Node.js",
+          "url": "https://github.com/63Klabs/atlantis-starter-02-apigw-lambda-cache-data-nodejs"
+        },
+        {
+          "text": "Atlantis Configuration Repository for Serverless Deployments using AWS SAM",
+          "url": "https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments"
+        },
+        {
+          "text": "63Klabs Atlantis Starter 02 GitHub repository",
+          "url": "https://github.com/63Klabs/atlantis-starter-02-apigw-lambda-cache-data-nodejs/blob/main/application-infrastructure/template.yml"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/endpoint/README.md",
+      "stats": {
+        "size": 11878,
+        "lastModified": "2026-03-12T22:38:32.949Z",
+        "lineCount": 532,
+        "wordCount": 1354
+      },
+      "links": {
+        "total": 4,
         "external": 0,
-        "internal": 0,
+        "internal": 4,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/ssm-secrets-sdk-transport.md",
+      "stats": {
+        "size": 7381,
+        "lastModified": "2026-08-31T23:48:27.510Z",
+        "lineCount": 172,
+        "wordCount": 940
+      },
+      "links": {
+        "total": 2,
+        "external": 0,
+        "internal": 2,
         "broken": 0
       },
       "brokenLinks": [],
@@ -180,15 +399,15 @@
     {
       "filePath": "docs/features/tools/README.md",
       "stats": {
-        "size": 14672,
-        "lastModified": "2026-01-06T02:42:49.398Z",
-        "lineCount": 359,
-        "wordCount": 1997
+        "size": 44162,
+        "lastModified": "2026-05-18T00:51:58.225Z",
+        "lineCount": 1463,
+        "wordCount": 5411
       },
       "links": {
-        "total": 3,
-        "external": 3,
-        "internal": 0,
+        "total": 35,
+        "external": 4,
+        "internal": 14,
         "broken": 0
       },
       "brokenLinks": [],
@@ -204,29 +423,150 @@
         {
           "text": "Using the DynamoDB Document Client",
           "url": "https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/dynamodb-example-dynamodb-utilities.html"
+        },
+        {
+          "text": "AWS Parameters and Secrets Lambda Extension",
+          "url": "https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html"
         }
       ],
       "outdatedIssues": [],
       "needsReview": false
     },
     {
-      "filePath": "docs/lambda-optimization/README.md",
+      "filePath": "docs/features/tools/api-request-pagination.md",
       "stats": {
-        "size": 9841,
-        "lastModified": "2026-01-06T02:42:49.398Z",
-        "lineCount": 178,
-        "wordCount": 1393
+        "size": 18728,
+        "lastModified": "2026-03-10T03:03:40.649Z",
+        "lineCount": 707,
+        "wordCount": 2271
       },
       "links": {
-        "total": 8,
-        "external": 4,
+        "total": 4,
+        "external": 0,
         "internal": 4,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/tools/api-request-retry.md",
+      "stats": {
+        "size": 21040,
+        "lastModified": "2026-03-10T03:03:40.649Z",
+        "lineCount": 903,
+        "wordCount": 2720
+      },
+      "links": {
+        "total": 4,
+        "external": 0,
+        "internal": 4,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/tools/api-request-xray.md",
+      "stats": {
+        "size": 17325,
+        "lastModified": "2026-03-15T20:58:29.284Z",
+        "lineCount": 693,
+        "wordCount": 2237
+      },
+      "links": {
+        "total": 5,
+        "external": 2,
+        "internal": 3,
         "broken": 0
       },
       "brokenLinks": [],
       "externalLinks": [
         {
-          "text": "AWS's own documentation",
+          "text": "AWS X-Ray Documentation",
+          "url": "https://docs.aws.amazon.com/xray/"
+        },
+        {
+          "text": "X-Ray SDK for Node.js",
+          "url": "https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-nodejs.html"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/tools/powertools-integration.md",
+      "stats": {
+        "size": 10801,
+        "lastModified": "2026-05-18T00:51:58.225Z",
+        "lineCount": 318,
+        "wordCount": 1279
+      },
+      "links": {
+        "total": 4,
+        "external": 3,
+        "internal": 1,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "AWS Lambda Powertools for TypeScript",
+          "url": "https://docs.powertools.aws.dev/lambda/typescript/latest/"
+        },
+        {
+          "text": "AWS Lambda Powertools for TypeScript",
+          "url": "https://docs.powertools.aws.dev/lambda/typescript/latest/"
+        },
+        {
+          "text": "CloudWatch Embedded Metric Format",
+          "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html"
+        }
+      ],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/features/tools/request-validation.md",
+      "stats": {
+        "size": 20052,
+        "lastModified": "2026-03-13T13:18:38.418Z",
+        "lineCount": 628,
+        "wordCount": 2229
+      },
+      "links": {
+        "total": 14,
+        "external": 0,
+        "internal": 4,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/lambda-optimization/README.md",
+      "stats": {
+        "size": 31845,
+        "lastModified": "2026-03-12T22:38:32.950Z",
+        "lineCount": 835,
+        "wordCount": 3776
+      },
+      "links": {
+        "total": 10,
+        "external": 5,
+        "internal": 5,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [
+        {
+          "text": "AWS's computing power guide",
           "url": "https://docs.aws.amazon.com/lambda/latest/operatorguide/computing-power.html"
         },
         {
@@ -238,7 +578,11 @@
           "url": "https://github.com/63klabs/cache-data/assets/17443749/0ec98af5-edcf-4e2a-8017-dd17b9c7a11c"
         },
         {
-          "text": "63Klabs GitHub repositories",
+          "text": "Available versions of the Lambda Insights extension",
+          "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html"
+        },
+        {
+          "text": "Full application starter templates",
           "url": "https://github.com/63Klabs"
         }
       ],
@@ -246,12 +590,50 @@
       "needsReview": false
     },
     {
+      "filePath": "docs/migration/validation-system-migration.md",
+      "stats": {
+        "size": 17772,
+        "lastModified": "2026-03-07T18:50:24.810Z",
+        "lineCount": 700,
+        "wordCount": 2129
+      },
+      "links": {
+        "total": 10,
+        "external": 0,
+        "internal": 3,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
+      "filePath": "docs/technical/cache-key-hashing.md",
+      "stats": {
+        "size": 9259,
+        "lastModified": "2026-10-20T19:15:24.543Z",
+        "lineCount": 176,
+        "wordCount": 1282
+      },
+      "links": {
+        "total": 3,
+        "external": 0,
+        "internal": 3,
+        "broken": 0
+      },
+      "brokenLinks": [],
+      "externalLinks": [],
+      "outdatedIssues": [],
+      "needsReview": false
+    },
+    {
       "filePath": "docs/technical/in-memory-cache.md",
       "stats": {
-        "size": 14898,
-        "lastModified": "2026-01-26T15:19:55.995Z",
-        "lineCount": 467,
-        "wordCount": 1922
+        "size": 19590,
+        "lastModified": "2026-02-02T18:42:57.400Z",
+        "lineCount": 577,
+        "wordCount": 2506
       },
       "links": {
         "total": 3,
@@ -274,8 +656,15 @@
           "url": "https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_recently_used_(LRU"
         }
       ],
-      "outdatedIssues": [],
-      "needsReview": false
+      "outdatedIssues": [
+        {
+          "type": "outdated-node-version",
+          "line": 532,
+          "text": "Node.js 4.0",
+          "note": "References Node.js 4.x, but package.json requires >=22.0.0"
+        }
+      ],
+      "needsReview": true
     }
   ]
 }

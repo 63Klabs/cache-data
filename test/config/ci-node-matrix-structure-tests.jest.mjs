@@ -7,16 +7,19 @@
  * rather than by executing anything. The workflow paths are resolved relative
  * to this test file via `import.meta.url`.
  *
- * Requirement 2.1: the test matrix includes '26' in addition to '20','22','24'.
- * Requirement 2.2: the '26' leg is continue-on-error (a Node 26 failure does
- *   not block the workflow); fail-fast is disabled so the other legs still run.
- * Requirement 2.3: the '20' leg is retained and is NOT continue-on-error.
- * Requirement 2.4: coverage stays gated on the '24' leg only (never on '26').
- * Requirement 2.5: `npm-publish.yml` still pins Node 24 and is not switched to
- *   a matrix or to Node 26.
+ * Requirement 3.1: the test matrix is ['22','24','26'] with no '20' leg.
+ * Requirement 3.2: the '26' leg is the only continue-on-error leg; the '22'
+ *   and '24' legs are required. Fail-fast is disabled so a '26' failure does
+ *   not cancel the required legs.
+ * Requirement 3.3: the matrix comments reference the '22' and '24' legs.
+ * Requirement 3.4: coverage stays gated on the '24' leg only (never on '26').
+ * Requirement 3.5: the '20' leg has been removed; no required leg references
+ *   '20', and continue-on-error is not tied to the '20' leg.
+ * Requirement 3.6: `npm-publish.yml` still pins Node 24 and is not switched to
+ *   a matrix or to Node 26 (out of scope for the Node 20 removal).
  *
- * Feature: 1-3-17-node-26-support
- * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5
+ * Feature: 1-4-0-remove-node-20-support
+ * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
  */
 
 import { describe, it, expect, beforeAll } from '@jest/globals';
@@ -36,8 +39,8 @@ const testWorkflowPath = resolve(__dirname, '../../.github/workflows/test.yml');
 const publishWorkflowPath = resolve(__dirname, '../../.github/workflows/npm-publish.yml');
 
 describe('CI test matrix (.github/workflows/test.yml)', () => {
-	// Feature: 1-3-17-node-26-support
-	// Validates: Requirements 2.1, 2.2, 2.3, 2.4
+	// Feature: 1-4-0-remove-node-20-support
+	// Validates: Requirements 3.1, 3.2, 3.4, 3.5
 
 	let testYamlText;
 	let testWorkflow;
@@ -50,10 +53,11 @@ describe('CI test matrix (.github/workflows/test.yml)', () => {
 		expect(testJob).toBeDefined();
 	});
 
-	describe('Requirement 2.1: matrix includes 26 alongside 20, 22, 24', () => {
-		it('lists node-version 20, 22, 24, and 26', () => {
+	describe('Requirement 3.1: matrix is 22, 24, 26 with no 20 leg', () => {
+		it('lists node-version 22, 24, and 26 in order', () => {
 			const nodeVersions = testJob.strategy.matrix['node-version'].map(String);
-			expect(nodeVersions).toEqual(expect.arrayContaining(['20', '22', '24', '26']));
+			expect(nodeVersions).toEqual(['22', '24', '26']);
+			expect(nodeVersions).not.toContain('20');
 		});
 
 		it('includes 26 specifically', () => {
@@ -62,7 +66,7 @@ describe('CI test matrix (.github/workflows/test.yml)', () => {
 		});
 	});
 
-	describe('Requirement 2.2: the 26 leg is continue-on-error and fail-fast is off', () => {
+	describe('Requirement 3.2: the 26 leg is continue-on-error and fail-fast is off', () => {
 		it('sets fail-fast: false on the matrix strategy', () => {
 			// js-yaml normalizes the `fail-fast` key to `fail-fast`.
 			expect(testJob.strategy['fail-fast']).toBe(false);
@@ -77,15 +81,15 @@ describe('CI test matrix (.github/workflows/test.yml)', () => {
 		});
 
 		it('does not make continue-on-error unconditionally true', () => {
-			// A bare `true` would let every leg (including 20/22/24) fail silently.
+			// A bare `true` would let every leg (including 22/24) fail silently.
 			expect(testJob['continue-on-error']).not.toBe(true);
 		});
 	});
 
-	describe('Requirement 2.3: the 20 leg is retained and not continue-on-error', () => {
-		it('keeps 20 in the matrix', () => {
+	describe('Requirement 3.5: the 20 leg is removed', () => {
+		it('does not include 20 in the matrix', () => {
 			const nodeVersions = testJob.strategy.matrix['node-version'].map(String);
-			expect(nodeVersions).toContain('20');
+			expect(nodeVersions).not.toContain('20');
 		});
 
 		it('does not tie continue-on-error to the 20 leg', () => {
@@ -94,7 +98,7 @@ describe('CI test matrix (.github/workflows/test.yml)', () => {
 		});
 	});
 
-	describe('Requirement 2.4: coverage runs only on the 24 leg', () => {
+	describe('Requirement 3.4: coverage runs only on the 24 leg', () => {
 		it('gates the coverage test step on node-version == 24', () => {
 			const coverageStep = testJob.steps.find(
 				(step) => typeof step.run === 'string' && step.run.includes('--coverage')
@@ -121,8 +125,8 @@ describe('CI test matrix (.github/workflows/test.yml)', () => {
 });
 
 describe('Publish workflow (.github/workflows/npm-publish.yml)', () => {
-	// Feature: 1-3-17-node-26-support
-	// Validates: Requirement 2.5
+	// Feature: 1-4-0-remove-node-20-support
+	// Validates: Requirement 3.6
 
 	let publishWorkflow;
 	let publishJob;
@@ -134,7 +138,7 @@ describe('Publish workflow (.github/workflows/npm-publish.yml)', () => {
 		expect(publishJob).toBeDefined();
 	});
 
-	describe('Requirement 2.5: publish stays pinned to Node 24', () => {
+	describe('Requirement 3.6: publish stays pinned to Node 24', () => {
 		it('pins the setup-node step to node-version 24', () => {
 			const setupNodeStep = publishJob.steps.find(
 				(step) => typeof step.uses === 'string' && step.uses.includes('setup-node')

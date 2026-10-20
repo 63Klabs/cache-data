@@ -20,7 +20,7 @@ Package Policy and AWS Lambda Status are deliberately kept as separate columns: 
 
 | Runtime | Node Major | Package Policy | AWS Lambda Status | Upstream Node EOL | Lambda Deprecation Date | Lambda Block-Create | Lambda Block-Update | Notes | Last Checked |
 |---|---|---|---|---|---|---|---|---|---|
-| `nodejs20.x` | 20 | Deprecated (warn), as of v1.3.17 | Absent from AWS live table | 2026-04-30 | 2026-04-30 | ~2026-08-31 (3rd-party) | ~2026-09-30 (3rd-party) | AWS runtimes page no longer lists 20; third-party dates unconfirmed against official source, re-verify next run. | 2026-09-25 |
+| `nodejs20.x` | 20 | Removed (v1.4.0) | Absent from AWS live table | 2026-04-30 | 2026-04-30 | ~2026-08-31 (3rd-party) | ~2026-09-30 (3rd-party) | Support removed in v1.4.0 (`.kiro/specs/1-4-0-remove-node-20-support`); hard floor raised to Node 22. AWS runtimes page no longer lists 20; third-party dates unconfirmed against official source, re-verify next run. | 2026-10-20 |
 | `nodejs22.x` | 22 | Supported | GA | 2027-04-30 | 2027-04-30 | 2027-06-01 | 2027-07-01 | Active LTS. | 2026-09-25 |
 | `nodejs24.x` | 24 | Supported (coverage + example default) | GA | 2028-04-30 | 2028-04-30 | 2028-06-01 | 2028-07-01 | Current LTS; used for `npm-publish.yml`. | 2026-09-25 |
 | `nodejs26.x` | 26 | Supported (CI `continue-on-error`) | Preview | Not yet LTS (upstream Current 2026-05-05, LTS 2026-10-28) | Not scheduled | Not scheduled | Not scheduled | Lambda preview only; no SLA/support. | 2026-09-25 |

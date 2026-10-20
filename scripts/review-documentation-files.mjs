@@ -25,6 +25,42 @@ const ROOT_DIR = path.join(__dirname, '..');
 const OUTPUT_FILE = path.join(__dirname, '..', '.kiro', 'specs', '1-3-6-documentation-enhancement', 'docs-review-report.json');
 
 /**
+ * Read the declared minimum Node version from package.json engines.node.
+ * Resolves package.json relative to this script so the result does not depend
+ * on the current working directory.
+ *
+ * @returns {string} The engines.node value from package.json (e.g. ">=22.0.0")
+ * @throws {Error} If package.json cannot be read/parsed or engines.node is missing/unparseable
+ */
+function readEnginesNode() {
+	const packageJsonPath = path.join(__dirname, '..', 'package.json');
+
+	let raw;
+	try {
+		raw = fs.readFileSync(packageJsonPath, 'utf-8');
+	} catch (error) {
+		throw new Error(`Unable to read package.json at ${packageJsonPath}: ${error.message}`);
+	}
+
+	let parsed;
+	try {
+		parsed = JSON.parse(raw);
+	} catch (error) {
+		throw new Error(`Unable to parse package.json at ${packageJsonPath}: ${error.message}`);
+	}
+
+	const enginesNode = parsed && parsed.engines ? parsed.engines.node : undefined;
+	if (typeof enginesNode !== 'string' || enginesNode.trim() === '') {
+		throw new Error(`package.json at ${packageJsonPath} is missing a valid engines.node value`);
+	}
+
+	return enginesNode;
+}
+
+// Minimum Node version declared by the package, sourced from package.json at runtime
+const ENGINES_NODE = readEnginesNode();
+
+/**
  * Recursively get all markdown files in a directory
  * @param {string} dir Directory to scan
  * @param {Array<string>} fileList Accumulated file list
@@ -154,7 +190,7 @@ function checkForOutdatedContent(content, filePath) {
 				type: 'outdated-node-version',
 				line: content.substring(0, match.index).split('\n').length,
 				text: match[0],
-				note: `References Node.js ${major}.x, but package.json requires >=20.0.0`
+				note: `References Node.js ${major}.x, but package.json requires ${ENGINES_NODE}`
 			});
 		}
 	}

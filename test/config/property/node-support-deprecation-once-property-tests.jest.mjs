@@ -4,16 +4,24 @@
  *
  * ACCESS APPROACH: `checkNodeDeprecationNotices()` and `NODE_DEPRECATION_NOTICES`
  * are module-internal to `src/lib/tools/index.js` and are intentionally NOT
- * exported (Property 7 / Req 8.1 requires the export surface to stay unchanged,
+ * exported (Property 6 / Req 8.5 requires the export surface to stay unchanged,
  * and no TestHarness exists for tools/index.js). Following the same strategy as
- * the hard-floor property test (task 1.1), this test MIRRORS the walker's
- * guard-set semantics locally and drives that mirror against the REAL, exported
+ * the hard-floor property test, this test MIRRORS the walker's guard-set
+ * semantics locally and drives that mirror against the REAL, exported
  * `DebugAndLog.warn` (spied with `jest.spyOn`). The mirror must be kept in sync
  * with the source function `checkNodeDeprecationNotices` in
  * `src/lib/tools/index.js`.
  *
- * Feature: 1-3-17-node-26-support, Property 1: Deprecation warning fires at most once per process
- * Validates: Requirements 3.3, 4.2, 4.3
+ * The once-per-process invariant (Requirement 6.6) is independent of which
+ * entries are active: it holds for any registry. After the v1.4.0 Node 20
+ * removal, the single real registry entry (`version: 20`) is INACTIVE, so the
+ * real-registry case below now asserts zero warns for every running major,
+ * including 20. The first two properties below generate registries with mixed
+ * active flags and derive their expectations from those flags, so they remain
+ * correct and activeness-agnostic.
+ *
+ * Feature: 1-4-0-remove-node-20-support, Property 5: Once-per-process preserved
+ * Validates: Requirements 2.4, 6.6
  */
 
 import { describe, it, expect, jest, afterEach } from '@jest/globals';
@@ -23,9 +31,10 @@ import tools from '../../../src/lib/tools/index.js';
 const { DebugAndLog } = tools;
 
 /**
- * The exact message text of the real initial single-entry registry, used to
- * anchor one test against production data. Kept in sync with the
- * `NODE_DEPRECATION_NOTICES` entry in `src/lib/tools/index.js` (Req 3.2).
+ * The exact message text of the real single-entry registry, used to anchor one
+ * test against production data. Kept in sync with the `NODE_DEPRECATION_NOTICES`
+ * entry in `src/lib/tools/index.js` (the entry is retained for audit history but
+ * is now `active: false`).
  * @type {string}
  */
 const NODE_20_MESSAGE =
@@ -79,9 +88,9 @@ const majorArb = fc.integer({ min: 0, max: 100 });
 /** How many times the walker is invoked within one simulated process. */
 const invocationCountArb = fc.integer({ min: 1, max: 25 });
 
-describe('Property 1: Deprecation warning fires at most once per process', () => {
-	// Feature: 1-3-17-node-26-support, Property 1: Deprecation warning fires at most once per process
-	// Validates: Requirements 3.3, 4.2, 4.3
+describe('Property 5: Deprecation warning fires at most once per process', () => {
+	// Feature: 1-4-0-remove-node-20-support, Property 5: Once-per-process preserved
+	// Validates: Requirements 2.4, 6.6
 
 	afterEach(() => {
 		jest.restoreAllMocks();
@@ -112,8 +121,8 @@ describe('Property 1: Deprecation warning fires at most once per process', () =>
 							const source = registry.find(
 								(n) => n.active && n.version === runningMajor && n.message === message
 							);
-							// Property 1 concerns only the once-ness; matching is
-							// covered by Property 2. A source must always exist here.
+							// Property 5 concerns only the once-ness; matching is
+							// covered elsewhere. A source must always exist here.
 							expect(source).toBeDefined();
 							const count = warningsPerVersion.get(source.version) || 0;
 							warningsPerVersion.set(source.version, count + 1);
@@ -144,6 +153,8 @@ describe('Property 1: Deprecation warning fires at most once per process', () =>
 				fc.string({ minLength: 0, maxLength: 40 }),
 				(runningMajor, invocationCount, message) => {
 					// Guarantee at least one active entry matches the running major.
+					// This exercises the once-per-process guard directly and is
+					// independent of the real registry's activeness.
 					const registry = [{ version: runningMajor, active: true, message }];
 					const warnSpy = jest
 						.spyOn(DebugAndLog, 'warn')
@@ -165,8 +176,10 @@ describe('Property 1: Deprecation warning fires at most once per process', () =>
 		);
 	});
 
-	it('under the real initial single-entry registry, warns once iff the running major is 20 (never more)', () => {
-		const initialRegistry = [{ version: 20, active: true, message: NODE_20_MESSAGE }];
+	it('under the real single-entry registry (Node 20 now inactive), never warns for any running major', () => {
+		// The real registry retains the version-20 entry for audit history but
+		// marks it `active: false` as of v1.4.0, so the walker warns for no major.
+		const currentRegistry = [{ version: 20, active: false, message: NODE_20_MESSAGE }];
 		fc.assert(
 			fc.property(
 				majorArb,
@@ -176,15 +189,12 @@ describe('Property 1: Deprecation warning fires at most once per process', () =>
 						.spyOn(DebugAndLog, 'warn')
 						.mockImplementation(() => {});
 					try {
-						const walk = makeProcessWalker(initialRegistry, DebugAndLog.warn);
+						const walk = makeProcessWalker(currentRegistry, DebugAndLog.warn);
 						for (let i = 0; i < invocationCount; i++) {
 							walk(runningMajor);
 						}
-						const expectedCount = runningMajor === 20 ? 1 : 0;
-						expect(warnSpy).toHaveBeenCalledTimes(expectedCount);
-						if (expectedCount === 1) {
-							expect(warnSpy).toHaveBeenCalledWith(NODE_20_MESSAGE);
-						}
+						// Inactive entry => zero warnings for every major, including 20.
+						expect(warnSpy).toHaveBeenCalledTimes(0);
 					} finally {
 						warnSpy.mockRestore();
 					}

@@ -10,15 +10,15 @@
  * structure rather than importing the registry. The source path is resolved
  * relative to this test file via `import.meta.url`.
  *
- * Requirement 4.5: initial registry contains exactly one entry
- *   `{ version: 20, active: true, message: <Req 3.2 text> }`.
- * Requirement 4.6: the registry/helper are documented with a comment explaining
- *   the `active: false`-rather-than-delete convention and referencing the
- *   runbook `.kiro/steering/cache-data-node-support.md` as the source of future
- *   entries.
+ * After the v1.4.0 Node 20 removal, the registry still contains exactly one
+ * entry for version 20, but that entry is now INACTIVE and retained for audit
+ * history (Req 2.1, 2.2, 2.3): `{ version: 20, active: false, message: <retained text> }`.
+ * The documenting comment that explains the `active: false`-rather-than-delete
+ * convention and references the runbook `.kiro/steering/cache-data-node-support.md`
+ * is unchanged (Req 2.3 preserves that convention).
  *
- * Feature: 1-3-17-node-26-support
- * Validates: Requirements 4.5, 4.6
+ * Feature: 1-4-0-remove-node-20-support
+ * Validates: Requirements 2.1, 2.2, 2.3, 2.5
  */
 
 import { describe, it, expect, beforeAll } from '@jest/globals';
@@ -26,9 +26,10 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
-// The exact Requirement 3.2 message text. Kept identical to the seeded entry in
-// `src/lib/tools/index.js`.
-const REQ_3_2_MESSAGE = "Node.js 20 reached end-of-life on 2026-04-30 and is no longer tested by @63klabs/cache-data; please upgrade to Node.js 22 or later.";
+// The exact retained Node 20 notice message text. Kept identical (byte-for-byte)
+// to the retained entry in `src/lib/tools/index.js`; the v1.4.0 removal flipped
+// the entry to inactive but preserved this text for audit history (Req 2.2).
+const RETAINED_NODE_20_MESSAGE = "Node.js 20 reached end-of-life on 2026-04-30 and is no longer tested by @63klabs/cache-data; please upgrade to Node.js 22 or later.";
 
 /**
  * Produce a copy of JS source in which the contents of comments and string
@@ -130,9 +131,9 @@ function extractBalanced(source, openPos, openChar, closeChar) {
 	return null;
 }
 
-describe('Node deprecation-notice registry: initial state and documenting comment', () => {
-	// Feature: 1-3-17-node-26-support
-	// Validates: Requirements 4.5, 4.6
+describe('Node deprecation-notice registry: post-removal state and documenting comment', () => {
+	// Feature: 1-4-0-remove-node-20-support
+	// Validates: Requirements 2.1, 2.2, 2.3, 2.5
 
 	const __dirname = dirname(fileURLToPath(import.meta.url));
 	const sourcePath = resolve(__dirname, '../../src/lib/tools/index.js');
@@ -165,7 +166,7 @@ describe('Node deprecation-notice registry: initial state and documenting commen
 		registryCode = sanitizedExtracted.content;
 	});
 
-	describe('Requirement 4.5: initial registry has exactly one entry', () => {
+	describe('Requirement 2.1/2.2/2.5: registry retains exactly one (now inactive) entry', () => {
 		it('declares NODE_DEPRECATION_NOTICES as an array', () => {
 			expect(source).toMatch(/const\s+NODE_DEPRECATION_NOTICES\s*=\s*\[/);
 		});
@@ -194,14 +195,17 @@ describe('Node deprecation-notice registry: initial state and documenting commen
 			expect(registryBlock).toMatch(/version:\s*20\b/);
 		});
 
-		it('the single entry is active: true', () => {
-			expect(registryBlock).toMatch(/active:\s*true\b/);
-			// And is not seeded inactive.
-			expect(registryBlock).not.toMatch(/active:\s*false\b/);
+		it('the single entry is active: false after the v1.4.0 removal', () => {
+			// Use the sanitized copy so a commented-out example entry (e.g.
+			// `// { version: 22, active: true, message: "..." }`) is not mistaken
+			// for a live `active:` setting on the real entry.
+			expect(registryCode).toMatch(/active:\s*false\b/);
+			// And the real entry is no longer seeded active.
+			expect(registryCode).not.toMatch(/active:\s*true\b/);
 		});
 
-		it('the single entry carries the exact Requirement 3.2 message', () => {
-			expect(registryBlock).toContain(REQ_3_2_MESSAGE);
+		it('the single entry carries the exact retained message text (unchanged)', () => {
+			expect(registryBlock).toContain(RETAINED_NODE_20_MESSAGE);
 		});
 
 		it('does not seed any Node major other than 20', () => {
@@ -213,7 +217,7 @@ describe('Node deprecation-notice registry: initial state and documenting commen
 		});
 	});
 
-	describe('Requirement 4.6: documenting comment for the registry convention', () => {
+	describe('Requirement 2.3: documenting comment for the registry convention (preserved)', () => {
 		it('references the runbook steering document', () => {
 			expect(source).toContain('.kiro/steering/cache-data-node-support.md');
 		});

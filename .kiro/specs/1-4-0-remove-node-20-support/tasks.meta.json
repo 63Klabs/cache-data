@@ -1,0 +1,94 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "2. Retire the Node 20 deprecation notice and invert its coupled tests": [
+      {
+        "executionId": "c9eddd79-3807-4a47-b5ed-1797409f0398",
+        "chatSessionId": "sess_82bf7771-9e67-4a1f-a98e-6e7e1112093a",
+        "timestamp": 1792526838037
+      },
+      {
+        "executionId": "c9eddd79-3807-4a47-b5ed-1797409f0398",
+        "chatSessionId": "sess_82bf7771-9e67-4a1f-a98e-6e7e1112093a",
+        "timestamp": 1792526990505
+      }
+    ],
+    "3. Reconcile the module-load and once-per-process integration tests": [
+      {
+        "executionId": "b0543e31-00f2-4007-b712-73e97da66cfe",
+        "chatSessionId": "sess_5cfdd02d-de4f-4c7b-8feb-a8a60f73ce8b",
+        "timestamp": 1792527246926
+      }
+    ],
+    "5. Sync the runbook support matrix row for Node 20": [
+      {
+        "executionId": "227466eb-09e2-49ce-ab6e-42af8ae408e3",
+        "chatSessionId": "sess_2d31cb34-639b-419d-b5a1-d25bb20d3d42",
+        "timestamp": 1792527558080
+      },
+      {
+        "executionId": "227466eb-09e2-49ce-ab6e-42af8ae408e3",
+        "chatSessionId": "sess_2d31cb34-639b-419d-b5a1-d25bb20d3d42",
+        "timestamp": 1792527601286
+      }
+    ],
+    "6. Make the documentation review script read the engines floor dynamically": [
+      {
+        "executionId": "9c8cf4e7-3153-4130-bdf6-703313344dd2",
+        "chatSessionId": "sess_21fa916c-6e35-4165-9bac-9376fc03f1a0",
+        "timestamp": 1792527619171
+      },
+      {
+        "executionId": "9c8cf4e7-3153-4130-bdf6-703313344dd2",
+        "chatSessionId": "sess_21fa916c-6e35-4165-9bac-9376fc03f1a0",
+        "timestamp": 1792527743009
+      },
+      {
+        "executionId": "e374fcff-939c-452a-b188-6371758db74f",
+        "chatSessionId": "sess_44bc182b-056c-462e-9eee-9390985511ae",
+        "timestamp": 1792528350400
+      },
+      {
+        "executionId": "e374fcff-939c-452a-b188-6371758db74f",
+        "chatSessionId": "sess_44bc182b-056c-462e-9eee-9390985511ae",
+        "timestamp": 1792528428738
+      }
+    ],
+    "7. Sweep for any remaining pinned Node 20 references in tests": [
+      {
+        "executionId": "e374fcff-939c-452a-b188-6371758db74f",
+        "chatSessionId": "sess_44bc182b-056c-462e-9eee-9390985511ae",
+        "timestamp": 1792528431555
+      },
+      {
+        "executionId": "e374fcff-939c-452a-b188-6371758db74f",
+        "chatSessionId": "sess_44bc182b-056c-462e-9eee-9390985511ae",
+        "timestamp": 1792528548797
+      }
+    ],
+    "8. Full-suite verification on supported runtimes": [
+      {
+        "executionId": "55748ab5-2534-456e-9f10-e0a35a88f520",
+        "chatSessionId": "sess_21463f1a-ab30-4892-95ea-a0231307cc5f",
+        "timestamp": 1792529417081
+      },
+      {
+        "executionId": "55748ab5-2534-456e-9f10-e0a35a88f520",
+        "chatSessionId": "sess_21463f1a-ab30-4892-95ea-a0231307cc5f",
+        "timestamp": 1792530251698
+      }
+    ],
+    "9. Update the changelog": [
+      {
+        "executionId": "5f53a056-a8bc-46f7-bb02-2af1d7f39bcb",
+        "chatSessionId": "sess_4cfb053a-8289-4205-8517-8ebe2bd157d4",
+        "timestamp": 1792530441997
+      },
+      {
+        "executionId": "5f53a056-a8bc-46f7-bb02-2af1d7f39bcb",
+        "chatSessionId": "sess_4cfb053a-8289-4205-8517-8ebe2bd157d4",
+        "timestamp": 1792530504865
+      }
+    ]
+  }
+}

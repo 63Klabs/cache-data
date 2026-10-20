@@ -2,12 +2,12 @@
  * Integration test for the Node.js hard-floor EXIT WIRING in
  * `src/lib/tools/vars.js`.
  *
- * Task 1.1 (test/config/property/node-support-hard-floor-property-tests.jest.mjs)
- * covers the PURE predicate (`major < 20`). This file covers a different
+ * The property test (test/config/property/node-support-hard-floor-property-tests.jest.mjs)
+ * covers the PURE predicate (`major < 22`). This file covers a different
  * concern: the sub-floor side effects that the predicate is wired to — the
  * exact `console.error(...)` message AND the `process.exit(1)` call.
  *
- * Because the running Node major cannot be forced below 20 at runtime
+ * Because the running Node major cannot be forced below 22 at runtime
  * (`vars.js` reads it from `process.versions.node` via `AWS.NODE_VER_MAJOR`
  * at module load), the sub-floor branch is exercised two ways:
  *   1. A subprocess spawned with `execFile(process.execPath, ['-e', script])`
@@ -17,8 +17,8 @@
  *      branch invokes exit(1) with the exact message for a sub-floor input.
  * A source-drift guard confirms the mirrored wiring still matches `vars.js`.
  *
- * Feature: 1-3-17-node-26-support, Property 5: Hard floor exits below 20 and only below 20
- * Validates: Requirements 5.1, 5.2, 5.3
+ * Feature: 1-4-0-remove-node-20-support, Requirement 1: Raise the hard runtime floor to Node 22
+ * Validates: Requirements 1.1, 1.2, 1.3
  */
 
 import { describe, it, expect, jest, afterEach } from '@jest/globals';
@@ -37,7 +37,7 @@ const __dirname = dirname(__filename);
 const VARS_JS_PATH = resolve(__dirname, '../../../src/lib/tools/vars.js');
 
 /** The floor the exit branch is wired to, mirrored from `vars.js`. */
-const NODE_MAJOR_FLOOR = 20;
+const NODE_MAJOR_FLOOR = 22;
 
 /**
  * Build the exact sub-floor error message emitted by `src/lib/tools/vars.js`.
@@ -49,10 +49,10 @@ const NODE_MAJOR_FLOOR = 20;
  * @private
  * @example
  * buildFloorMessage('18.19.1');
- * // 'Node.js version 20 or higher is required for @63klabs/cache-data. Version 18.19.1 detected. ...'
+ * // 'Node.js version 22 or higher is required for @63klabs/cache-data. Version 18.19.1 detected. ...'
  */
 const buildFloorMessage = (nodeVer) =>
-	`Node.js version 20 or higher is required for @63klabs/cache-data. Version ${nodeVer} detected. Please install at least Node.js 20 (22 or later recommended) in your environment.`;
+	`Node.js version 22 or higher is required for @63klabs/cache-data. Version ${nodeVer} detected. Please install Node.js 22 or later in your environment.`;
 
 /**
  * In-process mirror of the `vars.js` floor branch. Uses the same predicate,
@@ -70,24 +70,28 @@ const runFloorBranch = (nodeVer) => {
 	}
 };
 
-describe('Property 5: Hard floor exits below 20 and only below 20 (exit wiring)', () => {
-	// Feature: 1-3-17-node-26-support, Property 5: Hard floor exits below 20 and only below 20
-	// Validates: Requirements 5.1, 5.2, 5.3
+describe('Property 2: Hard floor exits below 22 and only below 22 (exit wiring)', () => {
+	// Feature: 1-4-0-remove-node-20-support, Requirement 1: Raise the hard runtime floor to Node 22
+	// Validates: Requirements 1.1, 1.2, 1.3
 
 	afterEach(() => {
 		jest.restoreAllMocks();
 	});
 
 	describe('source-drift guard', () => {
-		it('vars.js still wires the exact message and process.exit(1) inside the < 20 branch', () => {
+		it('vars.js still wires the exact message and process.exit(1) inside the < 22 branch', () => {
 			const source = readFileSync(VARS_JS_PATH, 'utf8');
 
-			// The predicate the exit branch hangs off of.
-			expect(source).toContain('nodeVerMajor < 20');
+			// The predicate the exit branch hangs off of (new floor).
+			expect(source).toContain('nodeVerMajor < 22');
+			// The old floor predicate must NOT survive.
+			expect(source).not.toContain('nodeVerMajor < 20');
 			// The exact message template (with the ${nodeVer} interpolation).
 			expect(source).toContain(
-				'Node.js version 20 or higher is required for @63klabs/cache-data. Version ${nodeVer} detected. Please install at least Node.js 20 (22 or later recommended) in your environment.'
+				'Node.js version 22 or higher is required for @63klabs/cache-data. Version ${nodeVer} detected. Please install Node.js 22 or later in your environment.'
 			);
+			// The old message template must NOT survive.
+			expect(source).not.toContain('Please install at least Node.js 20 (22 or later recommended) in your environment.');
 			// The hard-exit call.
 			expect(source).toContain('process.exit(1)');
 		});
@@ -108,11 +112,25 @@ describe('Property 5: Hard floor exits below 20 and only below 20 (exit wiring)'
 			expect(exitSpy).toHaveBeenCalledWith(1);
 		});
 
-		it('does NOT exit or emit the message for a supported major (>= 20)', () => {
+		it('exits for a now-retired major (20.11.0 hits the floor)', () => {
 			const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
 			const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-			for (const supportedVer of ['20.11.0', '22.0.0', '24.1.0', '26.0.0']) {
+			// Node 20 is removed in v1.4.0 and now hits the hard floor.
+			const retiredVer = '20.11.0';
+			runFloorBranch(retiredVer);
+
+			expect(errorSpy).toHaveBeenCalledTimes(1);
+			expect(errorSpy).toHaveBeenCalledWith(buildFloorMessage(retiredVer));
+			expect(exitSpy).toHaveBeenCalledTimes(1);
+			expect(exitSpy).toHaveBeenCalledWith(1);
+		});
+
+		it('does NOT exit or emit the message for a supported major (>= 22)', () => {
+			const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+			const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+			for (const supportedVer of ['22.0.0', '24.1.0', '26.0.0']) {
 				runFloorBranch(supportedVer);
 			}
 
@@ -130,8 +148,8 @@ describe('Property 5: Hard floor exits below 20 and only below 20 (exit wiring)'
 const nodeVer = ${JSON.stringify(subFloorVer)};
 const nodeVerMajor = parseInt(nodeVer.split('.')[0], 10);
 // Mirror of src/lib/tools/vars.js floor wiring for a simulated sub-floor major.
-if (nodeVerMajor < 20) {
-	console.error(\`Node.js version 20 or higher is required for @63klabs/cache-data. Version \${nodeVer} detected. Please install at least Node.js 20 (22 or later recommended) in your environment.\`);
+if (nodeVerMajor < 22) {
+	console.error(\`Node.js version 22 or higher is required for @63klabs/cache-data. Version \${nodeVer} detected. Please install Node.js 22 or later in your environment.\`);
 	process.exit(1);
 }
 process.exit(0);
@@ -162,8 +180,8 @@ process.exit(0);
 			const supportedScript = `
 const nodeVer = "22.0.0";
 const nodeVerMajor = parseInt(nodeVer.split('.')[0], 10);
-if (nodeVerMajor < 20) {
-	console.error(\`Node.js version 20 or higher is required for @63klabs/cache-data. Version \${nodeVer} detected. Please install at least Node.js 20 (22 or later recommended) in your environment.\`);
+if (nodeVerMajor < 22) {
+	console.error(\`Node.js version 22 or higher is required for @63klabs/cache-data. Version \${nodeVer} detected. Please install Node.js 22 or later in your environment.\`);
 	process.exit(1);
 }
 process.exit(0);
