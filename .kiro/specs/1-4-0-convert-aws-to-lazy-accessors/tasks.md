@@ -191,30 +191,30 @@ Ordering follows [design.md](design.md). Tasks 1 through 5 run before any source
     - Confirm the temp directory was removed
     - _Requirements: 10.3, 10.4_
 
-- [ ] 6. Convert the accessors in `src/lib/tools/AWS.classes.js`
+- [x] 6. Convert the accessors in `src/lib/tools/AWS.classes.js`
   - Follow design.md "Components and interfaces" exactly
 
-  - [ ] 6.1 Add the memo fields, guard, and builders, and remove `#SDK`
+  - [x] 6.1 Add the memo fields, guard, and builders, and remove `#SDK`
     - Add `#dynamoSdk`, `#s3Sdk`, and `#ssmSdk` (each `null`, with `@private` JSDoc) beside `#secretsSdk` and before `#XRayOn`
     - Add `#assertSdkV3()` with the SDK v2 guard message, unchanged from today's text
     - Add `#buildDynamo()`, `#buildS3()`, and `#buildSsm()` as in the design. Each calls `#assertSdkV3()` first, then requires its packages, then constructs and instruments its client. S3 is `new S3({ region: AWS.REGION })`
     - Delete `static #SDK` and its JSDoc block
     - _Requirements: 1.1, 1.2, 2.1, 2.2, 4.1, 4.2, 4.3, 4.4, 4.6, 6.1, 6.2, 7.2_
 
-  - [ ] 6.2 Rewrite the `dynamo`, `s3`, and `ssm` getters
+  - [x] 6.2 Rewrite the `dynamo`, `s3`, and `ssm` getters
     - Build when the memo is `null`, then return a fresh literal that lists each property explicitly from the memo
     - Assign the memo only after the builder returns, so a throw leaves it `null`
     - Reference `AWS`, never `this`
     - Leave the `secrets` getter untouched
     - _Requirements: 2.1, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.9, 7.3, 7.4, 7.5_
 
-  - [ ] 6.3 Initialize X-Ray at load
+  - [x] 6.3 Initialize X-Ray at load
     - Change the `XRay` getter to `return initializeXRay();`
     - Between the end of the class and `module.exports`, add `if (USE_XRAY) { initializeXRay(); }` with the `//` line comment from the design. It must not be a JSDoc block
     - Leave `module.exports` unchanged
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
 
-  - [ ] 6.4 Update the JSDoc
+  - [x] 6.4 Update the JSDoc
     - `dynamo`, `s3`, `ssm` getters: a description of first-read construction and reuse; `@returns` with the exact shape (no `DynamoDB` in dynamo's `sdk`); `@throws {Error}` for the SDK v2 guard; `@throws {Error}` with code `MODULE_NOT_FOUND` when the package can't be loaded; an `@example`
     - `XRay` getter: `@returns {object|null}`, stating when each is returned; an `@example`
     - `@private` JSDoc on `#assertSdkV3()` and each builder
@@ -222,42 +222,42 @@ Ordering follows [design.md](design.md). Tasks 1 through 5 run before any source
     - Don't leave a JSDoc block directly before `constructor() {}`
     - _Requirements: 11.1, 11.2, 11.5_
 
-  - [ ] 6.5 Lint the converted file
+  - [x] 6.5 Lint the converted file
     - `npx eslint src/lib/tools/AWS.classes.js` reports no more than the 4 baseline errors (two unused `catch` bindings, unused `captureHttp`, unused `#XRayOn`), and none of a new kind
     - _Requirements: 9.12_
 
-- [ ] 7. Verify the conversion
+- [x] 7. Verify the conversion
 
-  - [ ] 7.1 Verify the lazy-behavior tests now pass
+  - [x] 7.1 Verify the lazy-behavior tests now pass
     - **IMPORTANT**: Re-run the SAME tests from task 4. Do NOT modify them
     - **EXPECTED OUTCOME**: All PASS, including `region-source` and the in-process S3 region test
     - _Requirements: 1.3, 1.4, 2.3, 3.2, 4.2, 4.4, 4.5, 4.6, 4.7, 5.1, 5.6, 6.1, 6.2, 6.3, 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [ ] 7.2 Verify the preservation tests still pass
+  - [x] 7.2 Verify the preservation tests still pass
     - **IMPORTANT**: Re-run the SAME tests from task 3, plus the unmodified `test/tools/aws-classes-tests.jest.mjs`
     - **EXPECTED OUTCOME**: All PASS with zero modifications. If any needs editing, the accessor contract has been broken. Stop and reassess
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 5.2, 5.3, 5.4, 5.5, 5.7, 8.1, 8.3_
 
-  - [ ] 7.3 Run the documentation validation tests
+  - [x] 7.3 Run the documentation validation tests
     - `test/documentation/`
     - **EXPECTED OUTCOME**: All PASS with the new JSDoc
     - _Requirements: 11.6_
 
-- [ ] 8. Checkpoint - full suite (Q6a gate)
+- [x] 8. Checkpoint - full suite (Q6a gate)
   - Run `npm test`
   - Confirm with `git status` that the only modified existing files are `src/lib/tools/AWS.classes.js` and the task 1 migration test
   - If an existing test fails: the `TestHarness` reset in Requirement 8.3 is the approved fallback only for a test that needs a real client rebuilt under a changed environment. Any other failure is a design problem; stop and bring it to the user. Don't edit existing tests
   - Ask the user if questions arise
   - _Requirements: 8.3, 9.1_
 
-- [ ] 9. Update the type definition comments
+- [x] 9. Update the type definition comments
   - **File**: `types/lib/tools/index.d.ts`
   - Replace the `dynamo`, `s3`, and `ssm` doc comments with the wording in design.md, matching the existing `secrets` comment. No type changes
   - Run `npm run test:types`
   - **EXPECTED OUTCOME**: PASS
   - _Requirements: 8.2, 11.3_
 
-- [ ] 10. Update the tools README
+- [x] 10. Update the tools README
   - **File**: `docs/features/tools/README.md`, `tools.AWS` section, per design.md "Documentation design"
   - Replace the SDK-detection and Node.js version paragraph with: AWS SDK for JavaScript v3, Node.js 22 or later
   - Name Secrets Manager among the included SDKs
@@ -269,7 +269,7 @@ Ordering follows [design.md](design.md). Tasks 1 through 5 run before any source
   - **EXPECTED OUTCOME**: PASS, including the example validation tests
   - _Requirements: 11.4, 11.5, 11.6, 11.7_
 
-- [ ] 11. Run the benchmark and record the results
+- [x] 11. Run the benchmark and record the results
   - Run the driver from task 5 with `--baseline` set to the last commit before task 6 (`HEAD` if task 6 is still uncommitted)
   - **File**: `.kiro/specs/1-4-0-convert-aws-to-lazy-accessors/benchmark/RESULTS.md`, created in task 5.3 with the A/A section: replace its "Before and after (task 11)" placeholder with the command, the environment, the before-and-after tables, and the first-read cost (the candidate's "all three" minus its "import only")
   - State plainly whether revisiting `Cache.init()` pre-warming (Q11 Option C) looks warranted. The decision belongs to the maintainer; don't implement it in this spec
@@ -277,31 +277,33 @@ Ordering follows [design.md](design.md). Tasks 1 through 5 run before any source
   - Confirm the temp directory was removed
   - _Requirements: 10.6_
 
-- [ ] 12. Update `CHANGELOG.md`
+- [x] 12. Update `CHANGELOG.md`
   - Under `## v1.4.0 (unreleased)`, `### Changed`: insert the entry from design.md before "**Documentation: cache-key generation corrected**"
   - Under `### Fixed`: append the documentation entry from design.md
   - Modify no existing text, and add no entry for the task 1 test edit
   - _Requirements: 12.1, 12.2_
+  - **Completion note** (2026-10-21): at the maintainer's request, the Changed entry ends with a **Benchmark** sub-bullet that summarizes task 11's results and links `benchmark/RESULTS.md`. The entry text in design.md predates that addition
 
-- [ ] 13. Final checkpoint
+- [x] 13. Final checkpoint
 
-  - [ ] 13.1 Run the full verification
+  - [x] 13.1 Run the full verification
     - `npm test` and `npm run test:types`
     - `npx eslint` on `src/lib/tools/AWS.classes.js` (4 or fewer errors, none new) and on every new JavaScript file: the two fixture scripts, the runner, the five test files, and both benchmark scripts (0 errors)
     - Confirm `package.json` still reads `1.4.0`
     - _Requirements: 8.4, 9.1, 9.12_
 
-  - [ ] 13.2 Check the package contents
+  - [x] 13.2 Check the package contents
     - `npm pack --dry-run` lists no `.kiro/`, `test/`, or coverage paths and no dotfiles. `.npmignore` now mirrors `.gitignore`'s exclusions (changed outside this spec), so the new fixtures, benchmark scripts, and `RESULTS.md` must not appear
     - _Requirements: 10.5_
 
-  - [ ] 13.3 Check hygiene
+  - [x] 13.3 Check hygiene
     - No stray node processes; no benchmark temp directories left in the system temp dir
     - `git status` shows only the files in design.md's file table, plus `.npmignore`, which was changed outside this spec. Report anything else to the user rather than reverting it
     - _Requirements: 9.9_
 
-  - [ ] 13.4 Ask the user to confirm before any commit, tag, or publish
+  - [x] 13.4 Ask the user to confirm before any commit, tag, or publish
     - Do not commit, tag, or publish without explicit instruction
+    - **Completion note** (2026-10-21): the maintainer asked for the changes to be committed. No tag, publish, or push
 
 ## Task Dependency Graph
 

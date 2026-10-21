@@ -284,15 +284,11 @@ console.log( obfuscate(str, opt) );
 
 ### AWS-SDK
 
-The @63klabs/cache-data package will automatically detect and use the correct AWS SDK based on the version of Node.
-
-Node < 18 is unsupported as of 63klabs/cache-data v1.3.0.
-
-Node 18+ environments will use AWS-SDK version 3.
+The @63klabs/cache-data package uses the AWS SDK for JavaScript v3 and requires Node.js 22 or later.
 
 Note that `package.json` for @63klabs/cache-data only installs the AWS-SDK on dev environments. This is because AWS Lambda environments already include the AWS-SDK without requiring installs. This makes your application lighter and ensures you are always running the most recent SDK release.
 
-Because DynamoDb, S3, and SSM Parameter store are used by cache-data, only those SDKs are included. A client is provided for each along with limited number of commands. To make gets and puts easier a get and put command is mapped for DynamoDb and S3.
+Because DynamoDB, S3, SSM Parameter Store, and Secrets Manager are used by cache-data, only those SDKs are included. A client is provided for each along with limited number of commands. To make gets and puts easier a get and put command is mapped for DynamoDb and S3.
 
 #### `tools.AWS` Object
 
@@ -311,8 +307,7 @@ var getParams = {
 
 const result = await AWS.s3.get(getParams);
 
-let objectData = await s3Body.transformToString(); // V3: Object bodies in V3 are readable streams, so we convert to string
-// let objectData = data.Body.toString('utf-8'); // V2: Object bodies are Buffers, so we convert to string
+let objectData = await result.Body.transformToString(); // V3: Object bodies in V3 are readable streams, so we convert to string
 console.log(`hello.txt Body: ${objectData}`);
 // outputs "hello.txt Body: Hello, World!"
 
@@ -348,6 +343,20 @@ AWS.ssm.getByName(query) // const params = await AWS.ssm.getByName(query)
 AWS.ssm.getByPath(query) // const params = await AWS.ssm.getByPath(query)
 ```
 
+##### When clients are created
+
+Each accessor (`AWS.dynamo`, `AWS.s3`, `AWS.ssm`, and `AWS.secrets`) loads its AWS SDK package and creates its client the first time it is read, then reuses that client for the life of the process. Requiring `@63klabs/cache-data` doesn't load these SDK packages, so a function only loads the ones for the services it uses.
+
+In Lambda, that work happens in the first invocation that reads the accessor. Functions that need it done during the Lambda init phase, such as those using provisioned concurrency, can read the accessors at module scope:
+
+```javascript
+const { tools } = require("@63klabs/cache-data");
+
+// Build the DynamoDB and S3 clients during the Lambda init phase
+tools.AWS.dynamo;
+tools.AWS.s3;
+```
+
 ##### Using AWS SDK V3 through tools.AWS
 
 To use the AWS SDK you normally have to import the proper SDKs and libraries, create a client, and then send the commands. However, since the package uses reads and writes to S3 objects, DynamoDb tables, and SSM Parameter store, it readily makes these commands available through the `AWS` object from `tools`.
@@ -373,8 +382,8 @@ const paramsForGet = {
 	Key: {'hash_id': '8e91cef4a27'}
 };
 
-const dbPutResult = await AWS.dynamodb.put(paramsForPut);
-const dbGetResult = await AWS.dynamodb.get(paramsForGet);
+const dbPutResult = await AWS.dynamo.put(paramsForPut);
+const dbGetResult = await AWS.dynamo.get(paramsForGet);
 ```
 
 Refer to the section about `tools.AWS` above for the variables, methods, and SDK objects available.

@@ -161,7 +161,10 @@ export class AWS {
 	/** AWS region (alias for REGION) */
 	static readonly region: string;
 
-	/** DynamoDB client and helper functions */
+	/**
+	 * DynamoDB client and helper functions.
+	 * Loaded lazily on first access and reused for the life of the process.
+	 */
 	static readonly dynamo: {
 		client: object;
 		/**
@@ -192,7 +195,10 @@ export class AWS {
 		sdk: object;
 	};
 
-	/** S3 client and helper functions */
+	/**
+	 * S3 client and helper functions.
+	 * Loaded lazily on first access and reused for the life of the process.
+	 */
 	static readonly s3: {
 		client: object;
 		/**
@@ -208,7 +214,10 @@ export class AWS {
 		sdk: object;
 	};
 
-	/** SSM Parameter Store client and helper functions */
+	/**
+	 * SSM Parameter Store client and helper functions.
+	 * Loaded lazily on first access and reused for the life of the process.
+	 */
 	static readonly ssm: {
 		client: object;
 		/**
