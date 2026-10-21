@@ -9,3 +9,18 @@ package-lock.json
 jest.config.mjs
 sample-implementations
 AGENTS.md
+coverage-jest
+.vscode
+
+# Mirror the exclusions in .gitignore. npm doesn't read .gitignore when this file
+# exists, so anything ignored there has to be listed here to stay out of the package.
+# Dotfiles and dot-directories, such as .env*, .nyc_output, .venv*, and editor settings
+.*
+*.zip
+*.log
+*desktop.ini
+coverage
+audit-report.json
+venv*
+__pycache__
+*.py[cod]

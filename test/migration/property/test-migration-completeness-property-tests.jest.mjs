@@ -119,8 +119,8 @@ describe('Test Migration Phase 6 - Property-Based Tests', () => {
 	it('Property 7: Source Code Immutability - Source files unchanged during migration', () => {
 		const sourceFiles = [
 			'src/lib/tools/ApiRequest.class.js',
-			'src/lib/dao-endpoint.js',
-			'src/lib/tools/AWS.classes.js'
+			'src/lib/dao-endpoint.js'
+			// src/lib/tools/AWS.classes.js removed by 1-4-0-convert-aws-to-lazy-accessors (Q14)
 		];
 
 		fc.assert(
