@@ -354,7 +354,7 @@ Ordering follows [design.md](design.md).
   - Modify no existing text. Add no entry for test-only changes
   - _Requirements: 14.1, 14.2_
 
-- [ ] 13. Final checkpoint
+- [x] 13. Final checkpoint
 
   - [x] 13.1 Run the full verification
     - Run `npm test` and `npm run test:types` on Node.js 24.15.0
@@ -382,7 +382,7 @@ Ordering follows [design.md](design.md).
     - Every new test file is under `test/cache/time-utils/` in `unit/`, `property/`, or `integration/`, and is named `*-tests.jest.mjs` or `*-property-tests.jest.mjs`
     - _Requirements: 11.9, 11.11_
 
-  - [-] 13.5 Ask the user before any commit, tag, or publish
+  - [x] 13.5 Ask the user before any commit, tag, or publish
     - Don't commit, tag, publish, or push without explicit instruction
 
 ## Task Dependency Graph

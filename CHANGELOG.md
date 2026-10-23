@@ -10,6 +10,10 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ## v1.4.0 (unreleased)
 
+This release is another milestone in Cache-Data's release history!
+
+Node 20 is no longer supported (AWS already removed it from the Lambda runtime), cache-data is Node 26 compatible and is ready for GA in Lambda later this year (AWS does not yet recommend for production until GA), cache-data is now production dependency free (removed object-hash and moment-timezone for internal tooling), and AWS SDK clients (DynamoDB, S3, etc) are now lazy-loaded on first request rather than initialized during cold starts. (see impact report, very minimal, but as cache-data adds support for other SDKs this will be pivotal.)
+
 ### Added
 
 - **Generator precondition audit** — `test/security/property/generator-precondition-audit-tests.jest.mjs` samples every fast-check arbitrary registered in the new `test/helpers/parameter-key-arbitraries.mjs` and asserts zero precondition violations, at a per-entry draw budget sized to each arbitrary's measured violation rate (200,000 baseline; 2,600,000 for the ARN entry). Deterministic by default, so it either always passes or always fails rather than becoming a randomly-timed release block. Includes a guard asserting the runtime premise the ARN generator rests on (no reserved key contains a digit). [Spec: 1-4-0-property-test-generator-preconditions](.kiro/specs/1-4-0-property-test-generator-preconditions/)
@@ -73,7 +77,10 @@ Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/
 
 ### Dependencies
 
+Production dependencies are no longer necessary.
+
 - Removed `object-hash` (was `^3.0.0`) now that cache-key hashing uses the built-in `DataHasher`.
+- Removed `moment-timezone` now that cache-data's `time-utils` uses built in Node timezone information. (Was only used for setting time zone on init.)
 
 ### Upgrade Notes
 
