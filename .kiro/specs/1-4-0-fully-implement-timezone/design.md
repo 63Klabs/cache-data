@@ -708,7 +708,7 @@ The two fields shown under [Types](#types), plus doc comments for `timeZoneForIn
 
 - How boundaries are computed: the timestamp in local time, rounded up to the next multiple of the interval.
 - Alignment: intervals that divide 24 hours (2, 3, 4, 6, 8, 12, and 24 hours) fall on local midnight. Others are aligned to the Unix epoch in local time: a 5-hour boundary moves by an hour each day, multi-day intervals count from 1970-01-01, and 168 hours falls on Thursdays.
-- :30 and :45 offsets: in India, Nepal, Newfoundland, or Chatham, hourly and some shorter boundaries sit at :30 or :45 past the UTC hour.
+- :30 and :45 offsets: boundaries stay on the local clock, so hourly boundaries fall at :30 past the UTC hour in India and Newfoundland, and at :15 past it in Nepal and Chatham, where half-hourly boundaries also fall at :15 and :45. In general, an interval's boundaries line up with the same interval in UTC only when the interval divides the offset evenly.
 - A timestamp exactly on a boundary expires immediately.
 - DST: each calculation uses the offset in effect at the moment it runs, so boundaries follow the clock change. A boundary calculated shortly before a change but falling after it is off by the DST delta. For a 24-hour interval, that's one calculated between midnight and 2 AM on the day of the change.
 - Where the rules come from: the Node.js runtime's tz data, whose version `Cache.info().tzDataVersion` reports. Versions differ between runtime releases.

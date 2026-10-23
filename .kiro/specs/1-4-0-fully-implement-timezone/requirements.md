@@ -220,7 +220,7 @@ Criteria 9 and 10 apply `.kiro/steering/test-execution-monitoring.md`, `.kiro/st
    - local-midnight alignment for intervals that divide 24 hours
    - epoch alignment for other intervals, such as 5 hours and multi-day intervals
    - Thursday alignment for 168 hours
-   - the effect of :30 and :45 offsets on intervals shorter than an hour
+   - the effect of :30 and :45 offsets on hourly and shorter intervals
    - accepted timezone names, including fixed offsets
    - the not-provided values and the default
    - init failing on an invalid timezone

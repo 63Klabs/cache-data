@@ -247,7 +247,7 @@ The Cache system accepts the following configuration options via `Cache.init()`:
 | `idHashAlgorithm` | string | `'RSA-SHA256'` | No | Hash algorithm for generating cache key identifiers from connection and cacheProfile objects. Can also be set via `CACHE_DATA_ID_HASH_ALGORITHM` env var. |
 | `DynamoDbMaxCacheSize_kb` | number | `10` | No | Maximum size in KB for storing cache entries in DynamoDB. Entries larger than this are stored in S3. Can also be set via `CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB` env var. |
 | `purgeExpiredCacheEntriesAfterXHours` | number | `24` | No | Number of hours after expiration to keep entries before purging. Can also be set via `CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS` env var. |
-| `timeZoneForInterval` | string | `'Etc/UTC'` | No | TZ database timezone name for interval-based cache expiration calculations. Aligns cache intervals with local time rather than UTC. Can also be set via `CACHE_DATA_TIME_ZONE_FOR_INTERVAL` env var. |
+| `timeZoneForInterval` | string | `'Etc/UTC'` | No | Timezone for interval-based cache expiration. Aligns cache intervals with local time rather than UTC. Accepts IANA time zone names such as `'America/Chicago'` (not case-sensitive) and fixed offsets such as `'+05:30'`. `undefined`, `null`, an empty string, or a whitespace-only string is treated as not provided, so the `CACHE_DATA_TIME_ZONE_FOR_INTERVAL` env var is used, then `'Etc/UTC'`. An invalid name makes `Cache.init()` throw. Honored in both storage modes, including `inMemoryOnly`. See [Interval-Based Expiration](#interval-based-expiration). |
 | `useInMemoryCache` | boolean | `false` | No | Enable in-memory L0 cache for ultra-fast access. Can also be set via `CACHE_USE_IN_MEMORY=true` env var. |
 | `inMemoryCacheMaxEntries` | number | Auto-calculated | No | Override automatic capacity calculation for in-memory cache. When set, ignores `entriesPerGB` heuristic. |
 | `inMemoryCacheEntriesPerGB` | number | `5000` | No | Heuristic for calculating max entries from Lambda memory allocation. Formula: `(lambdaMemoryMB / 1024) * entriesPerGB`. |
@@ -702,6 +702,79 @@ The `expires` timestamp determines when cached data becomes stale. After expirat
 - DynamoDB entries are marked for purging after `purgeExpiredCacheEntriesAfterXHours`
 - S3 objects can be cleaned up using lifecycle policies
 - In-memory cache entries are immediately deleted on access
+
+### Interval-Based Expiration
+
+When a cache profile sets `expirationIsOnInterval: true`, the `expires` timestamp is set to the next boundary of `defaultExpirationInSeconds` on the clock instead of that many seconds after the data was fetched. A 4-hour profile expires at the next 4-hour mark, no matter when the data was cached. The `timeZoneForInterval` setting decides which clock: local time in that timezone, or UTC by default.
+
+```javascript
+const { cache } = require('@63klabs/cache-data');
+
+// In-memory-only mode needs no AWS resources, so this example runs anywhere.
+// A deployed function would also pass secureDataKey, dynamoDbTable, and s3Bucket.
+cache.Cache.init({
+  inMemoryOnly: true,
+  timeZoneForInterval: 'America/Chicago'
+});
+
+// Cache.testInterval() reports the next boundary for each interval in the table,
+// starting now. A profile with expirationIsOnInterval and
+// defaultExpirationInSeconds: 4 * 60 * 60 expires at the hrs_04 boundary.
+const { info, tests } = cache.Cache.testInterval();
+console.log(info.timeZoneForInterval); // 'America/Chicago'
+console.log(info.tzDataVersion); // For example '2026a'
+console.log(tests.start.toISOString()); // Now
+console.log(tests.hrs_04.toISOString()); // Next 4-hour boundary on the Chicago clock
+console.log(tests.hrs_24.toISOString()); // Next local midnight in Chicago
+```
+
+#### How boundaries are computed
+
+The timestamp is converted to local time in the configured timezone and rounded up to the next multiple of the interval. The result is converted back to a real timestamp. A timestamp that is already exactly on a boundary stays where it is, so data cached at that instant expires immediately.
+
+#### Alignment
+
+- **Intervals that divide 24 hours** (15 minutes, 1 hour, 2, 3, 4, 6, 8, 12, and 24 hours) fall on multiples of the interval counted from local midnight. A 4-hour profile in `America/Chicago` expires at 12 AM, 4 AM, 8 AM, 12 PM, 4 PM, and 8 PM local time.
+- **Other intervals** are counted from the Unix epoch (1970-01-01 00:00:00) on the local clock, not from midnight. A 5-hour interval does not divide a day evenly, so its boundaries move one hour later each day. Multi-day intervals such as 48, 72, 96, and 120 hours count days from 1970-01-01.
+- **168 hours (one week)** falls on midnight at the start of Thursday, because 1970-01-01 was a Thursday.
+
+#### Timezones with :30 and :45 offsets
+
+Boundaries follow the local clock for every interval length, including intervals of an hour or less. In `Asia/Kolkata` (UTC+5:30) and `America/St_Johns` in winter (UTC-3:30), hourly boundaries fall at :30 past the UTC hour. In `Asia/Kathmandu` (UTC+5:45) and `Pacific/Chatham` (UTC+12:45 or UTC+13:45), hourly boundaries fall at :15 past the UTC hour, and half-hourly boundaries fall at :15 and :45. In general, an interval's boundaries line up with the same interval in UTC only when the timezone's offset from UTC is a multiple of the interval.
+
+#### Choosing a timezone
+
+`timeZoneForInterval` accepts:
+
+- IANA time zone names such as `'America/Chicago'`, `'Europe/London'`, and `'Asia/Kolkata'`
+- Fixed offsets such as `'+05:30'`
+- Surrounding whitespace, which is trimmed
+
+If the value is not provided, `Cache.init()` falls back to the `CACHE_DATA_TIME_ZONE_FOR_INTERVAL` environment variable, then to `'Etc/UTC'`. These values count as not provided: `undefined`, `null`, an empty string, and a string containing only whitespace. This lets you pass the environment variable straight through whether or not it is set:
+
+```javascript
+const { cache } = require('@63klabs/cache-data');
+
+cache.Cache.init({
+  inMemoryOnly: true,
+  // Uses 'Etc/UTC' when the environment variable is not set
+  timeZoneForInterval: process.env.CACHE_DATA_TIME_ZONE_FOR_INTERVAL
+});
+```
+
+An unknown name does not fall back to UTC. `Cache.init()` logs the problem and throws an error such as `Invalid timezone "America/Chicgo". Expected an IANA time zone name such as "America/Chicago" or "Etc/UTC".` The underlying error from the runtime is available as the error's `cause`. A non-string value (a number, for example) throws `Invalid timezone of type number. ...`. When the bad name came from the environment variable, the message adds `from CACHE_DATA_TIME_ZONE_FOR_INTERVAL` after the quoted name. A failed `Cache.init()` call leaves nothing configured, so a later call with a corrected value succeeds.
+
+The timezone is read once, by the first successful `Cache.init()`, and applies for the life of the function instance. The setting is honored in `inMemoryOnly` mode as well.
+
+#### Time zone rules and daylight saving time
+
+The time zone rules come from the Node.js runtime you deploy on, not from a library bundled with this package. `Cache.info().tzDataVersion` reports the version of the IANA time zone database in that runtime (for example `'2026a'`), or `null` if the runtime does not report one. Different Node.js releases can ship different versions, so a zone whose rules recently changed can behave differently between runtimes.
+
+Each interval calculation uses the UTC offset in effect at the timestamp being rounded, looked up when the calculation runs. A function instance that stays warm across a daylight saving time change keeps producing boundaries on the local clock. `Cache.info().offsetInMinutes` likewise reports the offset at the moment you call it.
+
+One case is not exact: a boundary that falls on the other side of a clock change from the timestamp it was calculated from. That boundary is computed with the offset from before the change, so it lands off by the size of the change, usually one hour. For example, in `America/Chicago` a 24-hour profile cached at 1:30 AM CDT on 2026-11-01 (before the clocks go back) expires at 11 PM CST that evening instead of at midnight. For a 24-hour interval, this affects entries cached between midnight and 2 AM local time on the day of the change. Entries cached at other times that day, and on other days, land on the local boundary.
+
+For how boundaries are computed internally, see the [technical documentation](../../technical/interval-expiration.md).
 
 ### Basic Usage
 

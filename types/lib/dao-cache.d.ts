@@ -50,7 +50,25 @@ export interface CacheInitParameters {
 	DynamoDbMaxCacheSize_kb?: number;
 	/** Hours after expiration before purging entries. Env: CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS. Default: 24 */
 	purgeExpiredCacheEntriesAfterXHours?: number;
-	/** TZ database timezone for interval calculations. Env: CACHE_DATA_TIME_ZONE_FOR_INTERVAL. Default: 'Etc/UTC' */
+	/**
+	 * Timezone that interval-based expiration aligns to: an IANA time zone name such as
+	 * "America/Chicago", or a fixed offset such as "+05:30". Any name Intl.DateTimeFormat
+	 * accepts is valid, case-insensitively. Surrounding whitespace is trimmed, and
+	 * Cache.info() reports the name as given rather than in Intl's canonical form
+	 * ("Etc/UTC", not "UTC").
+	 *
+	 * Resolution: this parameter, then the CACHE_DATA_TIME_ZONE_FOR_INTERVAL environment
+	 * variable, then "Etc/UTC". undefined, null, "", and whitespace-only values count as
+	 * not provided at both levels and fall through to the next one. The environment variable
+	 * is used only when the parameter isn't provided, so an invalid environment variable
+	 * can't fail a valid parameter.
+	 *
+	 * Cache.init() throws if the value is provided and isn't a string, or if
+	 * Intl.DateTimeFormat rejects the resolved name. Offsets and DST rules come from the
+	 * time zone data in the Node.js runtime, whose version Cache.info().tzDataVersion reports.
+	 *
+	 * Env: CACHE_DATA_TIME_ZONE_FOR_INTERVAL. Default: 'Etc/UTC'
+	 */
 	timeZoneForInterval?: string;
 	/**
 	 * @deprecated Since 1.4.0. No longer used; silently ignored. Cache-key hashing
@@ -183,6 +201,10 @@ export class Cache {
 		inMemoryCache?: object;
 		sharedCacheId: string | null;
 		inMemoryOnly: boolean;
+		/** Version of the Node.js runtime's time zone data (process.versions.tz), e.g. "2026a", or null when the runtime doesn't report one */
+		tzDataVersion: string | null;
+		/** Where the cache-key salt comes from */
+		saltSource: "sharedCacheId" | "AWS_LAMBDA_FUNCTION_NAME" | "none";
 	};
 
 	/**
@@ -258,11 +280,38 @@ export class Cache {
 	static generateInternetFormattedDate(timestamp: number, inMilliseconds?: boolean): string;
 
 	/**
-	 * Calculate the next interval boundary timestamp.
+	 * Get the next interval boundary at or after a timestamp. This is how expiration is set
+	 * when a cache profile uses expirationIsOnInterval. Boundaries align to local time in the
+	 * timezone set by timeZoneForInterval in Cache.init() ("Etc/UTC" by default, and before
+	 * Cache.init()): the timestamp is shifted into local time, rounded up to the next multiple
+	 * of the interval, and shifted back.
 	 *
-	 * @param intervalInSeconds - The interval duration in seconds
-	 * @param timestampInSeconds - The timestamp to calculate from (0 = use current time)
-	 * @returns The next interval boundary timestamp in seconds
+	 * Where boundaries fall:
+	 * - Intervals that divide 24 hours evenly fall on multiples of the interval counted from
+	 *   local midnight. Every 4 hours is 00:00, 04:00, 08:00, 12:00, 16:00, and 20:00, and
+	 *   every 24 hours is local midnight.
+	 * - Other intervals count from the Unix epoch (1970-01-01T00:00:00) in local time rather
+	 *   than from midnight. A 5-hour boundary moves by an hour each day, and 168 hours (one
+	 *   week) falls on Thursdays, because the epoch was a Thursday.
+	 * - The UTC offset applies to every interval length, including an hour or less. In a
+	 *   timezone whose offset isn't a whole number of hours, such as Asia/Kolkata (UTC+5:30),
+	 *   hourly boundaries sit off the UTC hour.
+	 *
+	 * A timestamp already on a boundary returns itself. A timestampInSeconds of 0, or an
+	 * omitted one, means the current time.
+	 *
+	 * Daylight saving time: each call uses the UTC offset in effect at the timestamp being
+	 * rounded, so boundaries follow clock changes however long the execution environment stays
+	 * up. A boundary calculated shortly before a change but falling after it is still off by
+	 * the DST delta.
+	 *
+	 * @param intervalInSeconds - The interval length in seconds, such as 900 for every 15 minutes, 3600 for hourly, or 86400 for daily
+	 * @param timestampInSeconds - The timestamp to round up, in seconds since the Unix epoch. 0 or omitted means the current time
+	 * @returns The next interval boundary, in seconds since the Unix epoch
+	 * @example
+	 * // With timeZoneForInterval: "America/Chicago". 2026-01-15T18:10:00Z is 12:10 PM CST
+	 * const timestamp = Cache.parseToSeconds("2026-01-15T18:10:00Z"); // 1768500600
+	 * Cache.nextIntervalInSeconds(15 * 60, timestamp); // 1768500900, 12:15 PM CST
 	 */
 	static nextIntervalInSeconds(intervalInSeconds: number, timestampInSeconds?: number): number;
 
@@ -293,10 +342,19 @@ export class Cache {
 	static multipartId(identifierArrayOrString: any[] | string, glue?: string): string | null;
 
 	/**
-	 * Convert a date string to a Unix timestamp in seconds.
+	 * Convert a date string to a Unix timestamp in seconds. Uses Date.parse() to parse the date
+	 * string and converts the result from milliseconds to seconds, rounding up.
 	 *
-	 * @param date - Date string to parse
-	 * @returns The date in seconds since Unix epoch, or 0 if parsing fails
+	 * Unparsable input returns 0, and the Unix epoch itself parses to 0. The method works
+	 * before Cache.init() and never uses timeZoneForInterval: a string without a UTC offset
+	 * follows Date.parse() rules, which can use the process's local time zone (the TZ
+	 * environment variable).
+	 *
+	 * @param date - Date string to parse (e.g., "2011-10-10T14:48:00" or "Wed, 28 Jul 2021 12:24:11 GMT")
+	 * @returns The date in seconds since January 1, 1970, 00:00:00 UTC, or 0 if parsing fails
+	 * @example
+	 * Cache.parseToSeconds("2021-07-28T12:24:11Z"); // 1627475051
+	 * Cache.parseToSeconds("not a date"); // 0
 	 */
 	static parseToSeconds(date: string): number;
 

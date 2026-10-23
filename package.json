@@ -16,9 +16,6 @@
   "engines": {
     "node": ">=22.0.0"
   },
-  "dependencies": {
-    "moment-timezone": "^0.6.5"
-  },
   "peerDependencies": {
     "@aws-lambda-powertools/logger": "^2.0.0",
     "@aws-lambda-powertools/metrics": "^2.0.0",

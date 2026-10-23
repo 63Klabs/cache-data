@@ -451,13 +451,10 @@ describe("Backwards Compatibility Integration Tests", () => {
 			packageJson = JSON.parse(content);
 		});
 
-		it("should only have moment-timezone as a required dependency", () => {
+		it("should have no required dependencies", () => {
 			const deps = Object.keys(packageJson.dependencies || {});
-			// object-hash was removed in v1.4.0 (hashing now uses the built-in DataHasher)
-			const allowedDeps = ["moment-timezone"];
-			for (const dep of deps) {
-				expect(allowedDeps).toContain(dep);
-			}
+			// v1.4.0 removed object-hash (built-in DataHasher) and moment-timezone (built-in TimeUtils)
+			expect(deps).toEqual([]);
 		});
 
 		it("should not have object-hash in required dependencies (removed in v1.4.0)", () => {
