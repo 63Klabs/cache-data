@@ -8,7 +8,7 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
-## v1.4.0 (unreleased)
+## v1.4.0 (2026-11-02)
 
 This release is another milestone in Cache-Data's release history!
 
@@ -23,6 +23,7 @@ Node 20 is no longer supported (AWS already removed it from the Lambda runtime),
 
 ### Fixed
 
+- **`Cache.getBody(true)` no longer logs an `[ERROR]` for non-JSON content** — Calling `getBody(true)` (or `getResponse(true)`) on an HTML, RSS, XML, or plain-text body logged `[ERROR] Cache.getBody() parse error: Unexpected token '<' ...` with a stack trace, even though the original string was returned and nothing was thrown. Returning the original string is the documented behavior for content that isn't JSON, so the entry is now logged at debug level only. Return values are unchanged, and JSON bodies are still parsed.
 - **Property-test generator preconditions** — Two fast-check generators in `test/security/parameter-key-safety-tests.jest.mjs` had preconditions weaker than the acceptance rule `ParameterKeySafety` applies, so each could emit a draw the implementation is specified to reject while the property asserted acceptance. Measured pre-fix rates over 4,000,000 draws each: ~1 in 49,383 for the `setGroupedSecret` round-trip generator (whole-string-only filter) and ~1 in 666,667 for the `Property A5` ARN generator (unfiltered secret-name portion). One instance of this defect class blocked the v1.3.17 release package build. [Spec: 1-4-0-property-test-generator-preconditions](.kiro/specs/1-4-0-property-test-generator-preconditions/)
   - Both generators now draw from shared arbitraries in `test/helpers/parameter-key-arbitraries.mjs`. The round-trip generator gates on the implementation's own `checkSecretName` — a precondition rather than a tautology, since the property asserts downstream assignment behavior. The ARN generator is safe by construction (every `/`-delimited segment carries a digit and no reserved key contains a digit), because that property asserts `isSafeSecretName` itself and filtering on it would make the property vacuous.
   - The `setGroupedSecretMap` round-trip generator, fixed by hand in v1.3.17, converged onto the same shared arbitrary, removing the drift risk of a hand-written mirror of the implementation's segment rule.

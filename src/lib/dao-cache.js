@@ -2575,7 +2575,9 @@ class Cache {
 	 * 
 	 * By default, returns the body as a string (which may be JSON-encoded). If
 	 * parseBody is true, attempts to parse the body as JSON and return an object.
-	 * If parsing fails, returns the original string.
+	 * If parsing fails, as it does for non-JSON content such as HTML, RSS, XML, or
+	 * plain text, the original string is returned unchanged and nothing is logged
+	 * above debug level.
 	 * 
 	 * @param {boolean} [parseBody=false] If true, parse JSON body into an object
 	 * @returns {string|Object|null} The body as a string, parsed object, or null if no cache data
@@ -2598,8 +2600,9 @@ class Cache {
 		try {
 			bodyToReturn = (body !== null && parseBody) ? JSON.parse(body) : body;
 		} catch (error) {
-			tools.DebugAndLog.error(`Cache.getBody() parse error: ${error?.message || 'Unknown error'}`, error?.stack);
-			tools.DebugAndLog.debug("Error parsing body", body);
+			// Non-JSON content (HTML, RSS, XML, text, etc.) is a normal, handled case: the
+			// original string is returned as documented, so this is not an error condition.
+			tools.DebugAndLog.debug(`Cache.getBody() body is not valid JSON, returning original string: ${error?.message || 'Unknown error'}`);
 		};
 
 		return (( bodyToReturn !== null) ? bodyToReturn : body );
