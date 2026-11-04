@@ -1184,16 +1184,39 @@ export class RequestInfo {
 	getClientUserAgent(): string | null;
 
 	/**
-	 * Gets the IP address from the client request.
+	 * Gets the IP address of the client request.
 	 *
-	 * @returns IP address string
+	 * The IP is taken only from values written by a trusted proxy, in this
+	 * order: the `CloudFront-Viewer-Address` header (used only when
+	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` is 2 or more), then the `X-Forwarded-For`
+	 * header read from the right by the hop count, then `identity.sourceIp`.
+	 * A value that is missing or is not a valid IP address moves on to the next source.
+	 *
+	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` is the number of proxies, counting API
+	 * Gateway, that append to `X-Forwarded-For` before the request reaches
+	 * your Lambda function. It defaults to 2 (edge-optimized API Gateway
+	 * endpoint). A Regional API without CloudFront needs 1. Your own
+	 * CloudFront distribution in front of an edge-optimized API needs 3.
+	 *
+	 * @returns The client IP address, or null when no source has a value
+	 * @example
+	 * const requestInfo = new RequestInfo(event);
+	 * const ip = requestInfo.getClientIp();
+	 * if (ip !== null) {
+	 *   console.log(`Request from ${ip}`);
+	 * }
 	 */
 	getClientIp(): string | null;
 
 	/**
-	 * Gets the IP address from the client request (alias for getClientIp).
+	 * Alias of getClientIp(). Resolves the client IP from the
+	 * `CloudFront-Viewer-Address` header (2 or more trusted hops), then the
+	 * `X-Forwarded-For` header read from the right by the
+	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` hop count (default 2), then `identity.sourceIp`.
 	 *
-	 * @returns IP address string
+	 * @returns The client IP address, or null when no source has a value
+	 * @example
+	 * const ip = new RequestInfo(event).getClientIP();
 	 */
 	getClientIP(): string | null;
 

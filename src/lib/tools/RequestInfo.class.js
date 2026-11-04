@@ -1,5 +1,6 @@
 
 const ImmutableObject = require("./ImmutableObject.class");
+const ClientIpResolver = require("../utils/ClientIpResolver.class.js");
 
 /* ****************************************************************************
  * ClientRequest Data Model
@@ -143,16 +144,42 @@ class RequestInfo {
 	};
 
 	/**
-	 * IP of client request
-	 * @returns {string} The IP string from the client request
+	 * IP of client request.
+	 * 
+	 * The IP is taken only from values written by a trusted proxy, in this
+	 * order: the `CloudFront-Viewer-Address` header (used only when
+	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` is 2 or more), then the `X-Forwarded-For`
+	 * header read from the right by the hop count, then `identity.sourceIp`.
+	 * A value that is missing or is not a valid IP address moves on to the next source.
+	 * 
+	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` is the number of proxies, counting API
+	 * Gateway, that append to `X-Forwarded-For` before the request reaches
+	 * your Lambda function. It defaults to 2 (edge-optimized API Gateway
+	 * endpoint). A Regional API without CloudFront needs 1. Your own
+	 * CloudFront distribution in front of an edge-optimized API needs 3.
+	 * 
+	 * @returns {string|null} The client IP address, or null when no source has a value
+	 * @example
+	 * const requestInfo = new RequestInfo(event);
+	 * const ip = requestInfo.getClientIp();
+	 * if (ip !== null) {
+	 *   console.log(`Request from ${ip}`);
+	 * }
 	 */
 	getClientIp() {
 		return this.getClient("ip");
 	};
 
 	/**
+	 * Alias of getClientIp(). Resolves the client IP from the
+	 * `CloudFront-Viewer-Address` header (2 or more trusted hops), then the
+	 * `X-Forwarded-For` header read from the right by the
+	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` hop count (default 2), then `identity.sourceIp`.
+	 * 
 	 * @see getClientIp
-	 * @returns {string}
+	 * @returns {string|null} The client IP address, or null when no source has a value
+	 * @example
+	 * const ip = new RequestInfo(event).getClientIP();
 	 */
 	getClientIP() {
 		return this.getClientIp();
@@ -269,12 +296,18 @@ class RequestInfo {
 	 * Parses the API Gateway event to extract client information including IP,
 	 * user agent, origin, referrer, headers, and query parameters.
 	 * 
-	 * For `client.ip`, the `x-forwarded-for` header is preferred over
-	 * `identity.sourceIp`. When `x-forwarded-for` is present and non-empty,
-	 * the first IP from the comma-separated list is used (trimmed). This
-	 * ensures the original client IP is returned when behind a proxy such
-	 * as CloudFront. Falls back to `identity.sourceIp` when the header is
-	 * absent or empty.
+	 * For `client.ip`, only values written by a trusted proxy are used, in
+	 * this order: the `CloudFront-Viewer-Address` header (only when the trusted
+	 * proxy hop count is 2 or more), then the `X-Forwarded-For` header read
+	 * from the right by the hop count, then `identity.sourceIp`. A missing or
+	 * invalid value moves on to the next source. `client.ip` is null when no
+	 * source has a value.
+	 * 
+	 * The hop count comes from the `CACHE_DATA_TRUSTED_PROXY_HOPS` environment
+	 * variable and defaults to 2 (edge-optimized API Gateway endpoint). A
+	 * Regional API without CloudFront needs 1. Your own CloudFront
+	 * distribution in front of an edge-optimized API needs 3. See the
+	 * "Client IP resolution" section of docs/features/tools/README.md.
 	 * 
 	 * For `client.userAgent`, the `user-agent` header is preferred over
 	 * `identity.userAgent`. When the header is present and non-empty, its
@@ -309,18 +342,9 @@ class RequestInfo {
 
 		client.headers = headers;
 
-		// set the source IP immediately for logging
-		if ( "sourceIp" in identity && identity.sourceIp !== null){
-			client.ip = identity.sourceIp;
-		}
-
-		// if x-forwarded-for header is present, prefer it over identity.sourceIp (first IP in the list is the original client)
-		if ( "x-forwarded-for" in headers && headers["x-forwarded-for"] !== null && headers["x-forwarded-for"] !== "" ) {
-			let firstIp = headers["x-forwarded-for"].split(",")[0].trim();
-			if ( firstIp !== "" ) {
-				client.ip = firstIp;
-			}
-		}
+		// >! Resolve the client IP only from values a trusted proxy wrote:
+		// >! CloudFront-Viewer-Address, X-Forwarded-For read from the right, then identity.sourceIp.
+		client.ip = ClientIpResolver.resolve(headers, identity);
 
 		// if there is a user-agent header, set it
 		if ( "userAgent" in identity && identity.userAgent !== null ) {

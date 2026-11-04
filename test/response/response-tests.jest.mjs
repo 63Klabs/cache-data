@@ -143,7 +143,8 @@ describe("Response Class", () => {
 			expect(logStub).toHaveBeenCalled();
 
 			// Verify log content
-			expect(logStub.mock.calls[0][0]).toContain(`[RESPONSE] 200 | 25 | JSON | ${REQ.getFinalExecutionTime()} | 192.168.100.1 | Mozilla/5.0 | - | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format=detailed&include=contact,department&version=2 | - | - | -`);
+			// queryKeys lists keys only, no values (spec 1-4-1-trusted-client-ip, Req 9)
+			expect(logStub.mock.calls[0][0]).toContain(`[RESPONSE] 200 | 25 | JSON | ${REQ.getFinalExecutionTime()} | 192.168.100.1 | Mozilla/5.0 | - | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format&include&version | - | - | -`);
 		});
 	});
 });
@@ -204,7 +205,8 @@ describe("Response Class Finalize", () => {
 			expect(resp.headers['X-Custom-Header']).toBe("Custom Value");
 			expect(resp.headers['x-exec-ms']).toBe(`${REQ.getFinalExecutionTime()}`);
 
-			const expectedLogMessage = `[RESPONSE] 200 | 25 | JSON | ${REQ.getFinalExecutionTime()} | 192.168.100.1 | Mozilla/5.0 | - | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format=detailed&include=contact,department&version=2 | - | - | -`;
+			// queryKeys lists keys only, no values (spec 1-4-1-trusted-client-ip, Req 9)
+			const expectedLogMessage = `[RESPONSE] 200 | 25 | JSON | ${REQ.getFinalExecutionTime()} | 192.168.100.1 | Mozilla/5.0 | - | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format&include&version | - | - | -`;
 
 			expect(logStub.mock.calls[0][0]).toBe(expectedLogMessage);
 		});

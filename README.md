@@ -1,11 +1,12 @@
 # 63Klabs Cache-Data
 
-A package for AWS Lambda Node.js applications to access and cache data from remote API endpoints (or other sources) utilizing AWS S3 and DynamoDb for the cache storage. Also provides a simple request handling, routing, and response logging framework for running a web service with minimal dependencies.
+A package for AWS Lambda Node.js applications to access and cache data from remote API endpoints (or other sources) utilizing AWS S3 and DynamoDb for the cache storage. Also provides a simple request handling, routing, and response logging framework for running a web service with no dependencies.
 
-> Note: This repository and package has moved from chadkluck to 63Klabs but is still managed by the same developer.
+While it can be used for any Lambda Node.js function, it is a core component of API services developed using [63Klabs Atlantis DevOps Platform starter code](https://github.com/63Klabs/atlantis-starter-02-apigw-lambda-cache-data-nodejs) to quickly scaffold new serverless workloads on AWS.
 
 - [@63klabs/cache-data on npmjs.com](https://www.npmjs.com/package/@63klabs/cache-data)
 - [@63klabs/cache-data on GitHub](https://github.com/63Klabs/cache-data)
+- [63Klabs Atlantis DevOps Platform](https://atlantis.63klabs.net)
 
 ## Description
 

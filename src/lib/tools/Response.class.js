@@ -9,6 +9,32 @@ const DebugAndLog = require('./DebugAndLog.class');
 const { flushMetrics } = require('./PowertoolsInit');
 
 /**
+ * Remove the RESPONSE log delimiter and control characters from a request-derived value.
+ * Returns "-" when the value is empty or nothing remains after cleaning.
+ *
+ * @private
+ * @param {*} value - Request-derived value to sanitize (string, number, null, or undefined)
+ * @returns {string} The cleaned value, or "-" for null, undefined, "", or a value with nothing left after cleaning
+ * @example
+ * sanitizeLogField("Mozilla/5.0 | evil\r\nRESPONSE"); // "Mozilla/5.0  evilRESPONSE"
+ * sanitizeLogField(null); // "-"
+ * sanitizeLogField("|\n"); // "-"
+ */
+function sanitizeLogField(value) {
+	if (value === null || value === undefined || value === "") { return "-"; }
+	const text = String(value);
+	let cleaned = "";
+	// for...of iterates by code point, so astral characters pass through intact
+	for (const char of text) {
+		const code = char.charCodeAt(0);
+		// >! "|" is the RESPONSE field delimiter and control characters (CR, LF, etc.) could forge log lines, so a request can't add or shift log fields
+		if (char === "|" || code <= 0x1F || code === 0x7F) { continue; }
+		cleaned += char;
+	}
+	return (cleaned === "" ? "-" : cleaned);
+}
+
+/**
  * Response class for creating and managing HTTP responses with support for multiple content types.
  * Provides methods to build, customize, and finalize responses for Lambda functions or web services.
  * Supports JSON, HTML, XML, RSS, and TEXT content types with automatic content type detection.
@@ -712,6 +738,8 @@ class Response {
 	 * Logs the ClientRequest and Response to CloudWatch.
 	 * Formats a log entry for parsing in CloudWatch Dashboard with fields:
 	 * statusCode, bytes, contentType, execms, clientIp, userAgent, origin, referrer, resource, queryKeys, routeLog, queryLog, apiKey.
+	 * The nine request-derived fields (clientIp through apiKey) are sanitized: "|" (the field delimiter)
+	 * and control characters (0x00-0x1F, 0x7F) are removed, and empty values are logged as "-".
 	 * 
 	 * @param {string} bodyAsString - The stringified response body
 	 * @returns {void}
@@ -744,15 +772,16 @@ class Response {
 			logFields.push(bytes);
 			logFields.push(contentType);
 			logFields.push(execms);
-			logFields.push(clientIp);
-			logFields.push( (( userAgent !== "" && userAgent !== null) ? userAgent : "-").replace(/|/g, "") ); // doubtful, but userAgent could have | which will mess with log fields
-			logFields.push( (( origin !== "" && origin !== null) ? origin : "-") );
-			logFields.push( (( referrer !== ""  && referrer !== null) ? referrer : "-") );
-			logFields.push(resource); // path includes any path parameter keys (not values)
-			logFields.push(queryKeys ? queryKeys : "-"); // just the keys used in query string (no values)
-			logFields.push(routeLog ? routeLog : "-"); // custom set routePath with values
-			logFields.push(queryLog ? queryLog : "-"); // custom set keys with values
-			logFields.push(apiKey ? apiKey : "-");
+			// >! Every request-derived field goes through sanitizeLogField() so "|" and control characters can't add or shift log fields
+			logFields.push(sanitizeLogField(clientIp));
+			logFields.push(sanitizeLogField(userAgent));
+			logFields.push(sanitizeLogField(origin));
+			logFields.push(sanitizeLogField(referrer));
+			logFields.push(sanitizeLogField(resource)); // path includes any path parameter keys (not values)
+			logFields.push(sanitizeLogField(queryKeys)); // just the keys used in query string (no values)
+			logFields.push(sanitizeLogField(routeLog)); // custom set routePath with values
+			logFields.push(sanitizeLogField(queryLog)); // custom set keys with values
+			logFields.push(sanitizeLogField(apiKey));
 
 			/* Join array together into single text string delimited by ' | ' */
 			const msg = logFields.join(" | ");

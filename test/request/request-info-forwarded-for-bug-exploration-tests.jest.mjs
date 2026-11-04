@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import fc from 'fast-check';
 
 const RequestInfo = (await import('../../src/lib/tools/RequestInfo.class.js')).default;
@@ -6,7 +6,14 @@ const RequestInfo = (await import('../../src/lib/tools/RequestInfo.class.js')).d
 /* ****************************************************************************
  * Bug Condition Exploration Tests
  * Feature: 1-3-11-client-request-update-forwarded-for
- * 
+ * Updated by: 1-4-1-trusted-client-ip
+ *
+ * 1-4-1-trusted-client-ip changed IP selection from leftmost to
+ * right-to-left: getClientIp() now returns the x-forwarded-for entry
+ * CACHE_DATA_TRUSTED_PROXY_HOPS + 1 positions from the right (default
+ * 2 from the right), and falls back to identity.sourceIp when the chain is
+ * too short. The IP assertions below were rewritten accordingly.
+ *
  * Property 1: Bug Condition - X-Forwarded-For and User-Agent Header Priority
  * 
  * These tests encode the EXPECTED (correct) behavior. On unfixed code they
@@ -16,26 +23,43 @@ const RequestInfo = (await import('../../src/lib/tools/RequestInfo.class.js')).d
  */
 describe("RequestInfo - Bug Condition Exploration (X-Forwarded-For / User-Agent)", () => {
 
+	let originalTrustedProxyHops;
+
+	beforeEach(() => {
+		originalTrustedProxyHops = process.env.CACHE_DATA_TRUSTED_PROXY_HOPS;
+		delete process.env.CACHE_DATA_TRUSTED_PROXY_HOPS;
+	});
+
+	afterEach(() => {
+		if (originalTrustedProxyHops === undefined) {
+			delete process.env.CACHE_DATA_TRUSTED_PROXY_HOPS;
+		} else {
+			process.env.CACHE_DATA_TRUSTED_PROXY_HOPS = originalTrustedProxyHops;
+		}
+	});
+
 	describe("Property 1: X-Forwarded-For header should take priority over identity.sourceIp", () => {
 
-		it("Property: getClientIp() returns first IP from x-forwarded-for when present", () => {
+		it("Property: getClientIp() returns the x-forwarded-for entry 2 from the right by default", () => {
 			/**
 			 * Validates: Requirements 2.1, 2.2
 			 * 
-			 * For any event where x-forwarded-for is present and non-empty
-			 * with identity.sourceIp set to a different value, getClientIp()
-			 * should return the first IP from x-forwarded-for (trimmed).
+			 * For any event where x-forwarded-for holds at least two entries
+			 * and CACHE_DATA_TRUSTED_PROXY_HOPS is unset (default 1),
+			 * getClientIp() should return the entry 2 from the right (trimmed),
+			 * regardless of any entries to its left.
 			 */
 			fc.assert(
 				fc.property(
-					fc.ipV4(),                                          // client IP (first in x-forwarded-for)
-					fc.array(fc.ipV4(), { minLength: 0, maxLength: 3 }), // optional proxy IPs
+					fc.ipV4(),                                          // client IP (2nd from the right)
+					fc.array(fc.ipV4(), { minLength: 0, maxLength: 3 }), // optional (forgeable) entries to the left
 					fc.ipV4(),                                          // identity.sourceIp (CloudFront IP)
-					(clientIp, proxyIps, identityIp) => {
-						// Ensure identity IP differs from client IP to trigger bug condition
+					fc.ipV4(),                                          // edge IP (rightmost entry)
+					(clientIp, proxyIps, identityIp, edgeIp) => {
+						// Ensure identity IP differs from client IP so a fallback is detectable
 						fc.pre(clientIp !== identityIp);
 
-						const forwardedFor = [clientIp, ...proxyIps].join(", ");
+						const forwardedFor = [...proxyIps, clientIp, edgeIp].join(", ");
 
 						const event = {
 							headers: {
@@ -80,7 +104,7 @@ describe("RequestInfo - Bug Condition Exploration (X-Forwarded-For / User-Agent)
 							},
 							requestContext: {
 								identity: {
-									sourceIp: "54.240.144.1",
+									sourceIp: "198.51.100.1",
 									userAgent: identityUserAgent
 								}
 							},
@@ -99,7 +123,7 @@ describe("RequestInfo - Bug Condition Exploration (X-Forwarded-For / User-Agent)
 
 	describe("Concrete bug condition cases", () => {
 
-		it("single IP: x-forwarded-for '203.0.113.50' with identity.sourceIp '54.240.144.1'", () => {
+		it("single IP: a one-entry chain falls back to identity.sourceIp", () => {
 			/**
 			 * Validates: Requirements 1.1, 2.1
 			 */
@@ -109,7 +133,7 @@ describe("RequestInfo - Bug Condition Exploration (X-Forwarded-For / User-Agent)
 				},
 				requestContext: {
 					identity: {
-						sourceIp: "54.240.144.1",
+						sourceIp: "198.51.100.1",
 						userAgent: "Amazon CloudFront"
 					}
 				},
@@ -118,20 +142,20 @@ describe("RequestInfo - Bug Condition Exploration (X-Forwarded-For / User-Agent)
 			};
 
 			const requestInfo = new RequestInfo(event);
-			expect(requestInfo.getClientIp()).toBe("203.0.113.50");
+			expect(requestInfo.getClientIp()).toBe("198.51.100.1");
 		});
 
-		it("multiple IPs: x-forwarded-for '203.0.113.50, 70.132.20.1, 54.240.144.1' with identity.sourceIp '54.240.144.1'", () => {
+		it("multiple IPs: a forged left entry is ignored", () => {
 			/**
 			 * Validates: Requirements 1.2, 2.2
 			 */
 			const event = {
 				headers: {
-					"X-Forwarded-For": "203.0.113.50, 70.132.20.1, 54.240.144.1"
+					"X-Forwarded-For": "192.0.2.1, 203.0.113.50, 198.51.100.1"
 				},
 				requestContext: {
 					identity: {
-						sourceIp: "54.240.144.1",
+						sourceIp: "198.51.100.1",
 						userAgent: "Amazon CloudFront"
 					}
 				},
@@ -153,7 +177,7 @@ describe("RequestInfo - Bug Condition Exploration (X-Forwarded-For / User-Agent)
 				},
 				requestContext: {
 					identity: {
-						sourceIp: "54.240.144.1",
+						sourceIp: "198.51.100.1",
 						userAgent: "Amazon CloudFront"
 					}
 				},

@@ -19,6 +19,13 @@ const ValidationExecutor = require('../utils/ValidationExecutor.class');
  * 3. Method-only match (BY_METHOD with "METHOD")
  * 4. Global parameter name
  * 
+ * Client IP Resolution:
+ * 
+ * The client IP returned by getClientIp() comes from the CloudFront-Viewer-Address header,
+ * then the X-Forwarded-For header read from the right by the trusted proxy hop count, then
+ * identity.sourceIp. The hop count is set with the CACHE_DATA_TRUSTED_PROXY_HOPS environment
+ * variable (default 2).
+ * 
  * Header Key Format Conversion:
  * 
  * HTTP headers use kebab-case naming (e.g., 'content-type', 'x-api-key'), but JavaScript
@@ -1477,13 +1484,14 @@ class ClientRequest extends RequestInfo {
 	 * pathLog: custom route path with values (set by application using addPathLog())
 	 * queryLog: custom query with or without values (set by addQueryLog())
 	 * apiKey: last 6 characters of api key if present
-	 * @returns {resource: string, queryKeys: string, routeLog: string, queryLog: string, apiKey: string}
+	 * @returns {resource: string, queryKeys: string, routeLog: string, queryLog: string, apiKey: string} Log entries. queryKeys contains the sorted query string keys joined with &, with no values.
 	 */
 	getRequestLog() {
 		return {
 			resource: `${this.#props.method}:${this.#props.resourceArray.join('/')}`,
 			// put queryString keys in alpha order and join with &
-			queryKeys: Object.keys(this.#props.queryStringParameters).sort().map(key => `${key}=${this.#props.queryStringParameters[key]}`).join('&'),
+			// >! Keys only: query values can hold tokens or personal data and must not reach the logs
+			queryKeys: Object.keys(this.#props.queryStringParameters).sort().join('&'),
 			routeLog: this.#logs.pathLog.join('/'),
 			// put logs.params in alpha order and join with &
 			queryLog: this.#logs.queryLog.sort().join('&'),

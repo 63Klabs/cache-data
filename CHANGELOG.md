@@ -8,6 +8,32 @@ To report an issue, or to see proposed and upcoming enhancements, check out [63K
 
 Report all vulnerabilities under the [Security menu](https://github.com/63Klabs/cache-data/security/advisories) in the Cache-Data GitHub repository.
 
+## v1.4.1 (unreleased)
+
+### Security
+
+- **Client IP can no longer be chosen by the client** — `getClientIp()`, `getProps().client.ip`, and the `RESPONSE` log line used the first `X-Forwarded-For` entry, which the client controls: CloudFront and API Gateway append to whatever the client sends. The IP now comes from `CloudFront-Viewer-Address`, then the `X-Forwarded-For` entry counted from the right by the number of trusted proxies (`CACHE_DATA_TRUSTED_PROXY_HOPS`), then `identity.sourceIp`. Affects v1.3.11 through v1.4.0. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+  - The default counts two proxies: the AWS-managed CloudFront distribution of an edge-optimized REST API, and API Gateway.
+  - Requests that reach API Gateway without passing through your own CloudFront can still forge `X-Forwarded-For`. Restricting the API to CloudFront needs an origin-verify header checked by AWS WAF or an authorizer. See the ClientRequest documentation.
+- **Regional APIs without CloudFront stay forgeable until you set `CACHE_DATA_TRUSTED_PROXY_HOPS=1`** — At the default of `2`, both `CloudFront-Viewer-Address` and `X-Forwarded-For` can still be forged on a Regional REST API with no CloudFront in front, the same exposure as v1.4.0. Set `CACHE_DATA_TRUSTED_PROXY_HOPS=1` for that deployment. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+- **`queryKeys` logs keys only** — The `queryKeys` field of `getRequestLog()` and of the `RESPONSE` log line contained `key=value` pairs, although documented as keys only, so query values such as tokens or email addresses reached CloudWatch. It now lists the keys. Use `addQueryLog()` to log chosen values. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+
+### Added
+
+- **`CACHE_DATA_TRUSTED_PROXY_HOPS`** — The number of trusted proxies that append to `X-Forwarded-For` in front of the function. Defaults to `2` (edge-optimized REST API). Set `3` with your own CloudFront in front of an edge-optimized API, `1` for a Regional API without CloudFront, or `0` to use only `identity.sourceIp`. An invalid value logs one warning and uses `2`. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+- **Debug-level client IP resolution line** — At debug level, one line per request reports the number of `X-Forwarded-For` entries, the hop count, and which source produced the IP. It contains no addresses. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+
+### Changed
+
+- **Own CloudFront in front of an edge-optimized API logs the edge address until you set `CACHE_DATA_TRUSTED_PROXY_HOPS=3`** — With the default left unset, the logged IP for this deployment is your distribution's edge address rather than the viewer's. It is not a forged value. Set `CACHE_DATA_TRUSTED_PROXY_HOPS=3` to get the viewer address. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+- **Clients behind a corporate proxy are reported as the proxy's egress address** — A client whose corporate proxy adds its own `X-Forwarded-For` entry is now reported as the proxy's address, which is the address CloudFront saw. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+- **Invalid selected values fall through** — If the value chosen from a header is not a valid IP address, resolution moves on to the next source instead of returning it. Requests with malformed headers can now log a different address than before. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+- **Empty client IP is logged as `-`** — The `RESPONSE` log line wrote an empty field when the client IP was empty or missing. It now writes `-`. Dashboards or queries that match an empty field need updating. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+
+### Fixed
+
+- **`RESPONSE` log fields can't add or shift fields** — Request-derived fields (client IP, user agent, origin, referrer, resource, query keys, route and query logs, API key) are now written with `|` and control characters removed. The user-agent clean-up previously removed nothing, so a value containing `|` could add or shift fields in the line. [Spec: 1-4-1-trusted-client-ip](.kiro/specs/1-4-1-trusted-client-ip/)
+
 ## v1.4.0 (2026-11-02)
 
 This release is another milestone in Cache-Data's release history!
