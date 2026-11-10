@@ -34,7 +34,7 @@ const FORWARDED_EDGE = "198.51.100.40";
 const FORWARDED_MEMBER = "203.0.113.20";
 const SOURCE_IP = "203.0.113.99";
 
-const EXPECTED_WARNING = (raw) => `${ENV_VAR} must be a non-negative integer. Received ${JSON.stringify(raw)}. Using the default of 2.`;
+const EXPECTED_WARNING = (raw) => `${ENV_VAR} must be a non-negative integer. Received ${JSON.stringify(raw)}. Using the default of 0.`;
 
 describe("ClientIpResolver - configuration and logging tests", () => {
 	let originalEnv;
@@ -58,9 +58,9 @@ describe("ClientIpResolver - configuration and logging tests", () => {
 	describe("parseTrustedProxyHops()", () => {
 		describe("valid and default values", () => {
 			const validCases = [
-				[undefined, 2],
-				["", 2],
-				["  ", 2],
+				[undefined, 0],
+				["", 0],
+				["  ", 0],
 				["0", 0],
 				["1", 1],
 				["2", 2],
@@ -85,8 +85,8 @@ describe("ClientIpResolver - configuration and logging tests", () => {
 				"\uFF12" // full-width digit two
 			];
 
-			it.each(invalidCases)("parses %j as the default of 2 and marks it invalid", (raw) => {
-				expect(ClientIpResolver.parseTrustedProxyHops(raw)).toEqual({ trustedProxyHops: 2, isValid: false });
+			it.each(invalidCases)("parses %j as the default of 0 and marks it invalid", (raw) => {
+				expect(ClientIpResolver.parseTrustedProxyHops(raw)).toEqual({ trustedProxyHops: 0, isValid: false });
 			});
 		});
 
@@ -96,14 +96,14 @@ describe("ClientIpResolver - configuration and logging tests", () => {
 			ClientIpResolver.parseTrustedProxyHops(undefined);
 			expect(warnSpy).not.toHaveBeenCalled();
 			expect(debugSpy).not.toHaveBeenCalled();
-			expect(ClientIpResolver.parseTrustedProxyHops(undefined).trustedProxyHops).toBe(2);
+			expect(ClientIpResolver.parseTrustedProxyHops(undefined).trustedProxyHops).toBe(0);
 		});
 	});
 
 	describe("getTrustedProxyHops() reads process.env", () => {
-		it("returns 2 when the variable is unset", () => {
+		it("returns 0 when the variable is unset", () => {
 			delete process.env[ENV_VAR];
-			expect(ClientIpResolver.getTrustedProxyHops()).toBe(2);
+			expect(ClientIpResolver.getTrustedProxyHops()).toBe(0);
 		});
 
 		it("returns 3 when the variable is \"3\"", () => {
@@ -119,7 +119,7 @@ describe("ClientIpResolver - configuration and logging tests", () => {
 			expect(ClientIpResolver.getTrustedProxyHops()).toBe(1);
 
 			delete process.env[ENV_VAR];
-			expect(ClientIpResolver.getTrustedProxyHops()).toBe(2);
+			expect(ClientIpResolver.getTrustedProxyHops()).toBe(0);
 
 			process.env[ENV_VAR] = "0";
 			expect(ClientIpResolver.getTrustedProxyHops()).toBe(0);
@@ -132,10 +132,10 @@ describe("ClientIpResolver - configuration and logging tests", () => {
 			expect(ClientIpResolver.getTrustedProxyHops()).toBe(3);
 		});
 
-		it("never throws for an invalid value and falls back to 2", () => {
+		it("never throws for an invalid value and falls back to 0", () => {
 			process.env[ENV_VAR] = "never-throws-invalid";
 			expect(() => ClientIpResolver.getTrustedProxyHops()).not.toThrow();
-			expect(ClientIpResolver.getTrustedProxyHops()).toBe(2);
+			expect(ClientIpResolver.getTrustedProxyHops()).toBe(0);
 		});
 	});
 
@@ -145,12 +145,12 @@ describe("ClientIpResolver - configuration and logging tests", () => {
 			process.env[ENV_VAR] = raw;
 
 			for (let i = 0; i < 5; i++) {
-				expect(ClientIpResolver.getTrustedProxyHops()).toBe(2);
+				expect(ClientIpResolver.getTrustedProxyHops()).toBe(0);
 			}
 
 			expect(warnSpy).toHaveBeenCalledTimes(1);
 			expect(warnSpy).toHaveBeenCalledWith(EXPECTED_WARNING(raw));
-			expect(warnSpy.mock.calls[0][0]).toBe(`CACHE_DATA_TRUSTED_PROXY_HOPS must be a non-negative integer. Received "five-calls-invalid". Using the default of 2.`);
+			expect(warnSpy.mock.calls[0][0]).toBe(`CACHE_DATA_TRUSTED_PROXY_HOPS must be a non-negative integer. Received "five-calls-invalid". Using the default of 0.`);
 		});
 
 		it("warns once more for a second distinct invalid value", () => {
@@ -216,10 +216,10 @@ describe("ClientIpResolver - configuration and logging tests", () => {
 			expect(ClientIpResolver.getTrustedProxyHops()).toBe(6);
 
 			process.env[ENV_VAR] = "";
-			expect(ClientIpResolver.getTrustedProxyHops()).toBe(2);
+			expect(ClientIpResolver.getTrustedProxyHops()).toBe(0);
 
 			delete process.env[ENV_VAR];
-			expect(ClientIpResolver.getTrustedProxyHops()).toBe(2);
+			expect(ClientIpResolver.getTrustedProxyHops()).toBe(0);
 
 			expect(warnSpy).not.toHaveBeenCalled();
 		});
@@ -315,13 +315,13 @@ describe("ClientIpResolver - configuration and logging tests", () => {
 				expect(debugSpy).toHaveBeenCalledWith(DEBUG_LINE("x-forwarded-for", 3, 3));
 			});
 
-			it("reports the default hop count of 2 when the variable is unset", () => {
+			it("reports the default hop count of 0 when the variable is unset", () => {
 				delete process.env[ENV_VAR];
 
 				ClientIpResolver.resolve({}, { sourceIp: SOURCE_IP });
 
 				expect(debugSpy).toHaveBeenCalledTimes(1);
-				expect(debugSpy).toHaveBeenCalledWith(DEBUG_LINE("source-ip", 2, 0));
+				expect(debugSpy).toHaveBeenCalledWith(DEBUG_LINE("source-ip", 0, 0));
 			});
 		});
 

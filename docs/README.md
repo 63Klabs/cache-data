@@ -16,6 +16,10 @@ A full implementation example and tutorial is provided as one of the Atlantis Ap
 
 - **[Features](./features/README.md)** - Detailed documentation for all package features including cache, endpoint, and tools modules with usage examples and API references.
 
+### Observed AWS Behavior
+
+- **[CloudFront and API Gateway Observations](./cloudfront-notes/README.md)** - Dated observations of how API Gateway and CloudFront treat `X-Forwarded-For`, `CloudFront-Viewer-Address`, and `identity.sourceIp` in front of a Lambda function, and the features of cache-data that depend on them.
+
 ### Optimization and Best Practices
 
 - **[Lambda Optimization Best Practices](./lambda-optimization/README.md)** - AWS Lambda-specific optimization guidance including memory allocation recommendations, performance tips, and cold start best practices for cache-data.

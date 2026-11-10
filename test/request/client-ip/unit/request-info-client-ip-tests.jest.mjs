@@ -17,8 +17,9 @@ import { fileURLToPath, URL } from 'node:url';
  *   on the code before the change and pass after it.
  *
  * Setup:
- * - CACHE_DATA_TRUSTED_PROXY_HOPS is deleted before each test so the default
- *   hop count (2) applies. process.env is saved and restored.
+ * - CACHE_DATA_TRUSTED_PROXY_HOPS is deleted before each test, so the default
+ *   hop count (0) applies; tests of selection by count set the count they need.
+ *   process.env is saved and restored.
  *
  * Addresses: documentation ranges only (192.0.2.0/24, 198.51.100.0/24,
  * 203.0.113.0/24).
@@ -221,7 +222,11 @@ describe("RequestInfo client IP", () => {
 
 	describe("fixed behavior", () => {
 
-		it("ignores a forged leftmost x-forwarded-for entry (T1 chain, default hop count)", () => {
+		beforeEach(() => {
+			process.env[HOPS_ENV_VAR] = "2";
+		});
+
+		it("ignores a forged leftmost x-forwarded-for entry (T1 chain, hop count 2)", () => {
 			const event = buildEvent({
 				"X-Forwarded-For": `${FORGED_IP}, ${VIEWER_IP}, ${PROXY_IP}`
 			}, PROXY_IP);

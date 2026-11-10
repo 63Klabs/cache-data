@@ -92,20 +92,33 @@ describe("ClientIpResolver - property-based tests", () => {
 		}, PROPERTY_TIMEOUT_MS);
 	});
 
-	describe("Property 2: Fail-safe at the default", () => {
+	describe("Property 2: The default returns identity.sourceIp", () => {
 		/**
-		 * With the environment variable unset, for a T2 chain P ++ [V, E, M], the result
-		 * is E (the entry 2 from the right), never an element of P.
+		 * With the environment variable unset, for any forged list P and addresses V, E, M,
+		 * the chain P ++ [V, E, M] resolves to identity.sourceIp. The default hop count is 0,
+		 * so no X-Forwarded-For entry is trusted.
 		 *
-		 * **Validates: Requirements 6.2, 10.4**
+		 * The chain entries come from one documentation range and sourceIp from another,
+		 * so sourceIp differs from every chain entry by construction. A default of 1, 2, or 3
+		 * would select M, E, or V and fail this property. Nothing is filtered on the asserted
+		 * predicate and there is no fc.pre.
+		 *
+		 * **Validates: Requirement 2.5 of spec 1-4-1-docs-a-cache-data-trusted-proxy-hops-value-that**
 		 */
-		it("selects the entry 2 from the right with the default hop count", () => {
+		it("returns identity.sourceIp with the default hop count whatever the headers hold", () => {
 			fc.assert(
-				fc.property(forged, ip, ip, ip, (leftEntries, v, e, m) => {
-					delete process.env.CACHE_DATA_TRUSTED_PROXY_HOPS;
-					const headers = { "x-forwarded-for": [...leftEntries, v, e, m].join(", ") };
-					expect(ClientIpResolver.resolve(headers, { sourceIp: e })).toBe(e);
-				}),
+				fc.property(
+					forged,
+					docIp(FORWARDED_RANGE),
+					docIp(FORWARDED_RANGE),
+					docIp(FORWARDED_RANGE),
+					docIp(SOURCE_RANGE),
+					(leftEntries, v, e, m, sourceIp) => {
+						delete process.env.CACHE_DATA_TRUSTED_PROXY_HOPS;
+						const headers = { "x-forwarded-for": [...leftEntries, v, e, m].join(", ") };
+						expect(ClientIpResolver.resolve(headers, { sourceIp })).toBe(sourceIp);
+					}
+				),
 				{ numRuns: 500 }
 			);
 		}, PROPERTY_TIMEOUT_MS);

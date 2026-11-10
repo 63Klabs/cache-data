@@ -1186,17 +1186,22 @@ export class RequestInfo {
 	/**
 	 * Gets the IP address of the client request.
 	 *
-	 * The IP is taken only from values written by a trusted proxy, in this
-	 * order: the `CloudFront-Viewer-Address` header (used only when
-	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` is 2 or more), then the `X-Forwarded-For`
-	 * header read from the right by the hop count, then `identity.sourceIp`.
-	 * A value that is missing or is not a valid IP address moves on to the next source.
+	 * By default (`CACHE_DATA_TRUSTED_PROXY_HOPS` unset or `0`) this is
+	 * `identity.sourceIp`, the address of the connection API Gateway received.
+	 * That is the client for an edge-optimized API with no CloudFront of your
+	 * own, for a Regional API, and for your own CloudFront in front of a
+	 * Regional API. With your own CloudFront in front of an edge-optimized API,
+	 * set `CACHE_DATA_TRUSTED_PROXY_HOPS=3`.
 	 *
-	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` is the number of proxies, counting API
-	 * Gateway, that append to `X-Forwarded-For` before the request reaches
-	 * your Lambda function. It defaults to 2 (edge-optimized API Gateway
-	 * endpoint). A Regional API without CloudFront needs 1. Your own
-	 * CloudFront distribution in front of an edge-optimized API needs 3.
+	 * With a hop count of 1 or more, the IP is taken only from values written
+	 * by a trusted proxy, in this order: the `CloudFront-Viewer-Address` header
+	 * (used only when the hop count is 2 or more), then the `X-Forwarded-For`
+	 * header read from the right by the hop count, then `identity.sourceIp`.
+	 * A value that is missing or is not a valid IP address moves on to the next
+	 * source. A hop count above the real number of proxies is not safe: a client
+	 * that sends extra `X-Forwarded-For` entries can choose the result.
+	 * See "Client IP resolution" in docs/features/tools/README.md and
+	 * docs/cloudfront-notes/README.md.
 	 *
 	 * @returns The client IP address, or null when no source has a value
 	 * @example
@@ -1209,10 +1214,13 @@ export class RequestInfo {
 	getClientIp(): string | null;
 
 	/**
-	 * Alias of getClientIp(). Resolves the client IP from the
-	 * `CloudFront-Viewer-Address` header (2 or more trusted hops), then the
-	 * `X-Forwarded-For` header read from the right by the
-	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` hop count (default 2), then `identity.sourceIp`.
+	 * Alias of getClientIp(). Returns `identity.sourceIp` by default
+	 * (`CACHE_DATA_TRUSTED_PROXY_HOPS` unset or `0`). With a hop count of 1 or
+	 * more it resolves the IP from the `CloudFront-Viewer-Address` header
+	 * (2 or more hops), then the `X-Forwarded-For` header read from the right
+	 * by the hop count, then `identity.sourceIp`. A hop count above the real
+	 * number of proxies is not safe. See "Client IP resolution" in
+	 * docs/features/tools/README.md and docs/cloudfront-notes/README.md.
 	 *
 	 * @returns The client IP address, or null when no source has a value
 	 * @example

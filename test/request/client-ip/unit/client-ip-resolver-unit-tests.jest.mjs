@@ -82,10 +82,10 @@ describe("ClientIpResolver - unit tests", () => {
 			});
 		});
 
-		it("uses the default hop count of 2 when none is passed and the variable is unset", () => {
+		it("uses the default hop count of 0 when none is passed and the variable is unset", () => {
 			const headers = { "x-forwarded-for": `${FORGED}, ${CLIENT}, ${MEMBER}` };
-			expect(ClientIpResolver.DEFAULT_TRUSTED_PROXY_HOPS).toBe(2);
-			expect(ClientIpResolver.resolve(headers, { sourceIp: SOURCE_IP })).toBe(CLIENT);
+			expect(ClientIpResolver.DEFAULT_TRUSTED_PROXY_HOPS).toBe(0);
+			expect(ClientIpResolver.resolve(headers, { sourceIp: SOURCE_IP })).toBe(SOURCE_IP);
 		});
 	});
 

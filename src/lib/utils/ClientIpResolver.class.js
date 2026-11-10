@@ -5,8 +5,8 @@ const DebugAndLog = require("../tools/DebugAndLog.class.js");
 /** Environment variable that holds the number of trusted proxies in front of the function */
 const ENV_VAR = "CACHE_DATA_TRUSTED_PROXY_HOPS";
 
-/** Hop count used when the environment variable is unset, empty, or invalid. Measured for an edge-optimized REST API with no CloudFront distribution of the user's own. */
-const DEFAULT_TRUSTED_PROXY_HOPS = 2;
+/** Hop count used when the environment variable is unset, empty, or invalid. 0 returns identity.sourceIp, which no header can change, so a missing or wrong setting is never forgeable. */
+const DEFAULT_TRUSTED_PROXY_HOPS = 0;
 
 /** Last raw environment value seen. A Symbol never equals a real value, so the first read always parses. */
 let memoRaw = Symbol("unread");
@@ -31,14 +31,19 @@ const warnedRawValues = new Set();
  *
  * The hop count N is the number of trusted proxies that append to `X-Forwarded-For`
  * between the client and the Lambda function. It comes from the environment variable
- * `CACHE_DATA_TRUSTED_PROXY_HOPS` and defaults to 2 (an edge-optimized REST API with no
- * CloudFront distribution of the user's own). A Regional REST API with no CloudFront
- * needs 1, and the user's own CloudFront in front of an edge-optimized REST API needs 3.
+ * `CACHE_DATA_TRUSTED_PROXY_HOPS` and defaults to 0, which returns `identity.sourceIp`
+ * and reads neither header. `identity.sourceIp` is the client for an edge-optimized REST
+ * API with no CloudFront distribution of the user's own, for a Regional REST API, and for
+ * the user's own CloudFront in front of a Regional REST API (measured 2026-11-09, see
+ * docs/cloudfront-notes/README.md). Only the user's own CloudFront in front of an
+ * edge-optimized REST API needs a count, 3.
  *
- * Fail-safe direction: a hop count that is too high falls through to `identity.sourceIp`,
- * and one that is too low selects the address of a trusted proxy. Neither selects a
- * value the client chose, unless the count is lower than the real number of proxies by
- * enough that the selected entry was written by the client.
+ * A wrong count is not equally safe in both directions. A count that is too low selects
+ * the address of a trusted proxy, never an entry the client wrote. A count that is too
+ * high selects an entry to the left of the real chain, which the client can write: with a
+ * count k higher than the real chain, a client that sends k or more extra entries chooses
+ * the result, and with fewer the header is shorter than the count and the result is
+ * `identity.sourceIp`.
  *
  * Every method is total: header values that are missing or not strings fall through
  * to the next step rather than throw.
@@ -47,9 +52,10 @@ const warnedRawValues = new Set();
  * @example
  * const ip = ClientIpResolver.resolve(
  *   { "x-forwarded-for": "198.51.100.10, 203.0.113.20" },
- *   { sourceIp: "203.0.113.20" }
+ *   { sourceIp: "203.0.113.20" },
+ *   2
  * );
- * // ip === "198.51.100.10" with the default hop count of 2
+ * // ip === "198.51.100.10" with a hop count of 2
  */
 class ClientIpResolver {
 
@@ -66,7 +72,7 @@ class ClientIpResolver {
 	 *
 	 * @param {Object|null|undefined} headers - Header map with every key lowercased
 	 * @param {Object|null|undefined} identity - The `requestContext.identity` object
-	 * @param {number} [trustedProxyHops] - Hop count to use. Defaults to the value of CACHE_DATA_TRUSTED_PROXY_HOPS (2 when unset)
+	 * @param {number} [trustedProxyHops] - Hop count to use. Defaults to the value of CACHE_DATA_TRUSTED_PROXY_HOPS (0 when unset)
 	 * @returns {string|null} The client IP, or null when no step produces a value
 	 * @example
 	 * const ip = ClientIpResolver.resolve(
@@ -100,7 +106,7 @@ class ClientIpResolver {
 	 *
 	 * @param {Object|null|undefined} headers - Header map with every key lowercased. Anything that is not a non-null object is treated as an empty map
 	 * @param {Object|null|undefined} identity - The `requestContext.identity` object. Anything that is not a non-null object is treated as an empty object
-	 * @param {number} [trustedProxyHops] - Non-negative safe integer hop count. Any other value is replaced by the value of CACHE_DATA_TRUSTED_PROXY_HOPS (2 when unset)
+	 * @param {number} [trustedProxyHops] - Non-negative safe integer hop count. Any other value is replaced by the value of CACHE_DATA_TRUSTED_PROXY_HOPS (0 when unset)
 	 * @returns {{ip: (string|null), step: string, trustedProxyHops: number, forwardedForEntryCount: number}} The IP, the step that produced it (`viewer-address`, `x-forwarded-for`, `source-ip`, or `none`), the hop count used, and the number of `x-forwarded-for` entries (0 when the header is absent)
 	 * @example
 	 * const result = ClientIpResolver.resolveDetailed({ "x-forwarded-for": "198.51.100.10" }, { sourceIp: "203.0.113.20" }, 1);
@@ -140,10 +146,10 @@ class ClientIpResolver {
 	 *
 	 * Reads the variable on every call, so a change is seen on the next call. The parsed
 	 * result is cached against the raw string, so an unchanged value is not parsed again.
-	 * An invalid value gives the default of 2 and one DebugAndLog.warn per distinct raw
+	 * An invalid value gives the default of 0 and one DebugAndLog.warn per distinct raw
 	 * value. Never throws because of the variable's value.
 	 *
-	 * @returns {number} The hop count: 0 or more, or 2 when the variable is unset, empty, or invalid
+	 * @returns {number} The hop count: 0 or more, or 0 when the variable is unset, empty, or invalid
 	 * @example
 	 * process.env.CACHE_DATA_TRUSTED_PROXY_HOPS = "3";
 	 * const hops = ClientIpResolver.getTrustedProxyHops();
@@ -180,7 +186,7 @@ class ClientIpResolver {
 	 * @returns {{trustedProxyHops: number, isValid: boolean}} The hop count and whether the raw value was acceptable
 	 * @example
 	 * ClientIpResolver.parseTrustedProxyHops(" 3 ");   // { trustedProxyHops: 3, isValid: true }
-	 * ClientIpResolver.parseTrustedProxyHops("abc");   // { trustedProxyHops: 2, isValid: false }
+	 * ClientIpResolver.parseTrustedProxyHops("abc");   // { trustedProxyHops: 0, isValid: false }
 	 */
 	static parseTrustedProxyHops(rawValue) {
 		if (rawValue === undefined) {

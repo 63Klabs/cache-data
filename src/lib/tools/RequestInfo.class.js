@@ -146,17 +146,23 @@ class RequestInfo {
 	/**
 	 * IP of client request.
 	 * 
-	 * The IP is taken only from values written by a trusted proxy, in this
-	 * order: the `CloudFront-Viewer-Address` header (used only when
-	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` is 2 or more), then the `X-Forwarded-For`
+	 * By default (`CACHE_DATA_TRUSTED_PROXY_HOPS` unset or `0`) this is
+	 * `identity.sourceIp`, the address of the connection API Gateway received.
+	 * That is the client for an edge-optimized API with no CloudFront of your
+	 * own, for a Regional API, and for your own CloudFront in front of a
+	 * Regional API. With your own CloudFront in front of an edge-optimized API,
+	 * set `CACHE_DATA_TRUSTED_PROXY_HOPS=3`.
+	 * 
+	 * With a hop count of 1 or more, the IP is taken only from values written
+	 * by a trusted proxy, in this order: the `CloudFront-Viewer-Address` header
+	 * (used only when the hop count is 2 or more), then the `X-Forwarded-For`
 	 * header read from the right by the hop count, then `identity.sourceIp`.
 	 * A value that is missing or is not a valid IP address moves on to the next source.
+	 * A hop count above the real number of proxies is not safe: a client that
+	 * sends extra `X-Forwarded-For` entries can choose the result.
 	 * 
-	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` is the number of proxies, counting API
-	 * Gateway, that append to `X-Forwarded-For` before the request reaches
-	 * your Lambda function. It defaults to 2 (edge-optimized API Gateway
-	 * endpoint). A Regional API without CloudFront needs 1. Your own
-	 * CloudFront distribution in front of an edge-optimized API needs 3.
+	 * See "Client IP resolution" in docs/features/tools/README.md and
+	 * docs/cloudfront-notes/README.md.
 	 * 
 	 * @returns {string|null} The client IP address, or null when no source has a value
 	 * @example
@@ -171,10 +177,11 @@ class RequestInfo {
 	};
 
 	/**
-	 * Alias of getClientIp(). Resolves the client IP from the
-	 * `CloudFront-Viewer-Address` header (2 or more trusted hops), then the
-	 * `X-Forwarded-For` header read from the right by the
-	 * `CACHE_DATA_TRUSTED_PROXY_HOPS` hop count (default 2), then `identity.sourceIp`.
+	 * Alias of getClientIp(). Returns `identity.sourceIp` by default
+	 * (`CACHE_DATA_TRUSTED_PROXY_HOPS` unset or `0`). With a hop count of 1 or
+	 * more it resolves the IP from the `CloudFront-Viewer-Address` header
+	 * (2 or more hops), then the `X-Forwarded-For` header read from the right
+	 * by the hop count, then `identity.sourceIp`.
 	 * 
 	 * @see getClientIp
 	 * @returns {string|null} The client IP address, or null when no source has a value
@@ -296,18 +303,22 @@ class RequestInfo {
 	 * Parses the API Gateway event to extract client information including IP,
 	 * user agent, origin, referrer, headers, and query parameters.
 	 * 
-	 * For `client.ip`, only values written by a trusted proxy are used, in
-	 * this order: the `CloudFront-Viewer-Address` header (only when the trusted
-	 * proxy hop count is 2 or more), then the `X-Forwarded-For` header read
-	 * from the right by the hop count, then `identity.sourceIp`. A missing or
-	 * invalid value moves on to the next source. `client.ip` is null when no
-	 * source has a value.
+	 * By default (`CACHE_DATA_TRUSTED_PROXY_HOPS` unset or `0`), `client.ip` is
+	 * `identity.sourceIp`. That is the client for an edge-optimized API with no
+	 * CloudFront of your own, for a Regional API, and for your own CloudFront in
+	 * front of a Regional API. With your own CloudFront in front of an
+	 * edge-optimized API, set `CACHE_DATA_TRUSTED_PROXY_HOPS=3`.
 	 * 
-	 * The hop count comes from the `CACHE_DATA_TRUSTED_PROXY_HOPS` environment
-	 * variable and defaults to 2 (edge-optimized API Gateway endpoint). A
-	 * Regional API without CloudFront needs 1. Your own CloudFront
-	 * distribution in front of an edge-optimized API needs 3. See the
-	 * "Client IP resolution" section of docs/features/tools/README.md.
+	 * With a hop count of 1 or more, only values written by a trusted proxy are
+	 * used, in this order: the `CloudFront-Viewer-Address` header (only when the
+	 * hop count is 2 or more), then the `X-Forwarded-For` header read from the
+	 * right by the hop count, then `identity.sourceIp`. A missing or invalid
+	 * value moves on to the next source. `client.ip` is null when no source has
+	 * a value. A hop count above the real number of proxies is not safe: a client
+	 * that sends extra `X-Forwarded-For` entries can choose the result.
+	 * 
+	 * See "Client IP resolution" in docs/features/tools/README.md and
+	 * docs/cloudfront-notes/README.md.
 	 * 
 	 * For `client.userAgent`, the `user-agent` header is preferred over
 	 * `identity.userAgent`. When the header is present and non-empty, its

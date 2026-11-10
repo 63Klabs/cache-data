@@ -7,12 +7,19 @@ const RequestInfo = (await import('../../src/lib/tools/RequestInfo.class.js')).d
  * Bug Condition Exploration Tests
  * Feature: 1-3-11-client-request-update-forwarded-for
  * Updated by: 1-4-1-trusted-client-ip
+ * Updated by: 1-4-1-docs-a-cache-data-trusted-proxy-hops-value-that
  *
  * 1-4-1-trusted-client-ip changed IP selection from leftmost to
- * right-to-left: getClientIp() now returns the x-forwarded-for entry
- * CACHE_DATA_TRUSTED_PROXY_HOPS + 1 positions from the right (default
- * 2 from the right), and falls back to identity.sourceIp when the chain is
- * too short. The IP assertions below were rewritten accordingly.
+ * right-to-left: with a hop count of 1 or more, getClientIp() reads the
+ * x-forwarded-for chain from the right by the hop count, and falls back to
+ * identity.sourceIp when the chain is too short. The IP assertions below were
+ * rewritten accordingly.
+ *
+ * 1-4-1-docs-a-cache-data-trusted-proxy-hops-value-that: the default of
+ * CACHE_DATA_TRUSTED_PROXY_HOPS is 0, which makes getClientIp() return
+ * identity.sourceIp. The IP assertions below depend on the x-forwarded-for
+ * chain, so beforeEach sets a hop count of 2 (the entry 2 from the right is
+ * the client) and afterEach restores the original value.
  *
  * Property 1: Bug Condition - X-Forwarded-For and User-Agent Header Priority
  * 
@@ -27,7 +34,7 @@ describe("RequestInfo - Bug Condition Exploration (X-Forwarded-For / User-Agent)
 
 	beforeEach(() => {
 		originalTrustedProxyHops = process.env.CACHE_DATA_TRUSTED_PROXY_HOPS;
-		delete process.env.CACHE_DATA_TRUSTED_PROXY_HOPS;
+		process.env.CACHE_DATA_TRUSTED_PROXY_HOPS = "2";
 	});
 
 	afterEach(() => {
@@ -40,12 +47,12 @@ describe("RequestInfo - Bug Condition Exploration (X-Forwarded-For / User-Agent)
 
 	describe("Property 1: X-Forwarded-For header should take priority over identity.sourceIp", () => {
 
-		it("Property: getClientIp() returns the x-forwarded-for entry 2 from the right by default", () => {
+		it("Property: getClientIp() returns the x-forwarded-for entry 2 from the right with a hop count of 2", () => {
 			/**
 			 * Validates: Requirements 2.1, 2.2
 			 * 
 			 * For any event where x-forwarded-for holds at least two entries
-			 * and CACHE_DATA_TRUSTED_PROXY_HOPS is unset (default 1),
+			 * and CACHE_DATA_TRUSTED_PROXY_HOPS is "2" (set in beforeEach),
 			 * getClientIp() should return the entry 2 from the right (trimmed),
 			 * regardless of any entries to its left.
 			 */

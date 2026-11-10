@@ -21,10 +21,14 @@ const ValidationExecutor = require('../utils/ValidationExecutor.class');
  * 
  * Client IP Resolution:
  * 
- * The client IP returned by getClientIp() comes from the CloudFront-Viewer-Address header,
- * then the X-Forwarded-For header read from the right by the trusted proxy hop count, then
- * identity.sourceIp. The hop count is set with the CACHE_DATA_TRUSTED_PROXY_HOPS environment
- * variable (default 2).
+ * The client IP returned by getClientIp() is identity.sourceIp by default
+ * (CACHE_DATA_TRUSTED_PROXY_HOPS unset or 0). That is the client for a Regional API and for an
+ * edge-optimized API with no CloudFront of your own. An edge-optimized API behind your own
+ * CloudFront needs CACHE_DATA_TRUSTED_PROXY_HOPS=3. With a hop count of 1 or more, the IP comes
+ * from the CloudFront-Viewer-Address header (only when the hop count is 2 or more), then the
+ * X-Forwarded-For header read from the right by the hop count, then identity.sourceIp. A hop
+ * count above the real number of proxies is not safe. See docs/features/tools/README.md and
+ * docs/cloudfront-notes/README.md.
  * 
  * Header Key Format Conversion:
  * 

@@ -1089,15 +1089,15 @@ exports.handler = async (event, context) => {
 };
 ```
 
-> NOTE When accessed behind CloudFront: To ensure the user agent is passed along to API Gateway, use the AWS managed Origin Request Policy named AllViewerExceptHostHeader. This forwards the User-Agent along with most other viewer headers while maintaining the correct Host header required for API Gateway to route the request properly. That policy does not forward `CloudFront-Viewer-Address`; see [Client IP resolution](#client-ip-resolution) for how the client IP is chosen and what to set for your deployment.
+> NOTE When accessed behind CloudFront: To ensure the user agent is passed along to API Gateway, use the AWS managed Origin Request Policy named AllViewerExceptHostHeader. This forwards the User-Agent along with most other viewer headers while maintaining the correct Host header required for API Gateway to route the request properly. See [Client IP resolution](#client-ip-resolution) for how the client IP is chosen and what to set for your deployment.
 
 #### Client IP resolution
 
-`getClientIp()` (and `getProps().client.ip`, and the client IP in the `RESPONSE` log line) return an address that a trusted proxy wrote, never a value that only the client chose. CloudFront and API Gateway append to whatever `X-Forwarded-For` the client sends, so the first entry of that header can be forged. The address is taken from the right end of the header instead, counting the number of trusted proxies you configure.
+`getClientIp()` (and `getProps().client.ip`, and the client IP in the `RESPONSE` log line) never returns a value that only the client chose. By default it is `identity.sourceIp`, the address of the connection API Gateway received, which no header changed in any of the measurements in [CloudFront and API Gateway observations](../../cloudfront-notes/README.md). CloudFront and API Gateway append to whatever `X-Forwarded-For` the client sends, so the first entry of that header can be forged. When you set a hop count, the address is taken from the right end of the header instead, counting the number of trusted proxies you configure. Only one deployment needs a hop count: your own CloudFront in front of an edge-optimized API (T2).
 
 ##### Resolution order
 
-The first step that produces a valid IP address is used:
+At the default hop count of `0` only step 3 applies. The steps apply in order when you set a hop count of 1 or more. The first step that produces a valid IP address is used:
 
 | Step | Source | Used when | Skipped when |
 |------|--------|-----------|--------------|
@@ -1107,7 +1107,16 @@ The first step that produces a valid IP address is used:
 
 An invalid or missing value in one step moves on to the next step. If no step produces a value, `getClientIp()` returns `null`.
 
-A hop count that is too high falls through to `identity.sourceIp`. A hop count that is too low selects the address of one of your own proxies. Neither selects a value the client wrote, as long as the count is not lower than the real number of proxies by enough that the selected entry was written by the client.
+A hop count that is too low selects the address of one of your own proxies. That is the wrong address, but never one the client wrote, because every entry to the right of the client's entries was appended by a proxy. A hop count that is too high is not safe. It selects an entry to the left of your real proxy chain, and the client can write those. With a count that is `k` higher than the real number of proxies, a client that sends at least `k` extra `X-Forwarded-For` entries chooses the result. With fewer, the header is shorter than the count and resolution falls through to `identity.sourceIp`. A count of `0` never reads `X-Forwarded-For`, so it has no such risk.
+
+For example, an edge-optimized API with no CloudFront of your own (T1) has the real chain `C, M`, where `C` is the client and `M` is the AWS-managed edge. A client that adds one entry produces the header `192.0.2.1, 198.51.100.10, 203.0.113.30`, where `198.51.100.10` is `C` and `203.0.113.30` is `M`:
+
+| Hop count | Selected | Why |
+|-----------|----------|-----|
+| 2 (matches the chain) | `198.51.100.10` | The client's address |
+| 3 (one too high) | `192.0.2.1` | The entry the client wrote |
+| 1 (one too low) | `203.0.113.30` | A proxy's address, not written by the client |
+| 4 (two too high) | `identity.sourceIp` | The header has three entries, fewer than 4 |
 
 ##### Setting `CACHE_DATA_TRUSTED_PROXY_HOPS`
 
@@ -1115,46 +1124,48 @@ A hop count that is too high falls through to `identity.sourceIp`. A hop count t
 
 | Value | Meaning |
 |-------|---------|
-| Unset, empty, or only whitespace | `2`, the default. It describes an edge-optimized REST API with no CloudFront distribution of your own (T1 below) |
-| `0` | Ignore `X-Forwarded-For` and `CloudFront-Viewer-Address`; use `identity.sourceIp` only |
-| `1` | One trusted proxy: a Regional REST API with no CloudFront (T4 below). `CloudFront-Viewer-Address` is ignored |
-| `2` | Two trusted proxies: the default (T1), or your own CloudFront in front of a Regional REST API (T3) |
+| Unset, empty, or only whitespace | `0`, the default |
+| `0` | Use `identity.sourceIp` only. Ignore `X-Forwarded-For` and `CloudFront-Viewer-Address`. Correct for T1, T3, and T4. In T2 it returns your own distribution's edge address (wrong, but not forgeable) |
+| `1` | One trusted proxy: the chain of a Regional REST API with no CloudFront (T4). For honest traffic the same address as `0`. `CloudFront-Viewer-Address` is ignored |
+| `2` | Two trusted proxies: the chain of T1 and T3. For honest traffic the same address as `0`. Reads `CloudFront-Viewer-Address`. In T3, a request sent straight to the API's URL can choose the result |
 | `3` | Three trusted proxies: your own CloudFront in front of an edge-optimized REST API (T2) |
 | Any other run of digits, such as `4` | That many trusted proxies |
-| Anything else, such as `abc`, `-1`, `1.5`, or `2 hops` | A warning is logged once for each distinct value, then the default of `2` is used |
+| Anything else, such as `abc`, `-1`, `1.5`, or `2 hops` | A warning is logged once for each distinct value, then the default of `0` is used |
 
-> **Warning: Regional API without CloudFront (T4).** The default of `2` is one too high for a Regional REST API with no CloudFront in front of it. At the default, both `X-Forwarded-For` and `CloudFront-Viewer-Address` can be forged there, so a client can choose the address `getClientIp()` returns. Set `CACHE_DATA_TRUSTED_PROXY_HOPS=1`, which also turns off the use of `CloudFront-Viewer-Address`. This is no worse than v1.4.0, which also returned a client-chosen value, but it is not fixed until you set the variable.
-
-The default fails safe for the other topologies. If your own CloudFront is in front of an edge-optimized API and you leave the default, `getClientIp()` returns your distribution's edge address. That is the wrong address, but not a forged one, and setting `3` fixes it.
+> **Note:** At the default, no topology lets a client choose the address `getClientIp()` returns. A hop count above the real number of proxies does (see above), so set a count only when you know your chain, and confirm it with the [marker check](#check-your-deployment). In T2 the default returns your own distribution's edge address. That is the wrong address, but not a forged one, and setting `3` returns the viewer.
 
 ##### Which value to set
 
 In the chains below, `C` is the client, `V` is the viewer of your own CloudFront, `E` is the edge address of your own CloudFront distribution, and `M` is the edge address of the CloudFront distribution that AWS manages for an edge-optimized API. Entries to the left of the ones shown are anything the client chose to send.
 
-| | Endpoint type | Your own CloudFront in front? | Value to set | Chain in `X-Forwarded-For` at Lambda | `getClientIp()` returns | Effect of leaving the default (`2`) | Source |
-|---|---------------|-------------------------------|--------------|--------------------------------------|-------------------------|--------------------------------------|--------|
-| T1 | Edge-optimized | No | `2` (the default) | `..., C, M` | `C` | None. The default is correct | Measured 2026-11-04, on two APIs |
-| T2 | Edge-optimized | Yes | `3` | `..., V, E, M` | `V` | Returns `E`, your distribution's edge address. Wrong, but not forgeable | Measured 2026-11-04 |
-| T3 | Regional | Yes | `2` | `..., V, E` | `V` | None. The default is correct | From AWS documentation; not measured |
-| T4 | Regional | No | `1` | `..., C` | `C` | **Forgeable.** A client that sends `X-Forwarded-For` or `CloudFront-Viewer-Address` chooses the result. Set `1` | Measured 2026-11-04 (chain only) |
+| | Endpoint type | Your own CloudFront in front? | Value to set | Chain in `X-Forwarded-For` at Lambda | `identity.sourceIp` | `getClientIp()` returns | Effect of leaving the default (`0`) | Evidence |
+|---|---------------|-------------------------------|--------------|--------------------------------------|---------------------|-------------------------|--------------------------------------|----------|
+| T1 | Edge-optimized | No | `0` (the default; `2` also works) | `..., C, M` | `C` | `C` | None | Measured 2026-11-04 and 2026-11-09, [O1 and O3](../../cloudfront-notes/README.md#observations) |
+| T2 | Edge-optimized | Yes | `3` | `..., V, E, M` | `E` | `V` at `3` | Returns `E`, your distribution's edge address. Wrong, not forgeable. At `3`, a request sent straight to the API's URL can choose the result unless the origin is verified | Measured 2026-11-04 and 2026-11-09, [O1, O3, and O4](../../cloudfront-notes/README.md#observations) |
+| T3 | Regional | Yes | `0` | `..., V, E` | `V` | `V` | None | Measured 2026-11-09, [O1, O3, and O6](../../cloudfront-notes/README.md#observations) |
+| T4 | Regional | No | `0` (`1` also works) | `..., C` | `C` | `C` | None | Measured 2026-11-04 (chain) and 2026-11-09, [O1, O3, and O5](../../cloudfront-notes/README.md#observations) |
+
+The chains and `identity.sourceIp` values above were measured on REST APIs of each type. AWS defines `identity.sourceIp` as the address of the immediate TCP connection to the API Gateway endpoint ([API Gateway variables](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html)). It does not document what a Regional API reports when your own CloudFront is in front of it (T3), so that row rests on the measurement of 2026-11-09. If AWS changes this behavior, set the variable explicitly for your deployment.
+
+With an edge-optimized API behind your own CloudFront, no single count is right for both paths to your function. Through your distribution the chain is `..., V, E, M` (count 3). A request sent straight to the API's `execute-api` URL has the chain `..., C, M` (count 2), so `3` can select an entry the client wrote. A Regional API behind your own CloudFront avoids the problem: `identity.sourceIp` is the viewer on both paths and the default `0` is correct. If you keep an edge-optimized API, set `3` and restrict the API to your distribution (see [Origin lock](#origin-lock-for-your-own-cloudfront-t2-and-t3)).
 
 For example, in T2 a client that sends `X-Forwarded-For: 192.0.2.1` produces the chain `192.0.2.1, 198.51.100.10, 203.0.113.20, 203.0.113.30`, where `198.51.100.10` is the viewer, `203.0.113.20` is your distribution's edge, and `203.0.113.30` is the AWS-managed edge. With `CACHE_DATA_TRUSTED_PROXY_HOPS=3`, `getClientIp()` returns `198.51.100.10`. The forged `192.0.2.1` is never selected.
 
-A client behind a corporate proxy that adds its own `X-Forwarded-For` entry is reported as the proxy's address, which is the address CloudFront saw.
+A client behind a corporate proxy that adds its own `X-Forwarded-For` entry is reported as the proxy's address, which is the address CloudFront saw, when a hop count of 1 or more is set.
 
 HTTP APIs (payload format version 2) are not supported by `ClientRequest`.
 
 ##### About `CloudFront-Viewer-Address`
 
-CloudFront can add a `CloudFront-Viewer-Address` header holding the viewer's IP address and port. It is sent to the origin only when the origin request policy includes it. When 2 or more trusted proxies are configured, it is the first source `getClientIp()` reads.
+CloudFront can add a `CloudFront-Viewer-Address` header holding the viewer's IP address and port. It is sent to the origin only when the origin request policy includes it. The AWS managed `AllViewerExceptHostHeader` policy includes it: through a distribution that used it, the header reached a Regional API holding the real viewer address and port, and a value the viewer supplied was replaced (T3, measured 2026-11-09, observations [O6 and O7](../../cloudfront-notes/README.md#observations)). `getClientIp()` reads the header only when the hop count is 2 or more, so it does not read it at the default.
 
-On 2026-11-04, CloudFront dropped a `CloudFront-Viewer-Address` value that the viewer supplied, in both T1 and T2: the header was absent at Lambda instead of holding the supplied value. AWS doesn't document this behavior. A Regional API with no CloudFront (T4) delivered a viewer-supplied value unchanged, which is why T4 must set `1`. If you want this source off, set `CACHE_DATA_TRUSTED_PROXY_HOPS` to `0` or `1`, and use the [marker check](#check-your-deployment) to see whether the header arrives.
+Whether the header can be trusted depends on the path. The AWS-managed distribution of an edge-optimized API dropped a viewer-supplied value, with or without your own CloudFront in front (T1 and T2, measured 2026-11-04 and 2026-11-09, [O4](../../cloudfront-notes/README.md#observations)). A Regional API with no CloudFront delivered a viewer-supplied value unchanged (T4, measured 2026-11-04 and 2026-11-09, [O5](../../cloudfront-notes/README.md#observations)), so do not set a hop count of 2 or more there. AWS does not document either behavior.
 
-To forward `CloudFront-Viewer-Address` to an API Gateway origin (T2 and T3), the distribution needs a custom origin request policy that includes it. The AWS managed `AllViewerExceptHostHeader` policy forwards the viewer headers except `Host` but doesn't include CloudFront headers such as this one. Forwarding it is optional. Without it, `getClientIp()` uses `X-Forwarded-For`, which gives the same address in T2 and T3. This documentation doesn't recommend a specific header behavior; check that the policy you choose works with an API Gateway origin before you rely on it.
+Because the AWS-managed distribution drops the header in T2, forwarding it from your own CloudFront gives nothing there, and at `3` `getClientIp()` uses `X-Forwarded-For`. Use the [marker check](#check-your-deployment) to see whether the header arrives.
 
 ##### Origin lock for your own CloudFront (T2 and T3)
 
-The API Gateway endpoint stays reachable without going through your distribution. A request that skips your distribution can carry a forged `X-Forwarded-For` (and a forged `CloudFront-Viewer-Address`), and with the value set for your distribution, `getClientIp()` selects a forged entry. No code in this package can tell your CloudFront hop from a forged one.
+The API Gateway endpoint stays reachable without going through your distribution. With an edge-optimized API and `3` set (T2), or any deployment that sets a count above the real chain, a request that skips your distribution can carry a forged `X-Forwarded-For` that `getClientIp()` selects. No code in this package can tell your CloudFront hop from a forged one. With a Regional API and the default `0`, a request that skips your distribution cannot change the address (measured 2026-11-09, observations [O3 and O8](../../cloudfront-notes/README.md#observations)), but it still bypasses your distribution's caching and web ACL.
 
 > **Warning:** Only infrastructure prevents this. Restrict the API so that it accepts requests only from your distribution, for example with an origin-verify header that CloudFront adds and that AWS WAF or a Lambda authorizer checks. See the AWS blog post [Restricting access to HTTP APIs with a Lambda authorizer](https://aws.amazon.com/blogs/networking-and-content-delivery/restricting-access-http-api-gateway-lambda-authorizer/).
 
@@ -1179,7 +1190,7 @@ An empty list means no distribution of your own uses the API's default domain (T
 curl -H "X-Forwarded-For: 192.0.2.1" https://<your-api-or-distribution-url>/<path>
 ```
 
-Find the debug-level log line that begins with `ClientIpResolver:` for that request. It reports the step that produced the IP, the hop count in use, and the number of `X-Forwarded-For` entries, without any addresses. The only entry not written by a proxy is your marker, so the number of trusted proxies in front of your function is the entry count minus one. For example, `xForwardedForEntries=3` means two proxies appended entries after your marker, so set `CACHE_DATA_TRUSTED_PROXY_HOPS=2`. When the step is `viewer-address`, the `CloudFront-Viewer-Address` header arrived and was used.
+Find the debug-level log line that begins with `ClientIpResolver:` for that request. It reports the step that produced the IP, the hop count in use, and the number of `X-Forwarded-For` entries, without any addresses. The only entry not written by a proxy is your marker, so the number of trusted proxies in front of your function is the entry count minus one. That is the count that matches the chain, and it is the value to set for T2. For example, `xForwardedForEntries=4` means three proxies appended entries after your marker, so set `CACHE_DATA_TRUSTED_PROXY_HOPS=3`. For a Regional API, or an edge-optimized API with no CloudFront of your own, leave the default `0`. A count that matches the chain also works for honest traffic, but on another path to the same function a chain that is shorter or longer than the one you measured lets a client choose the result. When the step is `viewer-address`, the `CloudFront-Viewer-Address` header arrived and was used.
 
 #### ClientRequest `getProps()`
 
