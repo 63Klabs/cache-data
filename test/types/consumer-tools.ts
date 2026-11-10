@@ -252,6 +252,9 @@ tools.Response.init({
 const responseInfo = tools.Response.info();
 const isInit: boolean = responseInfo.isInitialized;
 
+declare const typedResponse: InstanceType<typeof tools.Response>;
+typedResponse.setBodyToNull();
+
 // ---------------------------------------------------------------------------
 // CachedParameterSecret, CachedSsmParameter, CachedSecret
 // ---------------------------------------------------------------------------

@@ -247,7 +247,7 @@ class UsersControllerBasic {
       response.setBody({ error: 'User not found' });
     } else {
       response.setStatusCode(204);
-      response.setBody(null);
+      response.setBodyToNull(); // setBody(null) is ignored; this sends no body
     }
     
     return response.finalize();

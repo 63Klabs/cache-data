@@ -1248,15 +1248,17 @@ Format Lambda responses:
 ```javascript
 const { tools: {Response} } = require('@63klabs/cache-data');
 
-async function createResponse(results) {
-  const response = new Response();
+async function createResponse(clientRequest, results) {
+  const response = new Response(clientRequest);
   response.setStatusCode(200);
   response.setBody({ message: 'Success', data: results });
-  response.setHeader('Content-Type', 'application/json');
+  response.addHeader('X-Custom-Header', 'value');
 
-  return response.get();
+  return response.finalize();
 }
 ```
+
+To send a response with no body, such as a `202 Accepted` or `204 No Content`, call `setBodyToNull()`; `setBody(null)` is ignored. See [Sending a response with no body](../../01-advanced-implementation-for-web-service/response-management.md#sending-a-response-with-no-body).
 
 ### ResponseDataModel Class
 

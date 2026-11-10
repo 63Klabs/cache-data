@@ -223,7 +223,8 @@ class Response {
 
 	/**
 	 * Sets properties of the response, overwriting only the supplied properties.
-	 * Use reset() to clear all properties. ClientRequest cannot be set.
+	 * A falsy statusCode, headers, or body is not assigned and the current value stays.
+	 * Use reset() to clear all properties, setBodyToNull() to send no body. ClientRequest cannot be set.
 	 * 
 	 * @param {{statusCode: number|string, headers: Object, body: string|number|Object|Array}} obj - Properties to set
 	 * @param {string} [contentType=null] - Content type (use Response.CONTENT_TYPE values)
@@ -480,6 +481,9 @@ class Response {
 
 	/**
 	 * Sets the body of the response, overwriting the current body.
+	 * A falsy body (null, undefined, '', 0, or false) is not assigned and the previous body
+	 * stays. To send a response with no body use setBodyToNull(); to restore the template
+	 * body use reset().
 	 * 
 	 * @param {string|number|Object|Array} body - Response body content
 	 * @returns {void}
@@ -491,6 +495,43 @@ class Response {
 	 */
 	setBody = (body) => {
 		this.set({body: body});
+	};
+
+	/**
+	 * Removes the body from the response by setting it to null, so the response is sent
+	 * with no content. Use it for a 202 Accepted or a 204 No Content.
+	 *
+	 * setBody(null) cannot do this: setBody() ignores null and other falsy values and
+	 * leaves the previous body in place, which for a new response is the template body
+	 * such as {"message":"Success"}.
+	 *
+	 * Only the body changes. The status code and the headers, including Content-Type, stay as
+	 * they are, and finalize() returns body: null. finalize() still adds Cache-Control and
+	 * Expires from routeExpirationInSeconds to a status below 400 unless you set them, so
+	 * set Cache-Control yourself on a 202 or 204 that must not be cached.
+	 *
+	 * After this call, reset() restores a template body, setBody() with a truthy value assigns
+	 * that value, and addToJsonBody() and setMessage() build a new JSON body.
+	 *
+	 * See docs/01-advanced-implementation-for-web-service/response-management.md.
+	 *
+	 * @returns {void}
+	 * @example
+	 * // 204 No Content after a delete
+	 * response.setStatusCode(204);
+	 * response.setBodyToNull();
+	 * return response.finalize();
+	 *
+	 * @example
+	 * // 202 Accepted that must not be cached
+	 * response.setStatusCode(202);
+	 * response.setBodyToNull();
+	 * response.addHeader('Cache-Control', 'no-store');
+	 * response.addHeader('Expires', '0');
+	 * return response.finalize();
+	 */
+	setBodyToNull = () => {
+		this._body = null;
 	};
 
 	/**

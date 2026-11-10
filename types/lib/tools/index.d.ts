@@ -1640,10 +1640,20 @@ export class Response {
 
 	/**
 	 * Sets the response body.
+	 * A falsy body (null, undefined, '', 0, false) is ignored and the previous body stays; use setBodyToNull() to send no body.
 	 *
 	 * @param body - Body value
 	 */
 	setBody(body: any): void;
+
+	/**
+	 * Sets the response body to null so the response is sent with no content, for example a
+	 * 202 Accepted or a 204 No Content. setBody(null) cannot do this because setBody() ignores
+	 * null and other falsy values. Only the body changes: the status code and headers stay,
+	 * and finalize() returns body: null. After this call, reset() restores a template body and
+	 * addToJsonBody() and setMessage() build a new JSON body.
+	 */
+	setBodyToNull(): void;
 
 	/**
 	 * Adds a single header to the response.

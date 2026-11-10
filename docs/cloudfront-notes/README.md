@@ -80,3 +80,4 @@ Add one row or section per observation. Put a new topic in a new file in this di
 ## Related documentation
 
 - [Client IP resolution](../features/tools/README.md#client-ip-resolution) - How `getClientIp()` chooses the client address and which hop count to set for each topology
+- [Lambda proxy response body observations](lambda-proxy-response-body.md) - What API Gateway REST API does with a `null`, missing, or empty `body`, and the feature of `Response` that depends on it

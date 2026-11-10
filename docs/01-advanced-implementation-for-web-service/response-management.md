@@ -281,6 +281,51 @@ async function handleRequest(clientRequest) {
 }
 ```
 
+## Sending a response with no body
+
+Use `setBodyToNull()` to send a response with no content, such as `202 Accepted` for work you queued for later or `204 No Content` after a delete.
+
+> **Note**: `setBody(null)` does not do this. `setBody()` ignores `null`, `undefined`, `''`, `0`, and `false` and leaves the previous body in place, which for a new response is the template body such as `{"message":"Success"}`. Call `setBodyToNull()` instead.
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+async function acceptJob(clientRequest) {
+  const response = new Response(clientRequest);
+
+  response.setStatusCode(202);
+  response.setBodyToNull();
+
+  // A bodiless 202 should not be cached
+  response.addHeader('Cache-Control', 'no-store');
+  response.addHeader('Expires', '0');
+
+  return response.finalize();
+}
+```
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+async function deleteItem(clientRequest) {
+  const response = new Response(clientRequest);
+
+  response.setStatusCode(204);
+  response.setBodyToNull();
+
+  return response.finalize();
+}
+```
+
+Things to know:
+
+- **Cache headers.** `finalize()` adds `Cache-Control: max-age` and `Expires` from `routeExpirationInSeconds` to every status below 400, including a 202 or 204 with no body. Set `Cache-Control` yourself, as in the first example, when the response must not be cached.
+- **Content-Type.** The `Content-Type` header stays on the response. Behind API Gateway REST API it reaches the client on a 202, and API Gateway removes it, and any body, from a 204 ([O11 and O12](../cloudfront-notes/lambda-proxy-response-body.md#observations)).
+- **Order.** `reset()` and the constructor use a template body when none is supplied, so call `setBodyToNull()` after them. `addToJsonBody()` and `setMessage()` build a new body from a null body.
+- **What was checked.** A null, omitted, or empty body returned no error and no content on Regional and edge-optimized REST APIs ([O9](../cloudfront-notes/lambda-proxy-response-body.md#observations)). HTTP API, Application Load Balancer, and Lambda function URLs were not checked.
+
 ## Reset and Reuse
 
 ```javascript
