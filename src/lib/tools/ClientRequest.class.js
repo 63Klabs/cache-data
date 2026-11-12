@@ -4,6 +4,11 @@ const DebugAndLog = require('./DebugAndLog.class');
 const { safeClone } = require('./utils');
 const ValidationMatcher = require('../utils/ValidationMatcher.class');
 const ValidationExecutor = require('../utils/ValidationExecutor.class');
+const IngressVerifier = require('../utils/IngressVerifier.class');
+
+// >! When CACHE_DATA_INGRESS_SECRET_NAME is a valid secret name, create and register the ingress secret readers
+// >! now so CachedParameterSecrets.prime() loads them. Does nothing when the variable is unset. Never throws.
+IngressVerifier.register();
 
 
 /**
@@ -29,6 +34,17 @@ const ValidationExecutor = require('../utils/ValidationExecutor.class');
  * X-Forwarded-For header read from the right by the hop count, then identity.sourceIp. A hop
  * count above the real number of proxies is not safe. See docs/features/tools/README.md and
  * docs/cloudfront-notes/README.md.
+ * 
+ * Ingress Verification:
+ * 
+ * When CACHE_DATA_INGRESS_SECRET_NAME names a Secrets Manager secret, each request is compared
+ * with the secret's current and previous values and getProps().client.ingress is "direct"
+ * (check not configured), "cloudfront", or "unverified". Use isIngressVerified() to guard a
+ * handler, and await ClientRequest.prime() (or CachedParameterSecrets.prime()) at cold start.
+ * Each unverified request writes one INGRESS_UNVERIFIED log line with a reason code. An
+ * unverified request is still valid: isValid() is not affected, so the application decides
+ * the response. getProps().client.sourceIp holds the address API Gateway saw. See
+ * docs/features/tools/README.md.
  * 
  * Header Key Format Conversion:
  * 
@@ -417,6 +433,9 @@ class ClientRequest extends RequestInfo {
 	/* The request data */
 	#props = {};
 
+	/* Ingress recorded once at construction: "direct", "cloudfront", or "unverified". Private so changing getProps() can't change isIngressVerified(). */
+	#ingress = IngressVerifier.INGRESS.DIRECT;
+
 	/* Logging */
 	#timer = null;
 	#logs = {
@@ -469,6 +488,10 @@ class ClientRequest extends RequestInfo {
 
 		const { resource, resourceArray, path, pathArray } = this.#extractResourceAndPath();
 
+		// >! Synchronous, no AWS call. Receives the lowercased header map. The header value is never stored or logged.
+		const ingressResult = IngressVerifier.evaluate(this.getClientHeaders());
+		this.#ingress = ingressResult.ingress;
+
 		this.#props = {
 			method: (this.#event.httpMethod || '').toUpperCase(),
 			path,
@@ -483,6 +506,8 @@ class ClientRequest extends RequestInfo {
 			bodyPayload: this.#event?.body || null, // from body
 			client: {
 				ip: this.getClientIp(),
+				sourceIp: this.getClient("sourceIp"),
+				ingress: ingressResult.ingress,
 				userAgent: this.getClientUserAgent(),
 				origin: this.getClientOrigin(),
 				referrer: this.getClientReferrer(),
@@ -494,6 +519,11 @@ class ClientRequest extends RequestInfo {
 			deadline: (this.deadline() - 500),
 			calcMsToDeadline: this.calcMsToDeadline
 		};
+
+		if (ingressResult.ingress === IngressVerifier.INGRESS.UNVERIFIED) {
+			// >! The message is built from one of six fixed reason codes. No IP, header value, secret value, or secret id.
+			DebugAndLog.log(JSON.stringify({ reason: ingressResult.reason }), "INGRESS_UNVERIFIED");
+		}
 		
 		// >! Initialize ValidationMatchers for each parameter type
 		// >! This enables route-specific and method-specific validations
@@ -1433,10 +1463,73 @@ class ClientRequest extends RequestInfo {
 	 * maintaining the correct Host header required for API Gateway to route 
 	 * the request properly.
 	 *
-	 * @returns {{ method: string, path: string, pathArray: string[], resource: string, resourceArray: string[], pathParameters: {}, queryStringParameters: {}, headerParameters: {}, cookieParameters: {}, bodyParameters: {}, bodyPayload: string, client: {ip: string, userAgent: string, origin: string, referrer: string, isAuthenticated: boolean, isGuest: boolean, authorizations: string[], roles: string[]}, deadline: number, calcMsToDeadline: function}
+	 * `client.sourceIp` is the address API Gateway saw (`identity.sourceIp`), or null.
+	 * `client.ingress` is `"direct"`, `"cloudfront"`, or `"unverified"`, set once when the
+	 * request is constructed. Use `isIngressVerified()` for a guard: changing this object
+	 * does not change that method's answer.
+	 *
+	 * @returns {{ method: string, path: string, pathArray: string[], resource: string, resourceArray: string[], pathParameters: {}, queryStringParameters: {}, headerParameters: {}, cookieParameters: {}, bodyParameters: {}, bodyPayload: string, client: {ip: string, sourceIp: string|null, ingress: "direct"|"cloudfront"|"unverified", userAgent: string, origin: string, referrer: string, isAuthenticated: boolean, isGuest: boolean, authorizations: string[], roles: string[]}, deadline: number, calcMsToDeadline: function}
 	 */
 	getProps() {
 		return this.#props;
+	};
+
+	/**
+	 * Whether the request came through the CloudFront distribution that holds the ingress secret.
+	 *
+	 * Returns true only when `getProps().client.ingress` was `"cloudfront"` when the request was
+	 * constructed. Returns false for `"unverified"` and also for `"direct"`, which is the value
+	 * when `CACHE_DATA_INGRESS_SECRET_NAME` is not set: a handler that enforces must set that
+	 * variable, otherwise every request is rejected. The answer is held in a private field, so
+	 * changing the object returned by `getProps()` does not change it. Synchronous, never throws.
+	 * A request that is not verified is still valid: `isValid()` is not affected.
+	 *
+	 * See docs/features/tools/README.md ("Ingress verification") for setup, rotation, and limits.
+	 *
+	 * @returns {boolean} true when the request passed through the distribution that holds the secret
+	 * @example
+	 * exports.handler = async (event, context) => {
+	 *   await ClientRequest.prime();
+	 *   const clientRequest = new ClientRequest(event, context);
+	 *
+	 *   if (!clientRequest.isIngressVerified()) {
+	 *     return {
+	 *       statusCode: 401,
+	 *       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+	 *       body: JSON.stringify({ message: "Unauthorized" })
+	 *     };
+	 *   }
+	 *   // ... handle the request
+	 * };
+	 */
+	isIngressVerified() {
+		return this.#ingress === IngressVerifier.INGRESS.CLOUDFRONT;
+	};
+
+	/**
+	 * Loads the ingress secret before the first request, for applications that do not call
+	 * `CachedParameterSecrets.prime()`.
+	 *
+	 * Resolves true when `CACHE_DATA_INGRESS_SECRET_NAME` is not set, or when it is set and the
+	 * current secret value is loaded. Resolves false when the variable is set to an invalid value
+	 * or the current value could not be loaded. A secret that has never been rotated (no previous
+	 * version) does not make it resolve false. Never rejects. Safe to call repeatedly and together
+	 * with `CachedParameterSecrets.prime()`; no second read starts while one is running.
+	 * An application that enforces `isIngressVerified()` and primes neither way rejects requests
+	 * with reason `secret-not-primed`.
+	 *
+	 * See docs/features/tools/README.md ("Ingress verification") for setup, rotation, and limits.
+	 *
+	 * @returns {Promise<boolean>} true when not configured or the current value is loaded; false otherwise
+	 * @example
+	 * // At cold start, before handling requests
+	 * const ingressReady = await ClientRequest.prime();
+	 * if (!ingressReady) {
+	 *   console.warn("Ingress secret not loaded; requests will be reported as unverified");
+	 * }
+	 */
+	static prime() {
+		return IngressVerifier.prime();
 	};
 	
 	/**

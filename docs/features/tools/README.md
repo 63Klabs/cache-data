@@ -1167,7 +1167,196 @@ Because the AWS-managed distribution drops the header in T2, forwarding it from 
 
 The API Gateway endpoint stays reachable without going through your distribution. With an edge-optimized API and `3` set (T2), or any deployment that sets a count above the real chain, a request that skips your distribution can carry a forged `X-Forwarded-For` that `getClientIp()` selects. No code in this package can tell your CloudFront hop from a forged one. With a Regional API and the default `0`, a request that skips your distribution cannot change the address (measured 2026-11-09, observations [O3 and O8](../../cloudfront-notes/README.md#observations)), but it still bypasses your distribution's caching and web ACL.
 
-> **Warning:** Only infrastructure prevents this. Restrict the API so that it accepts requests only from your distribution, for example with an origin-verify header that CloudFront adds and that AWS WAF or a Lambda authorizer checks. See the AWS blog post [Restricting access to HTTP APIs with a Lambda authorizer](https://aws.amazon.com/blogs/networking-and-content-delivery/restricting-access-http-api-gateway-lambda-authorizer/).
+> **Warning:** Only infrastructure prevents this. Restrict the API so that it accepts requests only from your distribution, for example with an origin-verify header that CloudFront adds and that AWS WAF or a Lambda authorizer checks. A third option is to set `CACHE_DATA_INGRESS_SECRET_NAME`, so that `ClientRequest` checks the header and your handler rejects a request that did not pass through your distribution (see [Ingress verification](#ingress-verification)). See the AWS blog post [Restricting access to HTTP APIs with a Lambda authorizer](https://aws.amazon.com/blogs/networking-and-content-delivery/restricting-access-http-api-gateway-lambda-authorizer/).
+
+##### Ingress verification
+
+When your distribution adds a secret header to every request it sends to the API, `ClientRequest` can tell your function whether a request carried that secret. The Atlantis network template adds the header `X-Atlantis-Origin-Secret` when `ApiOriginProtection` is `"true"`. The value is a Secrets Manager secret, and CloudFront replaces any value the viewer sent with the same header name ([O9](../../cloudfront-notes/README.md#observations)). When you set `CACHE_DATA_INGRESS_SECRET_NAME` to the name of that secret, `ClientRequest` compares the header with the secret's current and previous values and reports `getProps().client.ingress` as `direct`, `cloudfront`, or `unverified`. Rejecting a request stays in your handler, so you choose the status and the body. The template side (how the header and the secret are created) is described in the platform's [API ingress standard](https://github.com/63Klabs/atlantis-sam-templates/blob/main/docs/end-user/api-ingress-standard.md) and is not repeated here.
+
+**What it proves.** A matching header proves that the request passed through a distribution configured with the secret. It is not authentication of the caller: anyone who can read the distribution configuration, or the secret, can read the value. A request without a match is not necessarily an attack, and a match does not identify the viewer.
+
+###### Set up ingress verification
+
+1. Enable `ApiOriginProtection` on the network stack and create the secret in the application stack, as the [API ingress standard](https://github.com/63Klabs/atlantis-sam-templates/blob/main/docs/end-user/api-ingress-standard.md) describes. The secret is named `<Prefix>-<ProjectId>-<StageId>-OriginSecret`.
+2. Set the environment variables of your function:
+
+   | Variable | Default | Meaning |
+   |----------|---------|---------|
+   | `CACHE_DATA_INGRESS_SECRET_NAME` | unset | Name or ARN of the secret. Unset or empty turns the check off, and every request reports `direct`. A value that is not a valid secret name or ARN reports `unverified` with reason `bad-configuration` and logs one error |
+   | `CACHE_DATA_INGRESS_SECRET_REFRESH_SECONDS` | `3600` | Seconds before a loaded secret is read again. A whole number from `60` to `86400`. Anything else logs one warning and uses `3600` |
+
+3. Allow your function to read the secret. Add `secretsmanager:GetSecretValue` on the secret, and `kms:Decrypt` on the key if the secret uses a customer-managed KMS key:
+
+   ```yaml
+   # Function resource, Properties section
+   Policies:
+     - Version: "2012-10-17"
+       Statement:
+         - Sid: ReadIngressSecret
+           Effect: Allow
+           Action:
+             - secretsmanager:GetSecretValue
+           Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${Prefix}-${ProjectId}-${StageId}-OriginSecret-*"
+         # Only if the secret is encrypted with a customer-managed key
+         - Sid: DecryptIngressSecret
+           Effect: Allow
+           Action:
+             - kms:Decrypt
+           Resource: !Ref SecretKeyArn
+   ```
+
+   The function reads both the current and the previous version of the secret. A secret that has never been rotated has no previous version, which is normal and is not reported as a problem. You can use the [Parameters and Secrets Lambda Extension layer](../ssm-secrets-sdk-transport.md) or leave it out. Without the layer, the function calls Secrets Manager directly.
+
+4. Load the secret before the first request. `ClientRequest` is created synchronously and cannot wait for a read. Use one of these:
+
+   ```javascript
+   const { tools: { ClientRequest, CachedParameterSecrets } } = require("@63klabs/cache-data");
+
+   async function primeIngress() {
+   	// Option A: prime everything cached, as in Config.prime()
+   	await CachedParameterSecrets.prime();
+
+   	// Option B: prime only the ingress secret.
+   	// Resolves true when the check is off or the secret is loaded, false otherwise. It does not reject.
+   	return ClientRequest.prime();
+   }
+   ```
+
+   Both can be called repeatedly and together, and neither starts a second read while one is running. An application that sets `CACHE_DATA_INGRESS_SECRET_NAME` and does neither rejects requests with reason `secret-not-primed`.
+
+5. Guard your handler with `isIngressVerified()`. Roll it out in monitor mode first, as described in [The INGRESS_UNVERIFIED log line](#the-ingress_unverified-log-line).
+
+###### Reject unverified requests
+
+`isIngressVerified()` returns `true` only when `getProps().client.ingress` is `cloudfront`. It returns `false` for `direct` and `unverified`, so a handler that enforces must set `CACHE_DATA_INGRESS_SECRET_NAME`: without it every request reports `direct` and the handler rejects all of them.
+
+```javascript
+const { tools: { ClientRequest, Response } } = require("@63klabs/cache-data");
+
+exports.handler = async (event, context) => {
+	// Load the ingress secret before creating a ClientRequest.
+	// Not needed if Config.prime() already calls CachedParameterSecrets.prime().
+	await ClientRequest.prime();
+
+	const clientRequest = new ClientRequest(event, context);
+	const response = new Response(clientRequest);
+
+	if (!clientRequest.isIngressVerified()) {
+		// 401, not 403 or 404: the Atlantis distribution rewrites those two to its landing page with HTTP 200
+		response.setStatusCode(401);
+		response.addHeader("Cache-Control", "no-store");
+		response.addHeader("Expires", "0");
+		response.setBody({ message: "Unauthorized" });
+		return response.finalize();
+	}
+
+	// ... handle the request ...
+	return response.finalize();
+};
+```
+
+Use `401`, not `403` or `404`, because the distribution created by the Atlantis network template rewrites those two statuses to its landing page and answers with HTTP `200`. Send `Cache-Control: no-store` so that CloudFront does not cache the rejection and repeat it to other viewers.
+
+Ingress does not change validation. `isValid()`, `getValidationReason()`, and the status codes they report are the same for an `unverified` request, which stays valid.
+
+###### Ingress values and reason codes
+
+`getProps().client.ingress` is set once, when the `ClientRequest` is constructed.
+
+| Value | Meaning |
+|-------|---------|
+| `direct` | `CACHE_DATA_INGRESS_SECRET_NAME` is unset or empty. No check was made |
+| `cloudfront` | The header equals the secret's current value, or its previous value when one exists |
+| `unverified` | The check is on and the request did not verify. The reason code says why |
+
+Every failure ends in `unverified`. Only an unset or empty variable gives `direct`.
+
+| Reason code | Meaning | Usual cause |
+|-------------|---------|-------------|
+| `missing-header` | The header is absent, empty, or not a single string | A request that skipped the distribution; `ApiOriginProtection` is `"false"` |
+| `mismatch` | The header matches neither the current nor the previous value | A guessed value; a distribution holding an old value; a stale container |
+| `secret-not-primed` | The current value has not finished loading | Priming was skipped (step 4 of the setup) |
+| `secret-unavailable` | The read of the current value finished without a value | Missing permission, wrong secret id, a Secrets Manager outage on a cold start |
+| `secret-unusable` | The current value is empty, whitespace, or `BLANK` in any letter case | The application stack has not generated the secret |
+| `bad-configuration` | The value of `CACHE_DATA_INGRESS_SECRET_NAME` is not a valid secret name or ARN | A typo in the secret id |
+
+The comparison is exact (the whole secret string, with no trimming), uses a constant-time comparison, and matches the header name in any letter case.
+
+###### The INGRESS_UNVERIFIED log line
+
+Each unverified request writes one line, whether or not your handler later rejects it. The message is compact JSON with the reason code and nothing else: no address, no header value, and no secret name.
+
+```text
+[INGRESS_UNVERIFIED] {"reason":"mismatch"}
+```
+
+A request with ingress `direct` or `cloudfront` writes no such line. The `RESPONSE` line is unchanged. This CloudWatch Logs Insights query counts rejections by reason:
+
+```text
+fields @timestamp, @message
+| filter @message like /INGRESS_UNVERIFIED/
+| parse @message '"reason":"*"' as reason
+| stats count() by reason, bin(5m)
+```
+
+To roll out without risk, run in monitor mode first:
+
+1. Set `CACHE_DATA_INGRESS_SECRET_NAME` and prime, but do not reject yet.
+2. Watch the line. Requests that came through your distribution should produce none. A `secret-not-primed`, `secret-unavailable`, or `secret-unusable` line means the setup is wrong. A `missing-header` line from traffic that should pass through the distribution means `ApiOriginProtection` is off or the request skipped the distribution.
+3. When only requests that skip your distribution remain, add the `isIngressVerified()` guard.
+
+###### Rotate the secret
+
+Three places hold a copy of the secret, and each changes at a different time. Let R be the value of `CACHE_DATA_INGRESS_SECRET_REFRESH_SECONDS`.
+
+| Where | What it holds | When it changes | Delay |
+|-------|---------------|-----------------|-------|
+| Secrets Manager | Versions labeled `AWSCURRENT` and `AWSPREVIOUS` | `put-secret-value` moves the labels: the new value is current and the old value becomes previous | Immediate |
+| CloudFront distribution | The `AWSCURRENT` value as of the last stack update | A stack update with a changed `ApiOriginSecretRevision` | About one to two minutes until the distribution is `Deployed` |
+| Each warm Lambda container | A copy of the current and the previous value | The next `prime()` after R seconds. With the extension layer the copy may also be up to 300 seconds old | Up to R + 300 seconds |
+
+Steps:
+
+1. Deploy a version of your application that has `CACHE_DATA_INGRESS_SECRET_NAME` set, and confirm the secret loads (no `secret-*` lines).
+2. Put the new value into the secret. The current value is now new and the previous value is old. The distribution still sends the old value, which still matches, and containers that refresh begin to accept both.
+3. Wait at least R + 300 seconds (65 minutes at the default of `3600`), plus a margin, so that every warm container has refreshed on its own and no request is rejected.
+4. Update the network stack with a changed `ApiOriginSecretRevision`. The distribution switches to the new value over one to two minutes. During the switch both values reach the function, and both are accepted.
+5. Wait until the distribution is `Deployed`, plus a margin.
+6. Retire the old value. Detach the `AWSPREVIOUS` label from the old version, or wait for the next rotation:
+
+   ```bash
+   # Find the version that holds the AWSPREVIOUS label
+   aws secretsmanager list-secret-version-ids \
+     --secret-id my-origin-lock-secret \
+     --query "Versions[?contains(VersionStages, 'AWSPREVIOUS')].VersionId"
+
+   # Detach the label. The version stays in the secret, but it is no longer the previous version
+   aws secretsmanager update-secret-version-stage \
+     --secret-id my-origin-lock-secret \
+     --version-stage AWSPREVIOUS \
+     --remove-from-version-id <version-id>
+   ```
+
+   After the command, a read of the previous version behaves as it does for a secret that was never rotated: the function treats it as "no previous version" and logs it at debug level only. Containers stop accepting the old value after up to R + 300 seconds, when their copy expires.
+
+Do not put a second new value before step 4 finishes. The distribution would then send a value that is neither current nor previous, and every request would be rejected with `mismatch`.
+
+**If you skip the wait.** If the stack update runs before every container has refreshed, a container that still holds the old values rejects the new header with `mismatch`. That mismatch starts a reload of the current and previous values in the background. The request that caused it is rejected, and so are requests that arrive before the reload finishes. A container starts at most one such reload per 60 seconds. Without the extension layer the container holds the new values within seconds. With the layer, a forced reload may return the extension's cached copy, which is at most 300 seconds old, so a stale container can need further mismatches (one reload per 60 seconds) and corrects itself within about 6 minutes. Compared with the 65 minutes of waiting for the refresh interval, a skipped wait costs minutes of rejected requests.
+
+**What the mismatch reload does not do.** It does not shorten step 6. A retired value keeps matching the previous value a container has cached, so no mismatch occurs to trigger a reload. A header that is absent, empty, or not a string, an unusable secret, a secret that is not loaded, an unavailable secret, and an invalid configuration never start a reload, because a reload cannot fix them.
+
+**Suspected leak.** Put the new value, detach the `AWSPREVIOUS` label as in step 6, make the functions start new containers (publish a new version or change any setting), and then update the stack. Legitimate traffic is rejected from the moment the containers restart until the distribution switches, about one to two minutes. The refresh interval does not delay revocation on this path.
+
+A shorter interval shortens the wait in step 3 and the time before a retired value stops working, and it increases the number of Secrets Manager calls (two per warm container per interval). The outage after a skipped wait does not depend on it, because of the mismatch reload.
+
+###### Ingress verification limits
+
+- **Not authentication.** The secret proves passage through a distribution configured with it. Anyone who can read the distribution configuration, the secret, or a log that holds the header can present a matching value.
+- **Never log the header or the secret.** The package does not write either value to any log, error message, or object it returns. Your code must not either. `sanitize()` is not a safe way to hide this value: it prints the last four characters of an alphanumeric value, and for a value that contains a character outside `a-z`, `0-9`, `+`, `_`, `:`, `.`, `-`, and `/`, it prints everything after the first such character. Code that logs `event` or `getClientHeaders()` outside `sanitize()` prints the full value.
+- **REST API events only.** Like the rest of `ClientRequest`, ingress verification reads REST API (payload format version 1) events. An HTTP API (payload format version 2) event is not supported.
+- **`client.sourceIp`.** `getProps().client.sourceIp` is `identity.sourceIp` exactly as API Gateway gave it, or `null` when it is missing, not a string, or empty (an HTTP API event gives `null`). On an edge-optimized API behind your own CloudFront it is an edge address, not the viewer ([O3](../../cloudfront-notes/README.md#observations)). `CACHE_DATA_TRUSTED_PROXY_HOPS` does not change it, and `client.ip` is unchanged by this feature. For example, `client.ip` can be `198.51.100.10` while `client.sourceIp` is `203.0.113.20`.
+- **Stale containers.** A container can hold an old copy for up to R + 300 seconds after a rotation. See [Rotate the secret](#rotate-the-secret).
+- **Outages.** A container that starts while Secrets Manager cannot be read has no value, so an enforcing handler rejects requests with `secret-unavailable` until a read succeeds. A container that already holds a value keeps it while a later read fails.
 
 ##### Check your deployment
 
@@ -1226,6 +1415,8 @@ The `getProps()` method returns data about the client request to use for routing
   bodyPayload: "", // body as string
   client: {
     ip: "x.x.x.x", // IP of client (could be IPv4 or IPv6, or null; see Client IP resolution)
+    sourceIp: "x.x.x.x", // address API Gateway received (identity.sourceIp), or null
+    ingress: "direct", // "direct" (no ingress secret configured), "cloudfront" (secret verified), or "unverified"
     userAgent: "", // user agent of client (CloudFront origin policy must be AllViewerExceptHostHeader)
     origin: "", // origin host
     referrer: "example.com", // domain of referrer

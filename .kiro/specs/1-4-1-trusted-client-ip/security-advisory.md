@@ -125,6 +125,8 @@ Restrict the API to your distribution with infrastructure:
 
 See the AWS blog post [Restricting access to HTTP APIs with a Lambda authorizer](https://aws.amazon.com/blogs/networking-and-content-delivery/restricting-access-http-api-gateway-lambda-authorizer/). It describes the pattern for HTTP APIs; the same idea applies to REST APIs with AWS WAF or a Lambda authorizer.
 
+If you use the Atlantis network template, enable `ApiOriginProtection` and set `CACHE_DATA_INGRESS_SECRET_NAME` (v1.4.1) so that `getProps().client.ingress` and `isIngressVerified()` tell you whether a request passed through your distribution.
+
 Keep the origin-verify secret out of the repository and rotate it on a schedule.
 
 ## Workarounds

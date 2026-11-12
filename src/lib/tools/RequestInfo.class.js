@@ -320,6 +320,15 @@ class RequestInfo {
 	 * See "Client IP resolution" in docs/features/tools/README.md and
 	 * docs/cloudfront-notes/README.md.
 	 * 
+	 * `client.sourceIp` is `identity.sourceIp` exactly as API Gateway gave it
+	 * (not validated, trimmed, or changed), or null when it is missing, empty,
+	 * or not a string, including when `requestContext` or `identity` is missing
+	 * or null. It is the address of the connection API Gateway received, so on
+	 * an edge-optimized API behind your own CloudFront it is an edge address,
+	 * not the client. An HTTP API (payload v2) event has no `identity`, so the
+	 * value is null. It is not affected by `CACHE_DATA_TRUSTED_PROXY_HOPS`.
+	 * See "Client IP resolution" in docs/features/tools/README.md.
+	 * 
 	 * For `client.userAgent`, the `user-agent` header is preferred over
 	 * `identity.userAgent`. When the header is present and non-empty, its
 	 * value is used directly. This ensures the original client user agent
@@ -327,11 +336,11 @@ class RequestInfo {
 	 * Falls back to `identity.userAgent` when the header is absent or empty.
 	 * 
 	 * @param {object} event - API Gateway Lambda event object
-	 * @returns {{ip: string|null, userAgent: string|null, origin: string|null, referrer: string|null, ifModifiedSince: string|null, ifNoneMatch: string|null, accept: string|null, headers: object, parameters: object, body: string|null}} Client request information
+	 * @returns {{ip: string|null, sourceIp: string|null, userAgent: string|null, origin: string|null, referrer: string|null, ifModifiedSince: string|null, ifNoneMatch: string|null, accept: string|null, headers: object, parameters: object, body: string|null}} Client request information
 	 */
 	_clientRequestInfo (event) {
 
-		let client = { ip: null, userAgent: null, origin: null, referrer: null, ifModifiedSince: null, ifNoneMatch: null, accept: null, headers: {}, parameters: {}, body: null };
+		let client = { ip: null, sourceIp: null, userAgent: null, origin: null, referrer: null, ifModifiedSince: null, ifNoneMatch: null, accept: null, headers: {}, parameters: {}, body: null };
 		let identity = {};
 		let headers = {};
 
@@ -339,6 +348,9 @@ class RequestInfo {
 		if ( "requestContext" in event && "identity" in event.requestContext && event.requestContext.identity !== null ) {
 			identity = event.requestContext.identity;
 		}
+
+		// >! sourceIp is the connection API Gateway received. No header can change it, so it is stored as given.
+		if ( typeof identity.sourceIp === "string" && identity.sourceIp !== "" ) { client.sourceIp = identity.sourceIp; }
 		
 		// header data
 		if ( "headers" in event && event.headers !== null) {

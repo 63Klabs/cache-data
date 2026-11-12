@@ -1385,6 +1385,54 @@ export class ClientRequest extends RequestInfo {
 		statusCode: number;
 		messages: string[];
 	};
+
+	/**
+	 * Whether the request came through the CloudFront distribution that holds the ingress secret.
+	 *
+	 * Returns true only when the request was found to have passed through that distribution when
+	 * it was constructed. Returns false for an unverified request and also for a request whose
+	 * ingress is `"direct"`, which is the value when `CACHE_DATA_INGRESS_SECRET_NAME` is not set:
+	 * a handler that enforces must set that variable, otherwise every request is rejected.
+	 * Synchronous, never throws. A request that is not verified is still valid: `isValid()` is
+	 * not affected.
+	 *
+	 * @returns true when the request passed through the distribution that holds the secret
+	 * @example
+	 * exports.handler = async (event, context) => {
+	 *   await ClientRequest.prime();
+	 *   const clientRequest = new ClientRequest(event, context);
+	 *
+	 *   if (!clientRequest.isIngressVerified()) {
+	 *     return {
+	 *       statusCode: 401,
+	 *       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+	 *       body: JSON.stringify({ message: "Unauthorized" })
+	 *     };
+	 *   }
+	 *   // ... handle the request
+	 * };
+	 */
+	isIngressVerified(): boolean;
+
+	/**
+	 * Loads the ingress secret before the first request, for applications that do not call
+	 * `CachedParameterSecrets.prime()`.
+	 *
+	 * Resolves true when `CACHE_DATA_INGRESS_SECRET_NAME` is not set, or when it is set and the
+	 * current secret value is loaded. Resolves false when the variable is set to an invalid value
+	 * or the current value could not be loaded. A secret that has never been rotated (no previous
+	 * version) does not make it resolve false. Never rejects. Safe to call repeatedly and together
+	 * with `CachedParameterSecrets.prime()`.
+	 *
+	 * @returns true when not configured or the current value is loaded; false otherwise
+	 * @example
+	 * // At cold start, before handling requests
+	 * const ingressReady = await ClientRequest.prime();
+	 * if (!ingressReady) {
+	 *   console.warn("Ingress secret not loaded; requests will be reported as unverified");
+	 * }
+	 */
+	static prime(): Promise<boolean>;
 }
 
 /**

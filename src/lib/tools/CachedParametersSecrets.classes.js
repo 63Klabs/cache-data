@@ -625,6 +625,21 @@ class CachedParameterSecret {
 	}
 
 	/**
+	 * Writes the log entry for a non-2xx answer from the extension. Subclasses may override it.
+	 * The default writes a warning.
+	 * @private
+	 * @param {number} statusCode - HTTP status code returned by the extension
+	 * @param {string} path - Extension request path that produced the status code
+	 * @returns {void}
+	 * @example
+	 * // Called from _requestSecretsFromLambdaExtension when the status is outside 200-299
+	 * this._logNon2xxResponse(404, "/systemsmanager/parameters/get?name=%2Fmy%2Fparam");
+	 */
+	_logNon2xxResponse(statusCode, path) {
+		DebugAndLog.warn(`CachedParameterSecret http: Non-2xx ${statusCode} for ${path}`);
+	}
+
+	/**
 	 * Requests the value from the Lambda extension, returning a discriminated result.
 	 * Never throws (Req 10.6). The result.reason distinguishes connection failures
 	 * (safe to fall back) from request failures (layer present, do not fall back).
@@ -657,7 +672,7 @@ class CachedParameterSecret {
 						DebugAndLog.debug(`CachedParameterSecret http: Response ${res.statusCode} for ${options.path}`);
 						// >! Non-2xx: extension present but request failed — do NOT fall back (Req 10.2-10.3)
 						if (res.statusCode < 200 || res.statusCode >= 300) {
-							DebugAndLog.warn(`CachedParameterSecret http: Non-2xx ${res.statusCode} for ${options.path}`);
+							this._logNon2xxResponse(res.statusCode, options.path);
 							resolve({ ok: false, value: null, reason: 'non-2xx' });
 							return;
 						}
