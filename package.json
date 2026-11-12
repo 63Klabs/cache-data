@@ -50,8 +50,8 @@
   },
   "overrides": {
     "fast-xml-parser": ">=5.3.4",
-    "glob": ">=13.0.6",
-    "minimatch": ">=10.2.2"
+    "glob": ">=14.0.2",
+    "minimatch": ">=11.0.1"
   },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
