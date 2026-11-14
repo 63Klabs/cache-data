@@ -8,10 +8,20 @@
  * Requirements: 1.3, 1.6, 1.7, 1.8, 1.9, 1.10
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import DebugAndLog from '../../src/lib/tools/DebugAndLog.class.js';
 import textResponse from '../../src/lib/tools/generic.response.text.js';
 
 describe('Generic Text Response Module', () => {
+	beforeEach(() => {
+		// response(427) logs a one-time deprecation warning; keep test output clean
+		jest.spyOn(DebugAndLog, 'warn').mockImplementation(() => Promise.resolve());
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+	});
+
 	describe('contentType property', () => {
 		it('should match expected MIME type', () => {
 			expect(textResponse.contentType).toBe('text/plain');
@@ -113,6 +123,64 @@ describe('Generic Text Response Module', () => {
 			expect(result.statusCode).toBe(404);
 			expect(result.headers['Content-Type']).toBe('text/plain');
 			expect(result.body).toBe('Not Found');
+		});
+	});
+
+	describe('response() function for added status codes', () => {
+		it('should return response201 for status code 201', () => {
+			const result = textResponse.response(201);
+
+			expect(result.statusCode).toBe(201);
+			expect(result.headers['Content-Type']).toBe('text/plain');
+			expect(result.body).toBe('Created');
+		});
+
+		it('should return response202 for status code 202', () => {
+			const result = textResponse.response(202);
+
+			expect(result.statusCode).toBe(202);
+			expect(result.headers['Content-Type']).toBe('text/plain');
+			expect(result.body).toBe('Accepted');
+		});
+
+		it('should return response204 for status code 204', () => {
+			const result = textResponse.response(204);
+
+			expect(result.statusCode).toBe(204);
+			expect(result.headers['Content-Type']).toBe('text/plain');
+			expect(result.body).toBeNull();
+		});
+
+		it('should return response409 for status code 409', () => {
+			const result = textResponse.response(409);
+
+			expect(result.statusCode).toBe(409);
+			expect(result.headers['Content-Type']).toBe('text/plain');
+			expect(result.body).toBe('Conflict');
+		});
+
+		it('should return response422 for status code 422', () => {
+			const result = textResponse.response(422);
+
+			expect(result.statusCode).toBe(422);
+			expect(result.headers['Content-Type']).toBe('text/plain');
+			expect(result.body).toBe('Unprocessable Content');
+		});
+
+		it('should return response429 for status code 429', () => {
+			const result = textResponse.response(429);
+
+			expect(result.statusCode).toBe(429);
+			expect(result.headers['Content-Type']).toBe('text/plain');
+			expect(result.body).toBe('Too Many Requests');
+		});
+
+		it('should return response503 for status code 503', () => {
+			const result = textResponse.response(503);
+
+			expect(result.statusCode).toBe(503);
+			expect(result.headers['Content-Type']).toBe('text/plain');
+			expect(result.body).toBe('Service Unavailable');
 		});
 	});
 

@@ -1469,73 +1469,64 @@ response.setBody(dataModel.get());
 
 ## Generic Response Generators
 
-Pre-built response formatters for common content types.
+`jsonGenericResponse`, `htmlGenericResponse`, `xmlGenericResponse`, `rssGenericResponse` and `textGenericResponse` are objects, not functions. Each holds a template per status (`response200`, `response404`, and so on), a `response(statusCode)` lookup, its `contentType` and `headers`, and a helper that formats a body. `Response` uses them to fill in a body when you do not pass one. See [Generic Response Templates](../../01-advanced-implementation-for-web-service/response-management.md#generic-response-templates) for the statuses and the rule for statuses without a template.
 
-### JSON Response
+### JSON
 
 ```javascript
-const { tools: {jsonGenericResponse} } = require('@63klabs/cache-data');
+const { tools: { jsonGenericResponse } } = require('@63klabs/cache-data');
 
-async function jsonResponse(results) {
-  const response = jsonGenericResponse(
-    200,
-    { message: 'Success', data: results }
-  );
+const notFound = jsonGenericResponse.response(404);
+// { statusCode: 404, headers: { 'Content-Type': 'application/json' }, body: { message: 'Not Found' } }
 
-  return response;
-}
+const data = jsonGenericResponse.json({ items: [] }); // returns the data it is given, or {} when none is passed
 ```
 
-### HTML Response
+### HTML
 
 ```javascript
-const { tools: {htmlGenericResponse} } = require('@63klabs/cache-data');
+const { tools: { htmlGenericResponse } } = require('@63klabs/cache-data');
 
-async function htmlResponse() {
-  const html = '<html><body><h1>Hello World</h1></body></html>';
-  const response = htmlGenericResponse(200, html);
+const page = htmlGenericResponse.html('Hello', '<p>Hello World</p>');
+// '<html><head><title>Hello</title></head><body><p>Hello World</p></body></html>'
 
-  return response;
-}
+const notFound = htmlGenericResponse.response(404);
+// notFound.body is '<html><head><title>404 Not Found</title></head><body><p>Not Found</p></body></html>'
 ```
 
-### XML Response
+### XML
 
 ```javascript
-const { tools: {xmlGenericResponse} } = require('@63klabs/cache-data');
+const { tools: { xmlGenericResponse } } = require('@63klabs/cache-data');
 
-async function xmlResponse() {
-  const xml = '<?xml version="1.0"?><root><item>value</item></root>';
-  const response = xmlGenericResponse(200, xml);
+const doc = xmlGenericResponse.xml('<root><item>value</item></root>');
+// '<?xml version="1.0" encoding="UTF-8" ?><root><item>value</item></root>'
 
-  return response;
-}
+const notFound = xmlGenericResponse.response(404);
+// notFound.body is '<?xml version="1.0" encoding="UTF-8" ?><error>Not Found</error>'
 ```
 
-### RSS Response
+### RSS
 
 ```javascript
-const { tools: {rssGenericResponse} } = require('@63klabs/cache-data');
+const { tools: { rssGenericResponse } } = require('@63klabs/cache-data');
 
-async function rssResponse() {
-  const rss = '<?xml version="1.0"?><rss version="2.0">...</rss>';
-  const response = rssGenericResponse(200, rss);
+const feed = rssGenericResponse.rss('<channel><title>News</title></channel>');
+// '<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><channel><title>News</title></channel></rss>'
 
-  return response;
-}
+const notFound = rssGenericResponse.response(404);
+// notFound.body is '<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><error>Not Found</error></rss>'
 ```
 
-### Text Response
+### Text
 
 ```javascript
-const { tools: {textGenericResponse} } = require('@63klabs/cache-data');
+const { tools: { textGenericResponse } } = require('@63klabs/cache-data');
 
-async function textResponse() {
-  const text = 'Plain text response';
-  const response = textGenericResponse(200, text);
+const message = textGenericResponse.text('Plain text response'); // returns the text unchanged
 
-  return response;
-}
+const notFound = textGenericResponse.response(404);
+// notFound.body is 'Not Found'
 ```
 
 ## AppConfig super class

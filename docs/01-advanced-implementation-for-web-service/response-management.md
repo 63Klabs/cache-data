@@ -187,6 +187,101 @@ Response.init({
 });
 ```
 
+## Generic Response Templates
+
+`new Response(clientRequest, { statusCode })` and `response.reset({ statusCode })` fill the body from a generic template when you do not pass one. These statuses have a template in every format (JSON, HTML, XML, RSS and text):
+
+| Status | Message |
+|--------|---------|
+| 200 | Success |
+| 201 | Created |
+| 202 | Accepted |
+| 204 | No Content (no body) |
+| 400 | Bad Request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Not Found |
+| 405 | Method Not Allowed |
+| 408 | Request Timeout |
+| 409 | Conflict |
+| 418 | I'm a teapot |
+| 422 | Unprocessable Content |
+| 429 | Too Many Requests |
+| 500 | Internal Server Error |
+| 503 | Service Unavailable |
+
+Status 427 is not in the table. It is not a registered HTTP status (see [Status 427](#status-427)).
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+// 201 Created, body {"message":"Created"}
+const response = new Response(clientRequest, { statusCode: 201 });
+const result = response.finalize(); // return this from your handler
+```
+
+### Statuses without a template
+
+A status that is not in the table uses the template for its class:
+
+| Status | Template used | Body |
+|--------|---------------|------|
+| 200-299 (except 205) | 200 | `{"message":"Success"}` |
+| 400-499 | 400 | `{"message":"Bad Request"}` |
+| 500-599 | 500 | `{"message":"Internal Server Error"}` |
+| 100-199, 205, 300-399 | 204 | none |
+| Anything else (not a status) | 500 | `{"message":"Internal Server Error"}` |
+
+The `statusCode` of the template that a fallback returns is the template's own, so `response(410).statusCode` from a generic response module is `400`. `Response` keeps the status you set. `new Response(clientRequest, { statusCode: 410 })` is sent as a 410 with the 400 body, "Bad Request". A redirect has no body. Pass the `Location` header yourself:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+const response = new Response(clientRequest, {
+  statusCode: 301,
+  headers: { Location: 'https://example.com/new-path' }
+});
+const result = response.finalize(); // return this from your handler
+```
+
+To change the body for every status of a class, replace its template when you initialize `Response`. A template you add for a specific status always wins over the class fallback:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+Response.init({
+  jsonResponses: {
+    response400: {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: { error: 'Request not accepted', code: 'CLIENT_ERROR' }
+    },
+    response410: {
+      statusCode: 410,
+      headers: { 'Content-Type': 'application/json' },
+      body: { error: 'Gone' }
+    }
+  }
+});
+```
+
+With this configuration a 410 is sent with `{"error":"Gone"}`, and an unlisted 4xx such as 451 is sent with `{"error":"Request not accepted","code":"CLIENT_ERROR"}`.
+
+Before v1.4.2, every status without a template used the 500 template, so a custom `response500` was also sent with a 201 or a 410. It now applies only to 5xx statuses without a template and to values that are not statuses. An unlisted 2xx or 4xx no longer uses it.
+
+### 204 and other responses without a body
+
+The 204 template has no body, and `reset({ statusCode: 204 })` removes any body already on the response. API Gateway REST API removes the body and `Content-Type` of a 204 itself (see [observation O12](../cloudfront-notes/lambda-proxy-response-body.md)). Only REST API was checked. A response with no body on a 3xx or a 205 was not checked behind API Gateway, CloudFront or any other integration.
+
+When `routeExpirationInSeconds` is greater than 0 (the default is 0, which adds no cache headers), `finalize()` adds `Cache-Control: max-age` to every status below 400, including a 201, 202, 204 or 301, unless you set `Cache-Control` yourself. Set it on a response that must not be cached. See [Overriding cache headers per response](#overriding-cache-headers-per-response).
+
+### Status 427
+
+`response427` is deprecated. 427 is not a registered HTTP status. Use `response429` for Too Many Requests. `response427` is kept through all of v1.x, and a one-time warning is logged the first time a status of 427 is resolved.
+
 ## Response Finalization
 
 The `finalize()` method:

@@ -192,6 +192,9 @@ class Response {
 	/**
 	 * Resets all properties of the response to default values except those specified in the object.
 	 * ClientRequest cannot be reset. Uses generic response templates based on status code.
+	 * The template is chosen by the generic response module's response(statusCode), which
+	 * includes its fallback to the template for the status code's class. A template with a
+	 * null body clears the body.
 	 * 
 	 * @param {{statusCode: number|string, headers: Object, body: string|number|Object|Array}} obj - Properties to set after reset
 	 * @param {string} [contentType=null] - Content type (use Response.CONTENT_TYPE values)
@@ -219,6 +222,10 @@ class Response {
 		newObj.body = obj?.body ?? genericResponses.response(newObj.statusCode).body;
 
 		this.set(newObj, contentType);
+
+		if (newObj.body === null) {
+			this._body = null;
+		}
 	};
 
 	/**

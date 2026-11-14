@@ -2321,7 +2321,7 @@ export interface GenericResponseObject {
 	statusCode: number;
 	/** Response headers including Content-Type */
 	headers: Record<string, string>;
-	/** Response body (format depends on the module) */
+	/** Response body (format depends on the module). `null` for the 204 template. */
 	body: any;
 }
 
@@ -2335,6 +2335,12 @@ export interface GenericResponseModule {
 	headers: Record<string, string>;
 	/** Pre-built response for HTTP 200 */
 	response200: GenericResponseObject;
+	/** Pre-built response for HTTP 201 */
+	response201: GenericResponseObject;
+	/** Pre-built response for HTTP 202 */
+	response202: GenericResponseObject;
+	/** Pre-built response for HTTP 204. The body is `null`. */
+	response204: GenericResponseObject;
 	/** Pre-built response for HTTP 400 */
 	response400: GenericResponseObject;
 	/** Pre-built response for HTTP 401 */
@@ -2347,14 +2353,26 @@ export interface GenericResponseModule {
 	response405: GenericResponseObject;
 	/** Pre-built response for HTTP 408 */
 	response408: GenericResponseObject;
+	/** Pre-built response for HTTP 409 */
+	response409: GenericResponseObject;
 	/** Pre-built response for HTTP 418 */
 	response418: GenericResponseObject;
-	/** Pre-built response for HTTP 427 */
+	/** Pre-built response for HTTP 422 */
+	response422: GenericResponseObject;
+	/**
+	 * Pre-built response for HTTP 427
+	 *
+	 * @deprecated 427 is not a registered HTTP status. Use `response429`.
+	 */
 	response427: GenericResponseObject;
+	/** Pre-built response for HTTP 429 */
+	response429: GenericResponseObject;
 	/** Pre-built response for HTTP 500 */
 	response500: GenericResponseObject;
+	/** Pre-built response for HTTP 503 */
+	response503: GenericResponseObject;
 	/**
-	 * Get a response object by status code. Falls back to response500 for unknown codes.
+	 * Get a response object by status code. A code with no template gets the template of its class: 2xx the 200 template, 4xx the 400 template, 5xx the 500 template, 100-199, 205 and 300-399 the 204 template (no body). Anything else gets `response500`. The returned object's `statusCode` is the template's, not the requested code.
 	 *
 	 * @param statusCode - HTTP status code
 	 * @returns Response object for the given status code

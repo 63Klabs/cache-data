@@ -119,7 +119,7 @@ npm run test:utils
 
 **ALL public APIs must have complete JSDoc documentation.**
 
-See `.kiro/steering/documentation-standards.md` for complete documentation standards.
+See `.kiro/steering/documentation-standards-common.md` for complete documentation standards (JSDoc specifics are in `documentation-standards-jsdoc.md`).
 
 #### Required JSDoc Tags:
 
@@ -599,16 +599,21 @@ This repository uses Kiro for AI-assisted development. Steering documents provid
 
 **Available Steering Documents**:
 
-1. **spec-naming-convention.md**: Spec directory naming rules
+1. **spec-naming-convention-package.md**: Spec directory naming rules
    - Format: `{version}-{feature-name}`
    - Version from package.json with dots replaced by hyphens
    - Example: `.kiro/specs/1-3-6-in-memory-cache/`
 
-2. **documentation-standards.md**: Complete documentation standards
+2. **documentation-standards-common.md**, **documentation-standards-jsdoc.md**, **documentation-standards-markdown.md**, **documentation-standards-python.md**: Complete documentation standards
    - JSDoc requirements and templates
    - Documentation update process
    - Quality standards and validation
    - Common pitfalls and solutions
+
+3. **changelog-convention-package.md**: CHANGELOG.md maintenance rules
+   - Which version section to write to, derived from package.json
+   - Categories, entry format, and spec and issue links
+   - Read it before starting a spec (version check) and in the final task of every spec's `tasks.md` (adding entries)
 
 **CRITICAL**: Always follow steering document rules. They take precedence over general guidelines.
 
@@ -626,11 +631,15 @@ Specs are located in `.kiro/specs/{version}-{feature-name}/`:
 
 ### 7.2 Spec Workflow
 
+**Before creating any spec file**: check that the `package.json` version has no dated heading in `CHANGELOG.md`. If it does, stop and ask the user to run `npm version [major|minor|patch]` on a clean working tree. See `.kiro/steering/changelog-convention-package.md`.
+
 1. **Requirements**: Define what needs to be built
 2. **Design**: Define how it will be built
 3. **Tasks**: Break down into implementable tasks
 4. **Implementation**: Execute tasks one at a time
 5. **Testing**: Validate against correctness properties
+
+**Final task of every `tasks.md`**: update `CHANGELOG.md` following `.kiro/steering/changelog-convention-package.md`.
 
 ### 7.3 Property-Based Testing in Specs
 
@@ -755,32 +764,35 @@ const hash = tools.hashThisData(data);
 
 ### 9.1 Release Process
 
-1. Update version in `package.json`
-2. Update `CHANGELOG.md` with changes
-3. Run all tests: `npm test`
-4. Run documentation validation
-5. Commit changes
-6. Create git tag: `git tag v1.3.6`
-7. Push to npm: `npm publish`
+The `package.json` version is set with `npm version [major|minor|patch]` at the start of a development cycle. It is not a release step.
+
+1. Review the `(unreleased)` section of `CHANGELOG.md`, then run the `release-changelog-package` skill to set the release date and intro
+2. Run all tests: `npm test`
+3. Run documentation validation
+4. Commit changes
 
 ### 9.2 Changelog Format
 
-Follow existing CHANGELOG.md format:
+`.kiro/steering/changelog-convention-package.md` is the authoritative changelog standard. Summary:
+
+- New entries go under `## v{version} (unreleased)`, where `{version}` is the `package.json` version. The `release-changelog-package` skill, which the user invokes, changes `(unreleased)` to a `YYYY-MM-DD` date at release. Released sections are never edited by an agent.
+- Categories, in this order: Security, Fixed, Breaking Changes, Added, Changed, Deprecated, Removed, Dependencies. Omit empty categories.
+- Entry format is `- **Title** - Description.`, with spec and issue links at the end.
 
 ```markdown
-## [1.3.6] - 2026-02-01
-
-### Added
-- New feature description
-
-### Changed
-- Changed behavior description
+## v1.3.6 (unreleased)
 
 ### Fixed
-- Bug fix description
+- **Bug title** - Bug fix description. [Spec: 1-3-6-bug-title](.kiro/specs/1-3-6-bug-title/) addresses [#123](https://github.com/63Klabs/cache-data/issues/123)
+
+### Added
+- **New feature** - New feature description.
+
+### Changed
+- **Changed behavior** - Changed behavior description.
 
 ### Deprecated
-- Deprecated feature with migration path
+- **Deprecated feature** - Use the replacement instead. Kept for at least one major version.
 ```
 
 ### 9.3 Breaking Changes

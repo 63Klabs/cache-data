@@ -7,29 +7,56 @@
  * to generate random inputs and verify structural invariants.
  */
 
-import { describe, it, expect } from "@jest/globals";
+import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import fc from "fast-check";
 import { createGenericResponseModule } from "../../src/lib/tools/generic.response.js";
+import DebugAndLog from "../../src/lib/tools/DebugAndLog.class.js";
+import {
+	LISTED_STATUS_CODES,
+	NO_BODY_CODES,
+	STATUS_CODE_MESSAGES
+} from "../helpers/generic-response-status-codes.mjs";
 
-const KNOWN_STATUS_CODES = [200, 400, 401, 403, 404, 405, 408, 418, 427, 500];
+// The ten codes that had templates in v1.4.1. Pinned as a literal so the
+// backwards compatibility checks keep covering them when new codes are added.
+const V1_4_1_STATUS_CODES = [200, 400, 401, 403, 404, 405, 408, 418, 427, 500];
+
+// Listed codes whose template body comes from the body formatter
+const FORMATTED_STATUS_CODES = LISTED_STATUS_CODES.filter((code) => !NO_BODY_CODES.includes(code));
 
 const EXPECTED_PROPERTIES = [
 	"contentType",
 	"headers",
 	"response200",
+	"response201",
+	"response202",
+	"response204",
 	"response400",
 	"response401",
 	"response403",
 	"response404",
 	"response405",
 	"response408",
+	"response409",
 	"response418",
+	"response422",
 	"response427",
+	"response429",
 	"response500",
+	"response503",
 	"response"
 ];
 
 describe("Generic Response Module - Property-Based Tests", () => {
+
+	beforeEach(() => {
+		// response(427) logs a one-time deprecation warning; keep test output clean
+		jest.spyOn(DebugAndLog, "warn").mockImplementation(() => Promise.resolve());
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+	});
 
 	describe("Property 1: Factory structural completeness", () => {
 		// Feature: 1-3-10-clean-up-generic-responses, Property 1: Factory structural completeness
@@ -74,11 +101,36 @@ describe("Generic Response Module - Property-Based Tests", () => {
 						const bodyFormatter = (statusCode, message) => ({ statusCode, message });
 						const mod = createGenericResponseModule(contentType, bodyFormatter);
 
-						for (const code of KNOWN_STATUS_CODES) {
+						for (const code of V1_4_1_STATUS_CODES) {
 							const responseObj = mod["response" + code];
 							expect(responseObj.statusCode).toBe(code);
 							expect(responseObj.headers).toBe(mod.headers);
 							expect(responseObj.body).toEqual({ statusCode: code, message: expect.any(String) });
+						}
+					}
+				),
+				{ numRuns: 100 }
+			);
+		});
+
+		it("should produce the expected output for all listed status codes, with a null body for 204", () => {
+			fc.assert(
+				fc.property(
+					fc.string({ minLength: 1 }),
+					(contentType) => {
+						const bodyFormatter = (statusCode, message) => ({ statusCode, message });
+						const mod = createGenericResponseModule(contentType, bodyFormatter);
+
+						for (const code of LISTED_STATUS_CODES) {
+							const responseObj = mod["response" + code];
+							expect(responseObj.statusCode).toBe(code);
+							expect(responseObj.headers).toBe(mod.headers);
+							if (NO_BODY_CODES.includes(code)) {
+								expect(responseObj.body).toBeNull();
+							} else {
+								expect(responseObj.body).toEqual({ statusCode: code, message: STATUS_CODE_MESSAGES[code] });
+							}
+							expect(mod.response(code)).toBe(responseObj);
 						}
 					}
 				),
@@ -119,29 +171,19 @@ describe("Generic Response Module - Property-Based Tests", () => {
 						calls.length = 0;
 						createGenericResponseModule(contentType, trackingFormatter);
 
-						// Exactly 10 calls (one per status code)
-						expect(calls).toHaveLength(10);
+						// One call per listed code except the bodiless 204
+						expect(calls).toHaveLength(FORMATTED_STATUS_CODES.length);
 
-						// Each known status code was called exactly once
+						// Each formatted status code was called exactly once, and 204 never
 						const calledCodes = calls.map((c) => c.statusCode).sort((a, b) => a - b);
-						expect(calledCodes).toEqual([...KNOWN_STATUS_CODES].sort((a, b) => a - b));
+						expect(calledCodes).toEqual([...FORMATTED_STATUS_CODES].sort((a, b) => a - b));
+						for (const code of NO_BODY_CODES) {
+							expect(calledCodes).not.toContain(code);
+						}
 
-						// Messages match the STATUS_CODE_MAP
-						const expectedMessages = {
-							200: "Success",
-							400: "Bad Request",
-							401: "Unauthorized",
-							403: "Forbidden",
-							404: "Not Found",
-							405: "Method Not Allowed",
-							408: "Request Timeout",
-							418: "I'm a teapot",
-							427: "Too Many Requests",
-							500: "Internal Server Error"
-						};
-
+						// Messages match the shared message table
 						for (const call of calls) {
-							expect(call.message).toBe(expectedMessages[call.statusCode]);
+							expect(call.message).toBe(STATUS_CODE_MESSAGES[call.statusCode]);
 						}
 					}
 				),

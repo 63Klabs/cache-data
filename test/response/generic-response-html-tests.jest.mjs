@@ -8,10 +8,20 @@
  * Requirements: 1.2, 1.6, 1.7, 1.8, 1.9, 1.10
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import DebugAndLog from '../../src/lib/tools/DebugAndLog.class.js';
 import htmlResponse from '../../src/lib/tools/generic.response.html.js';
 
 describe('Generic HTML Response Module', () => {
+	beforeEach(() => {
+		// response(427) logs a one-time deprecation warning; keep test output clean
+		jest.spyOn(DebugAndLog, 'warn').mockImplementation(() => Promise.resolve());
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+	});
+
 	describe('contentType property', () => {
 		it('should match expected MIME type', () => {
 			expect(htmlResponse.contentType).toBe('text/html; charset=utf-8');
@@ -113,6 +123,64 @@ describe('Generic HTML Response Module', () => {
 			expect(result.statusCode).toBe(404);
 			expect(result.headers['Content-Type']).toBe('text/html; charset=utf-8');
 			expect(result.body).toBe('<html><head><title>404 Not Found</title></head><body><p>Not Found</p></body></html>');
+		});
+	});
+
+	describe('response() function for added status codes', () => {
+		it('should return response201 for status code 201', () => {
+			const result = htmlResponse.response(201);
+
+			expect(result.statusCode).toBe(201);
+			expect(result.headers['Content-Type']).toBe('text/html; charset=utf-8');
+			expect(result.body).toBe('<html><head><title>201 Created</title></head><body><p>Created</p></body></html>');
+		});
+
+		it('should return response202 for status code 202', () => {
+			const result = htmlResponse.response(202);
+
+			expect(result.statusCode).toBe(202);
+			expect(result.headers['Content-Type']).toBe('text/html; charset=utf-8');
+			expect(result.body).toBe('<html><head><title>202 Accepted</title></head><body><p>Accepted</p></body></html>');
+		});
+
+		it('should return response204 for status code 204', () => {
+			const result = htmlResponse.response(204);
+
+			expect(result.statusCode).toBe(204);
+			expect(result.headers['Content-Type']).toBe('text/html; charset=utf-8');
+			expect(result.body).toBeNull();
+		});
+
+		it('should return response409 for status code 409', () => {
+			const result = htmlResponse.response(409);
+
+			expect(result.statusCode).toBe(409);
+			expect(result.headers['Content-Type']).toBe('text/html; charset=utf-8');
+			expect(result.body).toBe('<html><head><title>409 Conflict</title></head><body><p>Conflict</p></body></html>');
+		});
+
+		it('should return response422 for status code 422', () => {
+			const result = htmlResponse.response(422);
+
+			expect(result.statusCode).toBe(422);
+			expect(result.headers['Content-Type']).toBe('text/html; charset=utf-8');
+			expect(result.body).toBe('<html><head><title>422 Unprocessable Content</title></head><body><p>Unprocessable Content</p></body></html>');
+		});
+
+		it('should return response429 for status code 429', () => {
+			const result = htmlResponse.response(429);
+
+			expect(result.statusCode).toBe(429);
+			expect(result.headers['Content-Type']).toBe('text/html; charset=utf-8');
+			expect(result.body).toBe('<html><head><title>429 Too Many Requests</title></head><body><p>Too Many Requests</p></body></html>');
+		});
+
+		it('should return response503 for status code 503', () => {
+			const result = htmlResponse.response(503);
+
+			expect(result.statusCode).toBe(503);
+			expect(result.headers['Content-Type']).toBe('text/html; charset=utf-8');
+			expect(result.body).toBe('<html><head><title>503 Service Unavailable</title></head><body><p>Service Unavailable</p></body></html>');
 		});
 	});
 

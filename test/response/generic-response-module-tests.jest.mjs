@@ -8,45 +8,84 @@
  * Unit tests verify the factory produces correct modules, response() handles
  * known/unknown/string codes, headers are correct, and format files export helpers.
  *
- * Property-based tests validate Properties 2, 3, and 4 from the design document.
+ * Property-based tests validate Properties 2 and 4 from the design document. The
+ * former Property 3 (response500 for any integer outside the known set) was removed
+ * in 1-4-2-generic-responses-for-unlisted-status-codes: unlisted codes now use the
+ * template of their class, which is covered by
+ * generic-response-class-fallback-property-tests.jest.mjs.
  */
 
-import { describe, it, expect } from "@jest/globals";
+import { describe, it, expect, jest, afterEach, beforeEach } from "@jest/globals";
 import fc from "fast-check";
 import { createGenericResponseModule } from "../../src/lib/tools/generic.response.js";
+import DebugAndLog from "../../src/lib/tools/DebugAndLog.class.js";
 import jsonResponse from "../../src/lib/tools/generic.response.json.js";
 import htmlResponse from "../../src/lib/tools/generic.response.html.js";
 import rssResponse from "../../src/lib/tools/generic.response.rss.js";
 import textResponse from "../../src/lib/tools/generic.response.text.js";
 import xmlResponse from "../../src/lib/tools/generic.response.xml.js";
 
-const KNOWN_STATUS_CODES = [200, 400, 401, 403, 404, 405, 408, 418, 427, 500];
+import {
+	LISTED_STATUS_CODES,
+	NO_BODY_CODES,
+	STATUS_CODE_MESSAGES
+} from "../helpers/generic-response-status-codes.mjs";
 
-const STATUS_CODE_MESSAGES = {
-	200: "Success",
-	400: "Bad Request",
-	401: "Unauthorized",
-	403: "Forbidden",
-	404: "Not Found",
-	405: "Method Not Allowed",
-	408: "Request Timeout",
-	418: "I'm a teapot",
-	427: "Too Many Requests",
-	500: "Internal Server Error"
-};
+/**
+ * The ten status codes that had templates in v1.4.1. Property 4 pins their output
+ * to the original implementations. The codes added in 1.4.2 are pinned by the
+ * per-format test files and generic-response-module-property-tests.jest.mjs.
+ */
+const V1_4_1_STATUS_CODES = [200, 400, 401, 403, 404, 405, 408, 418, 427, 500];
+
+// response() logs a one-time deprecation warning when it resolves 427. Keep the test output clean.
+beforeEach(() => {
+	jest.spyOn(DebugAndLog, "warn").mockImplementation(() => Promise.resolve());
+});
+
+afterEach(() => {
+	jest.restoreAllMocks();
+});
 
 describe("Generic Response Module - Unit Tests", () => {
 
 	describe("Factory produces complete module", () => {
 		const mod = createGenericResponseModule("application/json", (statusCode, message) => ({ message }));
 
-		it("should produce a module with all 10 response objects", () => {
-			for (const code of KNOWN_STATUS_CODES) {
+		it("should produce a module with all listed response objects", () => {
+			for (const code of LISTED_STATUS_CODES) {
 				const key = "response" + code;
 				expect(mod).toHaveProperty(key);
 				expect(mod[key]).toHaveProperty("statusCode", code);
 				expect(mod[key]).toHaveProperty("headers");
 				expect(mod[key]).toHaveProperty("body");
+			}
+		});
+
+		it("should give response204 a null body and every other listed code a formatted body", () => {
+			expect(mod.response204.body).toBeNull();
+			for (const code of LISTED_STATUS_CODES) {
+				if (NO_BODY_CODES.includes(code)) {
+					expect(mod["response" + code].body).toBeNull();
+				} else {
+					expect(mod["response" + code].body).toEqual({ message: STATUS_CODE_MESSAGES[code] });
+				}
+			}
+		});
+
+		it("should call the body formatter once per listed code except 204", () => {
+			const formatter = jest.fn((statusCode, message) => ({ message }));
+			const spiedMod = createGenericResponseModule("application/json", formatter);
+
+			expect(spiedMod.response204.body).toBeNull();
+
+			const calledCodes = formatter.mock.calls.map((call) => call[0]);
+			const expectedCodes = LISTED_STATUS_CODES.filter((code) => !NO_BODY_CODES.includes(code));
+
+			expect(formatter).toHaveBeenCalledTimes(expectedCodes.length);
+			expect(calledCodes).not.toContain(204);
+			for (const code of expectedCodes) {
+				expect(calledCodes.filter((called) => called === code)).toHaveLength(1);
 			}
 		});
 
@@ -102,7 +141,7 @@ describe("Generic Response Module - Unit Tests", () => {
 
 		it("should share the same headers object across all response objects", () => {
 			const mod = createGenericResponseModule("text/html", (s, m) => m);
-			for (const code of KNOWN_STATUS_CODES) {
+			for (const code of LISTED_STATUS_CODES) {
 				expect(mod["response" + code].headers).toBe(mod.headers);
 			}
 		});
@@ -157,7 +196,7 @@ describe("Generic Response Module - Property-Based Tests", () => {
 
 			fc.assert(
 				fc.property(
-					fc.constantFrom(...KNOWN_STATUS_CODES),
+					fc.constantFrom(...LISTED_STATUS_CODES),
 					(code) => {
 						const result = mod.response(code);
 						expect(result.statusCode).toBe(code);
@@ -173,32 +212,11 @@ describe("Generic Response Module - Property-Based Tests", () => {
 
 			fc.assert(
 				fc.property(
-					fc.constantFrom(...KNOWN_STATUS_CODES),
+					fc.constantFrom(...LISTED_STATUS_CODES),
 					(code) => {
 						const result = mod.response(String(code));
 						expect(result.statusCode).toBe(code);
 						expect(result).toBe(mod["response" + code]);
-					}
-				),
-				{ numRuns: 100 }
-			);
-		});
-	});
-
-	// Feature: 1-3-10-clean-up-generic-responses, Property 3: Unknown status code fallback
-	describe("Property 3: Unknown status code fallback", () => {
-
-		it("should return response500 for any integer outside the known set", () => {
-			const mod = createGenericResponseModule("text/plain", (statusCode, message) => message);
-			const knownSet = new Set(KNOWN_STATUS_CODES);
-
-			fc.assert(
-				fc.property(
-					fc.integer({ min: -1000, max: 1000 }).filter((n) => !knownSet.has(n)),
-					(unknownCode) => {
-						const result = mod.response(unknownCode);
-						expect(result).toBe(mod.response500);
-						expect(result.statusCode).toBe(500);
 					}
 				),
 				{ numRuns: 100 }
@@ -228,7 +246,7 @@ describe("Generic Response Module - Property-Based Tests", () => {
 			fc.assert(
 				fc.property(
 					fc.constantFrom(...formatNames),
-					fc.constantFrom(...KNOWN_STATUS_CODES),
+					fc.constantFrom(...V1_4_1_STATUS_CODES),
 					(formatName, statusCode) => {
 						const mod = formatModules[formatName];
 						const result = mod.response(statusCode);
@@ -246,7 +264,7 @@ describe("Generic Response Module - Property-Based Tests", () => {
 });
 
 /**
- * Build the hardcoded expected output map for all five formats and all ten
+ * Build the hardcoded expected output map for all five formats and the ten v1.4.1
  * status codes, matching the original pre-refactoring implementations.
  *
  * @returns {Object} Map of format name to status code to expected Response_Object
@@ -263,7 +281,7 @@ function buildExpectedOutputs() {
 
 	// JSON
 	formats.json = {};
-	for (const code of KNOWN_STATUS_CODES) {
+	for (const code of V1_4_1_STATUS_CODES) {
 		formats.json[code] = {
 			statusCode: code,
 			headers: { "Content-Type": "application/json" },
@@ -273,7 +291,7 @@ function buildExpectedOutputs() {
 
 	// Text
 	formats.text = {};
-	for (const code of KNOWN_STATUS_CODES) {
+	for (const code of V1_4_1_STATUS_CODES) {
 		formats.text[code] = {
 			statusCode: code,
 			headers: { "Content-Type": "text/plain" },
@@ -283,7 +301,7 @@ function buildExpectedOutputs() {
 
 	// HTML
 	formats.html = {};
-	for (const code of KNOWN_STATUS_CODES) {
+	for (const code of V1_4_1_STATUS_CODES) {
 		const message = STATUS_CODE_MESSAGES[code];
 		const titleText = HTML_TITLE_MAP[code] || message;
 		const title = code + " " + titleText;
@@ -296,7 +314,7 @@ function buildExpectedOutputs() {
 
 	// RSS
 	formats.rss = {};
-	for (const code of KNOWN_STATUS_CODES) {
+	for (const code of V1_4_1_STATUS_CODES) {
 		const message = STATUS_CODE_MESSAGES[code];
 		let body;
 		if (code === 200) {
@@ -314,7 +332,7 @@ function buildExpectedOutputs() {
 
 	// XML
 	formats.xml = {};
-	for (const code of KNOWN_STATUS_CODES) {
+	for (const code of V1_4_1_STATUS_CODES) {
 		const message = STATUS_CODE_MESSAGES[code];
 		let body;
 		if (code === 200) {

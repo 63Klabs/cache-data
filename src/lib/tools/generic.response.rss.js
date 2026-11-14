@@ -5,7 +5,7 @@ const rss = (body) => {
 };
 
 const rssBodyFormatter = (statusCode, message) => {
-	if (statusCode === 200) {
+	if (statusCode >= 200 && statusCode < 300) {
 		return rss("<hello>" + message + "</hello>");
 	}
 	const msg = statusCode === 418 ? "418 " + message : message;

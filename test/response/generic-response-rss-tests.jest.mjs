@@ -8,10 +8,20 @@
  * Requirements: 1.5, 1.6, 1.7, 1.8, 1.9, 1.10
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import DebugAndLog from '../../src/lib/tools/DebugAndLog.class.js';
 import rssResponse from '../../src/lib/tools/generic.response.rss.js';
 
 describe('Generic RSS Response Module', () => {
+	beforeEach(() => {
+		// response(427) logs a one-time deprecation warning; keep test output clean
+		jest.spyOn(DebugAndLog, 'warn').mockImplementation(() => Promise.resolve());
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+	});
+
 	describe('contentType property', () => {
 		it('should match expected MIME type', () => {
 			expect(rssResponse.contentType).toBe('application/rss+xml');
@@ -113,6 +123,64 @@ describe('Generic RSS Response Module', () => {
 			expect(result.statusCode).toBe(404);
 			expect(result.headers['Content-Type']).toBe('application/rss+xml');
 			expect(result.body).toBe('<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><error>Not Found</error></rss>');
+		});
+	});
+
+	describe('response() function for added status codes', () => {
+		it('should return response201 for status code 201', () => {
+			const result = rssResponse.response(201);
+
+			expect(result.statusCode).toBe(201);
+			expect(result.headers['Content-Type']).toBe('application/rss+xml');
+			expect(result.body).toBe('<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><hello>Created</hello></rss>');
+		});
+
+		it('should return response202 for status code 202', () => {
+			const result = rssResponse.response(202);
+
+			expect(result.statusCode).toBe(202);
+			expect(result.headers['Content-Type']).toBe('application/rss+xml');
+			expect(result.body).toBe('<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><hello>Accepted</hello></rss>');
+		});
+
+		it('should return response204 for status code 204', () => {
+			const result = rssResponse.response(204);
+
+			expect(result.statusCode).toBe(204);
+			expect(result.headers['Content-Type']).toBe('application/rss+xml');
+			expect(result.body).toBeNull();
+		});
+
+		it('should return response409 for status code 409', () => {
+			const result = rssResponse.response(409);
+
+			expect(result.statusCode).toBe(409);
+			expect(result.headers['Content-Type']).toBe('application/rss+xml');
+			expect(result.body).toBe('<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><error>Conflict</error></rss>');
+		});
+
+		it('should return response422 for status code 422', () => {
+			const result = rssResponse.response(422);
+
+			expect(result.statusCode).toBe(422);
+			expect(result.headers['Content-Type']).toBe('application/rss+xml');
+			expect(result.body).toBe('<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><error>Unprocessable Content</error></rss>');
+		});
+
+		it('should return response429 for status code 429', () => {
+			const result = rssResponse.response(429);
+
+			expect(result.statusCode).toBe(429);
+			expect(result.headers['Content-Type']).toBe('application/rss+xml');
+			expect(result.body).toBe('<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><error>Too Many Requests</error></rss>');
+		});
+
+		it('should return response503 for status code 503', () => {
+			const result = rssResponse.response(503);
+
+			expect(result.statusCode).toBe(503);
+			expect(result.headers['Content-Type']).toBe('application/rss+xml');
+			expect(result.body).toBe('<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0"><error>Service Unavailable</error></rss>');
 		});
 	});
 

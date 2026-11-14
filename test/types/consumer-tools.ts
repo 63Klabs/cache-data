@@ -289,6 +289,9 @@ async function testPrimeAll(): Promise<void> {
 const jsonResp = tools.jsonGenericResponse;
 const jsonContentType: string = jsonResp.contentType;
 const json200 = jsonResp.response200;
+const json201 = jsonResp.response201;
+const json204Body: any = jsonResp.response204.body;
+const json429 = jsonResp.response429;
 const jsonByCode = jsonResp.response(404);
 const jsonData: any = jsonResp.json({ key: "value" });
 

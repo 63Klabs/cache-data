@@ -26,9 +26,10 @@ For package.json version `1.3.6`:
 ## Process
 
 1. Read the current version from `package.json`
-2. Convert the version to the hyphenated format (replace `.` with `-`)
-3. Append the feature name in kebab-case
-4. Create the directory: `.kiro/specs/{version}-{feature-name}/`
+2. Check `CHANGELOG.md` for a heading that starts with `## v{version} `. If that heading has a release date instead of `(unreleased)`, STOP before creating any file or directory and tell the user to run `npm version [major|minor|patch]` on a clean working tree. See `.kiro/steering/changelog-convention-package.md`.
+3. Convert the version to the hyphenated format (replace `.` with `-`)
+4. Append the feature name in kebab-case
+5. Create the directory: `.kiro/specs/{version}-{feature-name}/`
 
 ## Important Notes
 

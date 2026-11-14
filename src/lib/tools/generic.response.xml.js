@@ -5,7 +5,7 @@ const xml = (body) => {
 };
 
 const xmlBodyFormatter = (statusCode, message) => {
-	if (statusCode === 200) {
+	if (statusCode >= 200 && statusCode < 300) {
 		return xml("<hello>" + message + "</hello>");
 	}
 	const msg = statusCode === 418 ? "418 " + message : message;
