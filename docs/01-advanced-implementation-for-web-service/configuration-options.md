@@ -79,6 +79,15 @@ Response.init({
       headers: { 'Content-Type': 'text/html' },
       body: '<html><body><h1>404 Not Found</h1></body></html>'
     }
+  },
+  
+  // Custom XML response templates
+  xmlResponses: {
+    response404: {
+      statusCode: 404,
+      headers: { 'Content-Type': 'application/xml' },
+      body: '<?xml version="1.0" encoding="UTF-8" ?><error>Resource not found</error>'
+    }
   }
 });
 ```

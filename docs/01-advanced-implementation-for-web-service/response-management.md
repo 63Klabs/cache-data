@@ -187,6 +187,32 @@ Response.init({
 });
 ```
 
+Each format has its own option: `jsonResponses`, `htmlResponses`, `xmlResponses`, `rssResponses` and `textResponses`. An option changes only its own format. This example replaces the XML 404 template and leaves every other XML template and every other format as it is:
+
+```javascript
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+Response.init({
+  xmlResponses: {
+    response404: {
+      statusCode: 404,
+      headers: { 'Content-Type': 'application/xml' },
+      body: '<?xml version="1.0" encoding="UTF-8" ?><error><code>NOT_FOUND</code><message>Resource not found</message></error>'
+    }
+  }
+});
+```
+
+A `Response` built from a template, such as `new Response(clientRequest, { statusCode: 404 }, Response.CONTENT_TYPE.XML)`, carries the `Content-Type` of `Response.CONTENT_TYPE.XML` (`application/xml`), not the `Content-Type` in the template's `headers`. To send another type, set it after the response is built:
+
+```javascript
+const response = new Response(clientRequest, { statusCode: 404 }, Response.CONTENT_TYPE.XML);
+response.addHeader('Content-Type', 'application/atom+xml');
+```
+
+`setHeaders({ 'Content-Type': 'application/atom+xml' })` works the same way. Before v1.4.2, `xmlResponses` was applied to the HTML templates by mistake; see the [CHANGELOG](../../CHANGELOG.md).
+
 ## Generic Response Templates
 
 `new Response(clientRequest, { statusCode })` and `response.reset({ statusCode })` fill the body from a generic template when you do not pass one. These statuses have a template in every format (JSON, HTML, XML, RSS and text):

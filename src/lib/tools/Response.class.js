@@ -160,7 +160,7 @@ class Response {
 			if ( options?.xmlResponses ) {
 				// merge settings using assign object
 				//Response.#xmlResponses = Object.assign({}, Response.#xmlResponses, options.xmlResponses);
-				Response.#htmlResponses = { ...Response.#xmlResponses, ...options.xmlResponses };
+				Response.#xmlResponses = { ...Response.#xmlResponses, ...options.xmlResponses };
 			}
 
 			if ( options?.rssResponses ) {
