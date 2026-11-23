@@ -204,14 +204,51 @@ Response.init({
 });
 ```
 
-A `Response` built from a template, such as `new Response(clientRequest, { statusCode: 404 }, Response.CONTENT_TYPE.XML)`, carries the `Content-Type` of `Response.CONTENT_TYPE.XML` (`application/xml`), not the `Content-Type` in the template's `headers`. To send another type, set it after the response is built:
+A `Response` built from a template, by the constructor or `reset()`, carries the first of these `Content-Type` values that exists:
+
+1. A `Content-Type` in the `headers` object you pass to the constructor or `reset()`.
+2. The `Content-Type` in the `headers` of the template.
+3. The `Response.CONTENT_TYPE` value for the format.
+
+The value is sent exactly as written. This example sends Atom from the RSS slot and a problem document from the JSON slot:
 
 ```javascript
-const response = new Response(clientRequest, { statusCode: 404 }, Response.CONTENT_TYPE.XML);
-response.addHeader('Content-Type', 'application/atom+xml');
+const { tools } = require('@63klabs/cache-data');
+const { Response } = tools;
+
+Response.init({
+  rssResponses: {
+    response404: {
+      statusCode: 404,
+      headers: { 'Content-Type': 'application/atom+xml' },
+      body: '<?xml version="1.0" encoding="UTF-8" ?><feed><title>Not found</title></feed>'
+    }
+  },
+  jsonResponses: {
+    response404: {
+      statusCode: 404,
+      headers: { 'Content-Type': 'application/problem+json' },
+      body: { type: 'about:blank', title: 'Not Found', status: 404 }
+    }
+  }
+});
 ```
 
-`setHeaders({ 'Content-Type': 'application/atom+xml' })` works the same way. Before v1.4.2, `xmlResponses` was applied to the HTML templates by mistake; see the [CHANGELOG](../../CHANGELOG.md).
+A `+json` type, such as `application/problem+json`, is serialized as JSON by `finalize()`, as `application/json` is.
+
+A `Content-Type` value in `headers` that is not one of the five `Response.CONTENT_TYPE` values no longer throws. `text/html` and `text/html; charset=utf-8` select the HTML templates. Another value, such as `application/atom+xml`, selects the template from the body type (JSON when there is no body) and is sent as written.
+
+A `Content-Type` that contains a control character, such as a line feed or carriage return, is ignored in a supplied header and in a template, and the next value in the order above is used. A warning is logged once. Other values are not validated. Do not build a `Content-Type` from request data.
+
+A template sends exactly the `Content-Type` it carries, so a template that carries `text/html` sends `text/html` with no charset. Use `text/html; charset=utf-8` for HTML.
+
+`setBody()`, `setStatusCode()` and `setHeaders()` can set `Content-Type` again from the body or headers they receive. Call `addHeader('Content-Type', ...)` after the last of them to keep a custom type. The rule for these calls is being decided in `1-4-2-response-set-status-code-resets-content-type-to-json`.
+
+A custom `contentType` property on a template module does not change `Response.CONTENT_TYPE`.
+
+A type outside the five can change how API Gateway (`binaryMediaTypes` and compression) and CloudFront (compression) handle a response. This was not verified.
+
+Before v1.4.2, `xmlResponses` was applied to the HTML templates by mistake; see the [CHANGELOG](../../CHANGELOG.md).
 
 ## Generic Response Templates
 

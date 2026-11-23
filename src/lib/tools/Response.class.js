@@ -8,6 +8,13 @@ const ClientRequest = require('./ClientRequest.class');
 const DebugAndLog = require('./DebugAndLog.class');
 const { flushMetrics } = require('./PowertoolsInit');
 
+// >! A single character set with no quantifier is linear in the length of the value and cannot backtrack
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARACTER = /[\u0000-\u001F\u007F]/;
+// >! The warning names the rule and never contains the rejected header value
+const CONTROL_CHARACTER_WARNING = "Response: a Content-Type value that contains a control character (U+0000 to U+001F, U+007F) was ignored. The next value in the order supplied header, template header, format constant is used.";
+let controlCharacterWarningLogged = false;
+
 /**
  * Remove the RESPONSE log delimiter and control characters from a request-derived value.
  * Returns "-" when the value is empty or nothing remains after cleaning.
@@ -78,6 +85,190 @@ class Response {
 		CSV: 'text/csv'
 	};
 
+	/**
+	 * Format codes that have a template slot.
+	 *
+	 * @private
+	 * @type {Array.<string>}
+	 */
+	static #FORMAT_CODES = ["JSON", "HTML", "XML", "RSS", "TEXT"];
+
+	/**
+	 * Media type of each Response.CONTENT_TYPE entry, built once during static initialization.
+	 *
+	 * @private
+	 * @type {Object.<string, string>}
+	 */
+	static #MEDIA_TYPES = Object.fromEntries(
+		Object.entries(Response.CONTENT_TYPE).map(([code, value]) => [code, Response.#mediaTypeOf(value)])
+	);
+
+	/**
+	 * Get the media type of a Content-Type value: the text before the first
+	 * semicolon, trimmed and converted to lower case.
+	 *
+	 * @private
+	 * @param {string} value - Content-Type value
+	 * @returns {string} The media type
+	 * @example
+	 * Response.#mediaTypeOf("Text/HTML; charset=utf-8"); // "text/html"
+	 */
+	static #mediaTypeOf(value) {
+		return value.split(";", 1)[0].trim().toLowerCase();
+	}
+
+	/**
+	 * Test whether a media type is application/json or a type/subtype+json type.
+	 *
+	 * @private
+	 * @param {string} mediaType - Media type as returned by #mediaTypeOf
+	 * @returns {boolean} True for a JSON media type
+	 * @example
+	 * Response.#isJsonMediaType("application/problem+json"); // true
+	 * Response.#isJsonMediaType("application/atom+xml"); // false
+	 */
+	static #isJsonMediaType(mediaType) {
+		if (mediaType === "application/json") {
+			return true;
+		}
+		const slash = mediaType.indexOf("/");
+		return slash > 0
+			&& mediaType.endsWith("+json")
+			&& mediaType.length > slash + 6
+			&& mediaType.indexOf("/", slash + 1) === -1;
+	}
+
+	/**
+	 * Test whether a Content-Type header value has a JSON media type.
+	 * A value that is not a string is not JSON and never throws.
+	 *
+	 * @private
+	 * @param {*} value - Content-Type header value of any type
+	 * @returns {boolean} True when the value is a string with a JSON media type
+	 * @example
+	 * Response.#isJsonContentType("application/json; charset=utf-8"); // true
+	 * Response.#isJsonContentType(42); // false
+	 */
+	static #isJsonContentType(value) {
+		return typeof value === "string" && Response.#isJsonMediaType(Response.#mediaTypeOf(value));
+	}
+
+	/**
+	 * Return a Content-Type value that can be used, or null. A value that is not
+	 * a string, contains a control character, or is blank is not usable. A control
+	 * character logs one warning per container. The control character test runs
+	 * before the blank test, so a value of only a line feed warns and is ignored.
+	 *
+	 * @private
+	 * @param {*} value - Content-Type value of any type
+	 * @returns {string|null} The value as given, or null when it is not usable
+	 * @example
+	 * Response.#usableContentType("text/html"); // "text/html"
+	 * Response.#usableContentType("   "); // null
+	 */
+	static #usableContentType(value) {
+		if (typeof value !== "string") {
+			return null;
+		}
+		if (CONTROL_CHARACTER.test(value)) {
+			Response.#warnControlCharacter();
+			return null;
+		}
+		if (value.trim() === "") {
+			return null;
+		}
+		return value;
+	}
+
+	/**
+	 * Find the format code that a Content-Type value names: the value equals the
+	 * code or the Response.CONTENT_TYPE constant of one of the five formats.
+	 *
+	 * @private
+	 * @param {string} contentType - A format code or a Response.CONTENT_TYPE value
+	 * @returns {string|null} The format code, or null when nothing matches
+	 * @example
+	 * Response.#formatCodeOf("application/xml"); // "XML"
+	 * Response.#formatCodeOf("HTML"); // "HTML"
+	 */
+	static #formatCodeOf(contentType) {
+		for (const code of Response.#FORMAT_CODES) {
+			if (contentType === code || contentType === Response.CONTENT_TYPE[code]) {
+				return code;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Select the format that a usable Content-Type value names. The value selects
+	 * a format when it equals a format code or constant, or has the same media
+	 * type as the constant of one of the five formats.
+	 *
+	 * @private
+	 * @param {string|null} value - Result of #usableContentType
+	 * @returns {string|null} The format code, or null when nothing is selected
+	 * @example
+	 * Response.#selectFormat("text/html; charset=utf-8"); // "HTML"
+	 * Response.#selectFormat("application/atom+xml"); // null
+	 */
+	static #selectFormat(value) {
+		if (value === null) {
+			return null;
+		}
+		const named = Response.#formatCodeOf(value);
+		if (named !== null) {
+			return named;
+		}
+		const mediaType = Response.#mediaTypeOf(value);
+		for (const code of Response.#FORMAT_CODES) {
+			if (Response.#MEDIA_TYPES[code] === mediaType) {
+				return code;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Resolve a usable Content-Type value. A format code is replaced by the
+	 * Response.CONTENT_TYPE constant of that format. Any other value is returned as given.
+	 *
+	 * @private
+	 * @param {string} value - A usable Content-Type value
+	 * @returns {string} The value to write to the header
+	 * @example
+	 * Response.#resolve("JSON"); // "application/json"
+	 * Response.#resolve("application/problem+json"); // "application/problem+json"
+	 */
+	static #resolve(value) {
+		return Response.#FORMAT_CODES.includes(value) ? Response.CONTENT_TYPE[value] : value;
+	}
+
+	/**
+	 * Log the one-time warning for a Content-Type value that contains a control
+	 * character. The warning never contains the value. A logging failure, thrown
+	 * or returned as a rejected promise, never reaches the caller.
+	 *
+	 * @private
+	 * @returns {void}
+	 * @example
+	 * Response.#warnControlCharacter();
+	 */
+	static #warnControlCharacter() {
+		if (controlCharacterWarningLogged) {
+			return;
+		}
+		controlCharacterWarningLogged = true;
+		try {
+			const result = DebugAndLog.warn(CONTROL_CHARACTER_WARNING);
+			if (result && typeof result.catch === "function") {
+				result.catch(() => {});
+			}
+		} catch {
+			// A logging failure must not change the response that is built
+		}
+	}
+
 	static #settings = {
 		errorExpirationInSeconds: (60 * 3),
 		routeExpirationInSeconds: 0,
@@ -90,16 +281,44 @@ class Response {
 	_body = null;
 
 	/**
-	 * Creates a new Response instance.
+	 * Creates a new Response instance from the generic response template for the status code.
+	 * The constructor calls `reset()`, so both follow the same rules.
+	 * 
+	 * The `Content-Type` of the response is the first of these that exists:
+	 * 1. A `Content-Type` in `obj.headers`.
+	 * 2. The `Content-Type` in the `headers` of the template for the format and status code.
+	 * 3. The `Response.CONTENT_TYPE` value for the format.
+	 * 
+	 * A value that equals a format code (`"JSON"`, `"HTML"`, `"XML"`, `"RSS"` or `"TEXT"`) is replaced by the
+	 * `Response.CONTENT_TYPE` value for that format. Any other value is used exactly as given, with no
+	 * charset added. A `Content-Type` value that is not a string, is blank, or contains a control character
+	 * (U+0000 to U+001F or U+007F, such as a line feed or carriage return) is ignored, and the next value in
+	 * the order above is used. A warning that does not contain the value is logged once per container.
+	 * 
+	 * The format is chosen from `contentType` when it is given. Otherwise it is chosen from a `Content-Type`
+	 * in `obj.headers` that equals a format code or constant, or has the same media type as a constant
+	 * (the text before the first `;`, trimmed and compared in lower case, so `text/html` selects the HTML
+	 * templates). When neither applies, the format is chosen from the body, and then from the default
+	 * content type in settings. A `Content-Type` value that selects no format, such as `application/atom+xml`,
+	 * does not throw and is sent as given.
+	 * 
+	 * `setBody()`, `setStatusCode()` and `setHeaders()` can set `Content-Type` again from what they receive.
+	 * Call `addHeader('Content-Type', ...)` after the last of them to keep a custom value.
 	 * 
 	 * @param {ClientRequest} clientRequest - The client request object associated with this response
 	 * @param {{statusCode: number, headers: Object, body: string|number|Object|Array}} [obj={}] - Initial response structure
-	 * @param {string} [contentType=null] - Content type for the response (e.g., Response.CONTENT_TYPE.JSON)
+	 * @param {string} [contentType=null] - Format for the response (a `Response.CONTENT_TYPE` value or format code such as `Response.CONTENT_TYPE.JSON`). When `null`, the format comes from a `Content-Type` in `obj.headers` that names or matches a format, else from the body, else from settings
+	 * @throws {Error} If `contentType` is not a supported format (`JSON`, `HTML`, `XML`, `RSS` or `TEXT`), including `Response.CONTENT_TYPE.JAVASCRIPT`, `CSS` and `CSV`. A `Content-Type` header value in `obj.headers` never throws.
 	 * @example
 	 * const response = new Response(clientRequest, { statusCode: 200, body: { success: true } });
 	 * 
 	 * @example
 	 * const response = new Response(clientRequest, {}, Response.CONTENT_TYPE.HTML);
+	 * 
+	 * @example
+	 * // A Content-Type header selects the HTML templates by media type and is kept as given
+	 * const response = new Response(clientRequest, { statusCode: 200, headers: { "Content-Type": "text/html" } });
+	 * response.getHeaders()["Content-Type"]; // "text/html"
 	 */
 	constructor(clientRequest, obj = {}, contentType = null) {
 		this._clientRequest = clientRequest;
@@ -196,14 +415,40 @@ class Response {
 	 * includes its fallback to the template for the status code's class. A template with a
 	 * null body clears the body.
 	 * 
+	 * The `Content-Type` of the response is the first of these that exists:
+	 * 1. A `Content-Type` in `obj.headers`.
+	 * 2. The `Content-Type` in the `headers` of the template for the format and status code.
+	 * 3. The `Response.CONTENT_TYPE` value for the format.
+	 * 
+	 * A value that equals a format code (`"JSON"`, `"HTML"`, `"XML"`, `"RSS"` or `"TEXT"`) is replaced by the
+	 * `Response.CONTENT_TYPE` value for that format. Any other value is used exactly as given, with no
+	 * charset added. A `Content-Type` value that is not a string, is blank, or contains a control character
+	 * (U+0000 to U+001F or U+007F, such as a line feed or carriage return) is ignored, and the next value in
+	 * the order above is used. A warning that does not contain the value is logged once per container.
+	 * When `obj.headers` is given, the other headers of the response are a copy of it, and the other headers
+	 * of the template are not merged in. Otherwise they are a copy of the template's headers.
+	 * 
+	 * The format is chosen from `contentType` when it is given. Otherwise it is chosen from a `Content-Type`
+	 * in `obj.headers` that equals a format code or constant, or has the same media type as a constant
+	 * (the text before the first `;`, trimmed and compared in lower case, so `text/html` selects the HTML
+	 * templates). When neither applies, the format is chosen from the body, and then from the default
+	 * content type in settings. A `Content-Type` value that selects no format, such as `application/atom+xml`,
+	 * does not throw and is sent as given.
+	 * 
 	 * @param {{statusCode: number|string, headers: Object, body: string|number|Object|Array}} obj - Properties to set after reset
-	 * @param {string} [contentType=null] - Content type (use Response.CONTENT_TYPE values)
+	 * @param {string} [contentType=null] - Format for the response (a `Response.CONTENT_TYPE` value or format code such as `Response.CONTENT_TYPE.JSON`). When `null`, the format comes from a `Content-Type` in `obj.headers` that names or matches a format, else from the body, else from settings
 	 * @returns {void}
+	 * @throws {Error} If `contentType` is not a supported format (`JSON`, `HTML`, `XML`, `RSS` or `TEXT`), including `Response.CONTENT_TYPE.JAVASCRIPT`, `CSS` and `CSV`. A `Content-Type` header value in `obj.headers` never throws.
 	 * @example
 	 * response.reset({ statusCode: 404 });
 	 * 
 	 * @example
 	 * response.reset({ statusCode: 200, body: { data: results } }, Response.CONTENT_TYPE.JSON);
+	 * 
+	 * @example
+	 * // A Content-Type header that is not one of the five constants does not throw
+	 * response.reset({ statusCode: 200, headers: { "Content-Type": "application/atom+xml" } });
+	 * response.getHeaders()["Content-Type"]; // "application/atom+xml"
 	 */
 	reset = (obj, contentType = null) => {
 
@@ -211,17 +456,30 @@ class Response {
 
 		newObj.statusCode = obj?.statusCode ?? 200;
 
+		const supplied = Response.#usableContentType(obj?.headers?.["Content-Type"]);
+
 		if (contentType === null) {
-			const result = Response.inspectContentType(obj);
-			contentType = (result !== null) ? result : Response.#settings.contentType;
+			const code = Response.#selectFormat(supplied);
+			if (code !== null) {
+				contentType = Response.CONTENT_TYPE[code];
+			} else {
+				const result = Response.inspectBodyContentType(obj.body);
+				contentType = (result !== null) ? result : Response.#settings.contentType;
+			}
 		}
 
 		const genericResponses = Response.getGenericResponses(contentType);
+		const template = genericResponses.response(newObj.statusCode);
 
-		newObj.headers = { ...(obj?.headers ?? genericResponses.response(newObj.statusCode).headers) };
-		newObj.body = obj?.body ?? genericResponses.response(newObj.statusCode).body;
+		newObj.headers = { ...(obj?.headers ?? template.headers) };
+		newObj.body = obj?.body ?? template.body;
 
 		this.set(newObj, contentType);
+
+		const templateValue = Response.#usableContentType(template.headers?.["Content-Type"]);
+		this.addHeader('Content-Type', Response.#resolve(
+			supplied ?? templateValue ?? Response.CONTENT_TYPE[Response.#formatCodeOf(contentType)]
+		));
 
 		if (newObj.body === null) {
 			this._body = null;
@@ -445,11 +703,26 @@ class Response {
 	/**
 	 * Gets the content type code (key) for the response.
 	 * Returns the key from CONTENT_TYPE object that matches the current content type.
+	 * An exact match with a `Response.CONTENT_TYPE` value is tried first. Otherwise the media type
+	 * (the text before the first `;`, trimmed and compared in lower case) is matched, so `text/html`
+	 * returns `HTML` and `application/json; charset=utf-8` returns `JSON`. A JSON media type
+	 * (`application/json` or a `+json` type) with no other match returns `JSON`.
+	 * The response log carries this code.
 	 * 
-	 * @returns {string} Content type code (e.g., 'JSON', 'HTML', 'XML')
+	 * @returns {string|undefined} Content type code (e.g., 'JSON', 'HTML', 'XML'), or `undefined` when nothing matches or the content type is not a string
 	 * @example
 	 * const code = response.getContentTypeCode();
 	 * // Returns 'JSON' if content type is 'application/json'
+	 * 
+	 * @example
+	 * // A media type match, with no charset in the header
+	 * response.addHeader("Content-Type", "text/html");
+	 * response.getContentTypeCode(); // "HTML"
+	 * 
+	 * @example
+	 * // A custom type that matches no format
+	 * response.addHeader("Content-Type", "application/atom+xml");
+	 * response.getContentTypeCode(); // undefined
 	 */
 	getContentTypeCode = () => {
 		const contentTypeStr = this.getContentType();
@@ -460,6 +733,18 @@ class Response {
 				return contentTypeCodes[i];
 			}
 		}
+		// A non-string content type has no media type to match
+		if (typeof contentTypeStr !== "string") {
+			return undefined;
+		}
+		// No exact match: match by media type, ignoring parameters such as charset
+		const mediaType = Response.#mediaTypeOf(contentTypeStr);
+		for (let i = 0; i < contentTypeCodes.length; i++) {
+			if (Response.#MEDIA_TYPES[contentTypeCodes[i]] === mediaType) {
+				return contentTypeCodes[i];
+			}
+		}
+		return Response.#isJsonMediaType(mediaType) ? "JSON" : undefined;
 	}
 
 	/**
@@ -669,7 +954,9 @@ class Response {
 	 * Finalizes and prepares the response for sending to the client.
 	 * Handles body stringification, sets appropriate headers (CORS, caching, execution time),
 	 * and logs the response to CloudWatch. If body is an object/array, it's stringified.
-	 * For JSON responses, string/number bodies are wrapped in an array.
+	 * For a JSON media type (`application/json` or a `+json` type such as `application/problem+json`,
+	 * with or without parameters such as `charset`), string/number bodies are wrapped in an array
+	 * and the body is stringified as JSON. Any other `Content-Type` sends the body as `${body}`.
 	 * 
 	 * Note: Application-set `Cache-Control` and `Expires` headers (via `addHeader()`)
 	 * take precedence over config defaults (`routeExpirationInSeconds` and
@@ -711,7 +998,7 @@ class Response {
 			if (this._body !== null) { // we'll keep null as null
 
 				// if response type is JSON we need to make sure we respond with stringified json
-				if (this._headers['Content-Type'] === Response.CONTENT_TYPE.JSON) {
+				if (Response.#isJsonContentType(this._headers['Content-Type'])) {
 
 					// body is a string or number, place in array (unless the number is 404, then that signifies not found)
 					if (typeof this._body === 'string' || typeof this._body === 'number') {

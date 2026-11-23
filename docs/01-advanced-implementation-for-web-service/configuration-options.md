@@ -76,7 +76,7 @@ Response.init({
   htmlResponses: {
     response404: {
       statusCode: 404,
-      headers: { 'Content-Type': 'text/html' },
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
       body: '<html><body><h1>404 Not Found</h1></body></html>'
     }
   },
